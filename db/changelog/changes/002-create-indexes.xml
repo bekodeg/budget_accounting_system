@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="002-01-membership-indexes" author="bekodeg">
+        <createIndex indexName="idx_budget_members_user" tableName="budget_members"><column name="user_id"/></createIndex>
+        <rollback><dropIndex indexName="idx_budget_members_user" tableName="budget_members"/></rollback>
+    </changeSet>
+
+    <changeSet id="002-02-category-indexes" author="bekodeg">
+        <createIndex indexName="idx_categories_budget_archived" tableName="categories"><column name="budget_id"/><column name="is_archived"/></createIndex>
+        <rollback><dropIndex indexName="idx_categories_budget_archived" tableName="categories"/></rollback>
+    </changeSet>
+
+    <changeSet id="002-03-account-indexes" author="bekodeg">
+        <createIndex indexName="idx_accounts_budget_archived" tableName="accounts"><column name="budget_id"/><column name="is_archived"/></createIndex>
+        <rollback><dropIndex indexName="idx_accounts_budget_archived" tableName="accounts"/></rollback>
+    </changeSet>
+
+    <changeSet id="002-04-device-indexes" author="bekodeg">
+        <createIndex indexName="idx_devices_user" tableName="devices"><column name="user_id"/></createIndex>
+        <rollback><dropIndex indexName="idx_devices_user" tableName="devices"/></rollback>
+    </changeSet>
+
+    <changeSet id="002-05-receipt-indexes" author="bekodeg">
+        <createIndex indexName="idx_receipts_budget_time" tableName="receipts"><column name="budget_id"/><column name="receipt_time"/></createIndex>
+        <rollback><dropIndex indexName="idx_receipts_budget_time" tableName="receipts"/></rollback>
+    </changeSet>
+
+    <changeSet id="002-06-transaction-report-indexes" author="bekodeg">
+        <createIndex indexName="idx_transactions_budget_occurred" tableName="transactions"><column name="budget_id"/><column name="occurred_at"/></createIndex>
+        <createIndex indexName="idx_transactions_budget_category_occurred" tableName="transactions"><column name="budget_id"/><column name="category_id"/><column name="occurred_at"/></createIndex>
+        <createIndex indexName="idx_transactions_budget_account_occurred" tableName="transactions"><column name="budget_id"/><column name="account_id"/><column name="occurred_at"/></createIndex>
+        <rollback>
+            <dropIndex indexName="idx_transactions_budget_account_occurred" tableName="transactions"/>
+            <dropIndex indexName="idx_transactions_budget_category_occurred" tableName="transactions"/>
+            <dropIndex indexName="idx_transactions_budget_occurred" tableName="transactions"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-07-transaction-receipt-unique" author="bekodeg">
+        <createIndex indexName="uq_transactions_receipt" tableName="transactions" unique="true"><column name="receipt_id"/></createIndex>
+        <rollback><dropIndex indexName="uq_transactions_receipt" tableName="transactions"/></rollback>
+    </changeSet>
+
+    <changeSet id="002-08-plan-unique" author="bekodeg">
+        <createIndex indexName="uq_plans_budget_month_category" tableName="plans" unique="true"><column name="budget_id"/><column name="month"/><column name="category_id"/></createIndex>
+        <rollback><dropIndex indexName="uq_plans_budget_month_category" tableName="plans"/></rollback>
+    </changeSet>
+
+    <changeSet id="002-09-sync-indexes" author="bekodeg">
+        <createIndex indexName="idx_sync_operations_budget_clock" tableName="sync_operations"><column name="budget_id"/><column name="logical_clock"/></createIndex>
+        <createIndex indexName="idx_sync_operations_entity_clock" tableName="sync_operations"><column name="budget_id"/><column name="entity_type"/><column name="entity_id"/><column name="logical_clock"/></createIndex>
+        <rollback>
+            <dropIndex indexName="idx_sync_operations_entity_clock" tableName="sync_operations"/>
+            <dropIndex indexName="idx_sync_operations_budget_clock" tableName="sync_operations"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
