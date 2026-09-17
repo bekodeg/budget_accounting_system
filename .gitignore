@@ -1,0 +1,48 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+
+# Generated Drift / build_runner code
+*.g.dart
+*.freezed.dart
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+android/**/GeneratedPluginRegistrant.java
+
+# iOS / macOS
+**/Pods/
+**/.symlinks/
+ios/Flutter/.last_build_id
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+
+# Desktop generated files
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Coverage / test
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local database files
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db

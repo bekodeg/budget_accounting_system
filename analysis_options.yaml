@@ -1,0 +1,11 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "test/drift/generated/**"
+
+linter:
+  rules:
+    always_declare_return_types: true
+    prefer_final_locals: true
