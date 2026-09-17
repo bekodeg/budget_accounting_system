@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        categories are budget-scoped, so global defaults cannot be inserted into
+        categories before a budget exists. Instead, this table stores templates.
+        When a budget is created, the application copies these rows into categories
+        and generates normal UUIDs for categories.id.
+    -->
+    <changeSet id="003-01-create-category-templates" author="bekodeg">
+        <createTable tableName="category_templates">
+            <column name="code" type="TEXT">
+                <constraints primaryKey="true" primaryKeyName="pk_category_templates" nullable="false"/>
+            </column>
+            <column name="name" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kind" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sort_order" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="category_templates"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="003-02-seed-expense-category-templates" author="bekodeg">
+        <insert tableName="category_templates"><column name="code" value="expense.food"/><column name="name" value="Продукты"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="10"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.cafe"/><column name="name" value="Кафе и рестораны"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="20"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.transport"/><column name="name" value="Транспорт"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="30"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.housing"/><column name="name" value="Жилье"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="40"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.utilities"/><column name="name" value="Коммунальные услуги"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="50"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.health"/><column name="name" value="Здоровье"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="60"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.clothing"/><column name="name" value="Одежда"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="70"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.entertainment"/><column name="name" value="Развлечения"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="80"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.education"/><column name="name" value="Образование"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="90"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.subscriptions"/><column name="name" value="Подписки"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="100"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.gifts"/><column name="name" value="Подарки"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="110"/></insert>
+        <insert tableName="category_templates"><column name="code" value="expense.other"/><column name="name" value="Другое"/><column name="kind" value="EXPENSE"/><column name="sort_order" valueNumeric="999"/></insert>
+        <rollback>
+            <delete tableName="category_templates"><where>kind = 'EXPENSE'</where></delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="003-03-seed-income-category-templates" author="bekodeg">
+        <insert tableName="category_templates"><column name="code" value="income.salary"/><column name="name" value="Зарплата"/><column name="kind" value="INCOME"/><column name="sort_order" valueNumeric="10"/></insert>
+        <insert tableName="category_templates"><column name="code" value="income.side_job"/><column name="name" value="Подработка"/><column name="kind" value="INCOME"/><column name="sort_order" valueNumeric="20"/></insert>
+        <insert tableName="category_templates"><column name="code" value="income.investments"/><column name="name" value="Инвестиционный доход"/><column name="kind" value="INCOME"/><column name="sort_order" valueNumeric="30"/></insert>
+        <insert tableName="category_templates"><column name="code" value="income.refund"/><column name="name" value="Возвраты"/><column name="kind" value="INCOME"/><column name="sort_order" valueNumeric="40"/></insert>
+        <insert tableName="category_templates"><column name="code" value="income.gifts"/><column name="name" value="Подарки"/><column name="kind" value="INCOME"/><column name="sort_order" valueNumeric="50"/></insert>
+        <insert tableName="category_templates"><column name="code" value="income.other"/><column name="name" value="Другое"/><column name="kind" value="INCOME"/><column name="sort_order" valueNumeric="999"/></insert>
+        <rollback>
+            <delete tableName="category_templates"><where>kind = 'INCOME'</where></delete>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
