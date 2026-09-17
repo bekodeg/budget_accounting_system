@@ -1,0 +1,23 @@
+name: budget_accounting_system
+description: Offline-first household budget accounting application.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  drift: ^2.35.0
+  drift_flutter: ^0.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.16.1
+  drift_dev: ^2.35.0
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
