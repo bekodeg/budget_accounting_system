@@ -11,5 +11,6 @@
 
     <include file="changes/001-create-core-schema.xml" relativeToChangelogFile="true"/>
     <include file="changes/002-create-indexes.xml" relativeToChangelogFile="true"/>
+    <include file="changes/003-seed-default-categories.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>
