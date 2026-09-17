@@ -52,7 +52,7 @@ class Accounts extends Table {
       text().references(Budgets, #id, onDelete: KeyAction.cascade)();
   TextColumn get name => text()();
   Int64Column get openingBalanceMinor =>
-      int64().withDefault(const Constant(BigInt.zero))();
+      int64().withDefault(Constant(BigInt.zero))();
   TextColumn get currency => text().withLength(min: 3, max: 3)();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 
@@ -118,7 +118,8 @@ class BudgetTransactions extends Table {
       text().nullable().references(Accounts, #id)();
   TextColumn get description => text().nullable()();
   TextColumn get categoryId => text().nullable().references(Categories, #id)();
-  TextColumn get receiptId => text().nullable().unique().references(Receipts, #id)();
+  TextColumn get receiptId =>
+      text().nullable().unique().references(Receipts, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
