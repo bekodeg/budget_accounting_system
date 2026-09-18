@@ -29,21 +29,19 @@ lib/
   main.dart
   src/
     app.dart
+    bootstrap/          # composition root и lifecycle concrete dependencies
+    domain/             # бизнес-модели и repository contracts
+    application/        # use cases и AppServices
     data/
-      database/
-        app_database.dart
-        tables.dart
-      dal/
-        dal.dart
-        user_budget_dao.dart
-        category_account_dao.dart
-        transaction_dao.dart
-        plan_receipt_dao.dart
-        report_dao.dart
-        sync_dao.dart
+      database/         # Drift schema
+      dal/              # SQL/Drift access
+      repositories/     # adapters domain repositories -> DAL
+    presentation/       # Flutter UI и локальное UI-state
 ```
 
-UI и domain-слой не должны выполнять SQL напрямую. Доступ к данным осуществляется через `BudgetDal` и специализированные DAO.
+Главное правило зависимостей: `presentation -> application -> domain`.
+Drift/DAO доступны только data/bootstrap слоям; UI не должен импортировать SQL, таблицы Drift или `BudgetDal`.
+Подробнее см. [логику приложения и границы слоев](docs/06_application_logic.md).
 
 ## Локальный запуск
 
@@ -102,4 +100,5 @@ dart run drift_dev make-migrations
 - [Модель данных](docs/03_data_model.md)
 - [Синхронизация и конфликты](docs/04_sync_and_conflicts.md)
 - [Отчеты, экспорт и чеки](docs/05_reports_and_receipts.md)
+- [Логика приложения и границы слоев](docs/06_application_logic.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
