@@ -18,17 +18,17 @@ void main() {
 
     expect(find.byKey(const ValueKey('section-transactions')), findsOneWidget);
 
-    await tester.tap(find.text('План').last);
+    await tester.tap(find.byIcon(Icons.event_note_outlined));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('section-planning')), findsOneWidget);
 
-    await tester.tap(find.text('Отчеты').last);
+    await tester.tap(find.byIcon(Icons.bar_chart_outlined));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('section-reports')), findsOneWidget);
 
-    await tester.tap(find.text('Настройки').last);
+    await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('section-settings')), findsOneWidget);
