@@ -42,6 +42,20 @@ jobs:
       - name: Generate Drift code
         run: dart run build_runner build
 
+      - name: Generate Drift migrations
+        run: dart run drift_dev make-migrations
+
+      - name: Upload generated migration artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: drift-migration-artifacts
+          path: |
+            drift_schemas/
+            test/drift/
+            lib/src/data/database/*.steps.dart
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Format sources
         run: dart format lib test
 
