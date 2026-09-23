@@ -78,10 +78,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(
-      find.descendant(
-        of: find.byKey(const ValueKey('category-category-1')),
-        matching: find.byType(PopupMenuButton),
-      ),
+      find.byKey(const ValueKey('category-menu-category-1')),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Переименовать'));
@@ -96,10 +93,7 @@ void main() {
     expect(find.text('Продукты'), findsOneWidget);
 
     await tester.tap(
-      find.descendant(
-        of: find.byKey(const ValueKey('category-category-1')),
-        matching: find.byType(PopupMenuButton),
-      ),
+      find.byKey(const ValueKey('category-menu-category-1')),
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Архивировать'));
