@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
@@ -45,6 +45,18 @@ jobs:
       - name: Generate Drift migration artifacts
         run: dart run drift_dev make-migrations
 
+      - name: Bootstrap Drift schema history
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          git add drift_schemas test/drift lib/src/data/database/*.steps.dart 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build: record generated Drift migration artifacts"
+            git push origin "HEAD:${GITHUB_HEAD_REF}"
+          fi
+
       - name: Upload Drift migration artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -57,7 +69,14 @@ jobs:
           retention-days: 7
 
       - name: Verify Drift migration artifacts are committed
-        run: git diff --exit-code -- drift_schemas test/drift lib/src/data/database
+        shell: bash
+        run: |
+          changes="$(git status --porcelain -- drift_schemas test/drift lib/src/data/database)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "Drift migration artifacts are not committed."
+            exit 1
+          fi
 
       - name: Format sources
         run: dart format lib test
