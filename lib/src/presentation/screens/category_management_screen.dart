@@ -263,6 +263,7 @@ final class _CategorySection extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             title: Text(category.name),
             trailing: PopupMenuButton<_CategoryAction>(
+              key: ValueKey('category-menu-${category.id}'),
               onSelected: (action) {
                 switch (action) {
                   case _CategoryAction.rename:
