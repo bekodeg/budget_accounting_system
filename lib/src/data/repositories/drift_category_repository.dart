@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart';
+
 import '../../domain/models/budget_category.dart';
 import '../../domain/models/category_template.dart';
 import '../../domain/models/domain_types.dart';
