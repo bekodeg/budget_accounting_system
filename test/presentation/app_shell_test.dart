@@ -12,9 +12,7 @@ void main() {
       watchUserBudgets: WatchUserBudgets(_EmptyBudgetRepository()),
     );
 
-    await tester.pumpWidget(
-      BudgetAccountingApp(services: services),
-    );
+    await tester.pumpWidget(BudgetAccountingApp(services: services));
 
     expect(find.byKey(const ValueKey('section-transactions')), findsOneWidget);
 
