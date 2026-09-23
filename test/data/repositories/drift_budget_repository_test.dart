@@ -21,43 +21,39 @@ void main() {
     await database.close();
   });
 
-  test('maps Drift budgets to domain summaries for active membership', () async {
-    await dao.upsertUser(
-      UsersCompanion.insert(
-        id: 'user-1',
-        name: 'Alice',
-        publicKey: 'public-key',
-      ),
-    );
-    await dao.upsertBudget(
-      BudgetsCompanion.insert(
-        id: 'budget-1',
-        name: 'Household',
-        baseCurrency: 'EUR',
-        createdBy: 'user-1',
-      ),
-    );
-    await dao.upsertMember(
-      BudgetMembersCompanion.insert(
-        budgetId: 'budget-1',
-        userId: 'user-1',
-        role: 'OWNER',
-      ),
-    );
-
-    final budgets = await repository.watchBudgetsForUser('user-1').first;
-
-    expect(
-      budgets,
-      const [
-        BudgetSummary(
+  test(
+    'maps Drift budgets to domain summaries for active membership',
+    () async {
+      await dao.upsertUser(
+        UsersCompanion.insert(
+          id: 'user-1',
+          name: 'Alice',
+          publicKey: 'public-key',
+        ),
+      );
+      await dao.upsertBudget(
+        BudgetsCompanion.insert(
           id: 'budget-1',
           name: 'Household',
           baseCurrency: 'EUR',
+          createdBy: 'user-1',
         ),
-      ],
-    );
-  });
+      );
+      await dao.upsertMember(
+        BudgetMembersCompanion.insert(
+          budgetId: 'budget-1',
+          userId: 'user-1',
+          role: 'OWNER',
+        ),
+      );
+
+      final budgets = await repository.watchBudgetsForUser('user-1').first;
+
+      expect(budgets, const [
+        BudgetSummary(id: 'budget-1', name: 'Household', baseCurrency: 'EUR'),
+      ]);
+    },
+  );
 
   test('does not expose revoked membership', () async {
     await dao.upsertUser(
