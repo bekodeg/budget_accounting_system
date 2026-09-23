@@ -49,7 +49,12 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
-          git add drift_schemas test/drift lib/src/data/database/*.steps.dart 2>/dev/null || true
+          git add drift_schemas
+          if [ -d test/drift ]; then
+            git add test/drift
+          fi
+          find lib/src/data/database -maxdepth 1 -name '*.steps.dart' -print0 |
+            xargs -0 -r git add
           if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
