@@ -26,6 +26,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: ${{ github.head_ref || github.ref_name }}
+        with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Flutter
@@ -72,6 +74,18 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "build: commit generated Drift schema artifacts"
             git push origin HEAD:${{ github.head_ref }}
+          fi
+
+      - name: Bootstrap generated Drift helper
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          git add test/drift/generated_migrations
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build: record generated Drift migration test helper"
+            git push origin "HEAD:${GITHUB_HEAD_REF}"
           fi
 
       - name: Upload generated migration artifacts
