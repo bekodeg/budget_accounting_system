@@ -321,7 +321,7 @@ final class _AccountEditorDialogState extends State<_AccountEditorDialog> {
     } on Object catch (error) {
       setState(() {
         _error = error is FormatException
-            ? error.message
+            ? error.message.toString()
             : 'Проверьте валюту и начальный остаток.';
       });
     }
