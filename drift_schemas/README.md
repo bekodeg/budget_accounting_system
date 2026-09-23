@@ -49,12 +49,19 @@ Commit those files before changing `schemaVersion`.
    ```
 5. Implement the generated `fromNToN+1` migration step.
 6. Extend the generated migration test with a data-integrity scenario for the changed tables.
-7. Run:
+7. Regenerate the verifier classes used by migration tests:
+   ```bash
+   dart run drift_dev schema generate --data-classes --companions \
+     drift_schemas/app_database/ test/drift/generated_migrations/
+   ```
+8. Run:
    ```bash
    flutter test
    flutter analyze
    ```
-8. Commit the schema snapshot, step migration, tests and schema source change together.
+9. Commit the schema snapshot, step migration, tests and schema source change together.
+
+`test/drift/generated_migrations/` is intentionally ignored by Git. It is derived only from committed schema snapshots and is regenerated in CI before tests.
 
 ## Data-integrity rule
 
