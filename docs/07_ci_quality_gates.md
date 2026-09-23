@@ -261,8 +261,39 @@ Main promotion gate
 
 Если GitHub не предлагает check в autocomplete, сначала нужно хотя бы один раз запустить соответствующий workflow, затем вернуться в настройки ruleset.
 
+## Автоматический GitHub Release
+
+Каждый push/merge в `main` запускает workflow `.github/workflows/release-main.yml`.
+
+Release workflow **не пересобирает Android**. Он использует APK, который уже был собран и протестирован на `stage`:
+
+1. убеждается, что новый commit `main` является merge commit с двумя parents;
+2. определяет второй parent как протестированный `stage` SHA;
+3. проверяет, что дерево файлов `main` совпадает с деревом этого `stage` SHA;
+4. находит успешный push-run `Stage CI` для exact stage SHA;
+5. скачивает artifact `stage-budget-accounting-debug-apk`;
+6. вычисляет SHA-256 APK;
+7. создает GitHub Release и прикладывает APK и файл checksum;
+8. генерирует release notes средствами GitHub.
+
+Тег генерируется автоматически из версии `pubspec.yaml` и номера run. Для версии `0.1.0+1` он имеет вид:
+
+```text
+v0.1.0-build.1-main.<run-number>
+```
+
+Release name сохраняет исходную Flutter-версию:
+
+```text
+Budget Accounting 0.1.0+1 · main #<run-number>
+```
+
+Workflow идемпотентен: повторный запуск не создает второй release с тем же тегом.
+
+На текущем этапе в GitHub Release публикуется **debug APK**, потому что signing/release keystore еще не настроен. Это пригодный для ручной установки тестовый бинарник, но не production artifact для Google Play. Когда появится release signing, Stage CI должен формировать подписанный release APK/AAB, а release workflow сможет переиспользовать его тем же способом.
+
 ## Почему main не запускает тяжелый CI повторно
 
-Commit, который попадает из `stage` в `main`, уже прошел полный Stage CI. Повторный `flutter test --coverage` и Android build на том же SHA только удваивали бы runner time.
+Commit, который попадает из `stage` в `main`, уже прошел полный Stage CI. Повторный `flutter test --coverage` и Android build на том же исходном дереве только удваивали бы runner time.
 
-Если в будущем появится release pipeline по тегам, release AAB/APK и iOS archive должны собираться отдельно по release tag, а не на каждом merge в `main`.
+`main` выполняет только дешевую release-оркестрацию: находит проверенный Stage CI artifact и публикует его как GitHub Release.

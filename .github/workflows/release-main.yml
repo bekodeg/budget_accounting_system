@@ -1,0 +1,150 @@
+name: Main Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: main-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish main release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve stage commit and release metadata
+        id: metadata
+        shell: bash
+        run: |
+          parents="$(git show -s --format=%P "$GITHUB_SHA")"
+          parent_count="$(wc -w <<< "$parents")"
+
+          if [ "$parent_count" -ne 2 ]; then
+            echo "main release expects a merge commit produced by stage -> main."
+            echo "Commit $GITHUB_SHA has $parent_count parent(s)."
+            exit 1
+          fi
+
+          stage_sha="$(git rev-parse "$GITHUB_SHA^2")"
+
+          if ! git diff --quiet "$stage_sha" "$GITHUB_SHA" -- .; then
+            echo "main tree differs from the tested stage tree."
+            echo "Refusing to release an artifact built from another source tree."
+            exit 1
+          fi
+
+          app_version="$(awk '$1 == "version:" { print $2; exit }' pubspec.yaml)"
+          if [ -z "$app_version" ]; then
+            echo "Unable to read version from pubspec.yaml."
+            exit 1
+          fi
+
+          safe_version="$(printf '%s' "$app_version" | sed 's/+/-build./g')"
+          short_sha="$(git rev-parse --short=12 "$GITHUB_SHA")"
+          tag="v${safe_version}-main.${GITHUB_RUN_NUMBER}"
+          release_name="Budget Accounting ${app_version} · main #${GITHUB_RUN_NUMBER}"
+
+          {
+            echo "stage_sha=$stage_sha"
+            echo "app_version=$app_version"
+            echo "short_sha=$short_sha"
+            echo "tag=$tag"
+            echo "release_name=$release_name"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Find successful Stage CI run
+        id: stage
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STAGE_SHA: ${{ steps.metadata.outputs.stage_sha }}
+        shell: bash
+        run: |
+          run_id="$(
+            gh api               -H "Accept: application/vnd.github+json"               "/repos/$GITHUB_REPOSITORY/actions/workflows/stage-ci.yml/runs?branch=stage&event=push&status=success&per_page=100"               --jq ".workflow_runs[] | select(.head_sha == \"$STAGE_SHA\") | .id"               | head -n 1
+          )"
+
+          if [ -z "$run_id" ]; then
+            echo "No successful Stage CI push run found for $STAGE_SHA."
+            exit 1
+          fi
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download tested stage APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STAGE_RUN_ID: ${{ steps.stage.outputs.run_id }}
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          gh run download "$STAGE_RUN_ID"             --repo "$GITHUB_REPOSITORY"             --name stage-budget-accounting-debug-apk             --dir release-artifacts
+
+      - name: Prepare release assets
+        id: assets
+        env:
+          TAG: ${{ steps.metadata.outputs.tag }}
+        shell: bash
+        run: |
+          source_apk="$(find release-artifacts -type f -name '*.apk' -print -quit)"
+          if [ -z "$source_apk" ]; then
+            echo "Stage APK artifact does not contain an APK file."
+            exit 1
+          fi
+
+          apk_path="release-artifacts/budget-accounting-${TAG}.apk"
+          mv "$source_apk" "$apk_path"
+
+          checksum_path="${apk_path}.sha256"
+          sha256sum "$apk_path" > "$checksum_path"
+
+          {
+            echo "apk_path=$apk_path"
+            echo "checksum_path=$checksum_path"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.metadata.outputs.tag }}
+          RELEASE_NAME: ${{ steps.metadata.outputs.release_name }}
+          APK_PATH: ${{ steps.assets.outputs.apk_path }}
+          CHECKSUM_PATH: ${{ steps.assets.outputs.checksum_path }}
+        shell: bash
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; nothing to create."
+            exit 0
+          fi
+
+          gh release create "$TAG"             "$APK_PATH"             "$CHECKSUM_PATH"             --repo "$GITHUB_REPOSITORY"             --target "$GITHUB_SHA"             --title "$RELEASE_NAME"             --generate-notes             --latest
+
+      - name: Publish release summary
+        env:
+          TAG: ${{ steps.metadata.outputs.tag }}
+          APP_VERSION: ${{ steps.metadata.outputs.app_version }}
+          STAGE_SHA: ${{ steps.metadata.outputs.stage_sha }}
+          STAGE_RUN_ID: ${{ steps.stage.outputs.run_id }}
+        shell: bash
+        run: |
+          {
+            echo "## GitHub Release"
+            echo
+            echo "- Tag: `$TAG`"
+            echo "- App version: `$APP_VERSION`"
+            echo "- Tested stage commit: `$STAGE_SHA`"
+            echo "- Stage CI run: `$STAGE_RUN_ID`"
+            echo "- Android artifact: tested stage debug APK"
+          } >> "$GITHUB_STEP_SUMMARY"
