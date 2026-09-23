@@ -51,7 +51,7 @@ Drift/DAO доступны только data/bootstrap слоям; UI не до�
 feature/* -> dev -> stage -> main
 ```
 
-`dev` предназначен для интеграции разработки и запускает только легкие Git-проверки. Полные Flutter tests, coverage и Android debug build выполняются в `stage` перед продвижением в `main`. После merge в `main` автоматически создается GitHub Release из уже протестированного stage APK без повторной Android-сборки.
+`dev` предназначен для интеграции разработки и запускает только легкие Git-проверки. Полные Flutter tests, coverage и Android debug build выполняются в `stage` перед продвижением в `main`.
 
 Подробнее: [ветки и CI/CD pipeline](docs/07_ci_quality_gates.md).
 
@@ -114,4 +114,5 @@ dart run drift_dev make-migrations
 - [Отчеты, экспорт и чеки](docs/05_reports_and_receipts.md)
 - [Логика приложения и границы слоев](docs/06_application_logic.md)
 - [Ветки и CI/CD pipeline](docs/07_ci_quality_gates.md)
+- [Первый запуск и локальная сессия](docs/08_onboarding_and_session.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)

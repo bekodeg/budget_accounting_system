@@ -5,9 +5,16 @@ import '../navigation/app_navigation_controller.dart';
 import '../navigation/app_section.dart';
 
 final class AppShell extends StatefulWidget {
-  const AppShell({required this.services, super.key});
+  const AppShell({
+    required this.services,
+    required this.budgetName,
+    this.onChooseBudget,
+    super.key,
+  });
 
   final AppServices services;
+  final String budgetName;
+  final VoidCallback? onChooseBudget;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -34,7 +41,18 @@ final class _AppShellState extends State<AppShell> {
       listenable: _navigation,
       builder: (context, _) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Budget Accounting')),
+          appBar: AppBar(
+            title: Text(widget.budgetName),
+            actions: [
+              if (widget.onChooseBudget != null)
+                IconButton(
+                  key: const ValueKey('choose-budget'),
+                  tooltip: 'Сменить бюджет',
+                  onPressed: widget.onChooseBudget,
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
+                ),
+            ],
+          ),
           body: _SectionPlaceholder(section: _navigation.section),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _navigation.section.index,
