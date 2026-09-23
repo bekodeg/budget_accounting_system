@@ -142,9 +142,9 @@ jobs:
           {
             echo "## GitHub Release"
             echo
-            echo "- Tag: `$TAG`"
-            echo "- App version: `$APP_VERSION`"
-            echo "- Tested stage commit: `$STAGE_SHA`"
-            echo "- Stage CI run: `$STAGE_RUN_ID`"
+            echo "- Tag: $TAG"
+            echo "- App version: $APP_VERSION"
+            echo "- Tested stage commit: $STAGE_SHA"
+            echo "- Stage CI run: $STAGE_RUN_ID"
             echo "- Android artifact: tested stage debug APK"
           } >> "$GITHUB_STEP_SUMMARY"
