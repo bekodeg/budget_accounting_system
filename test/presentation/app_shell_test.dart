@@ -37,6 +37,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('category-management')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings-screen')), findsOneWidget);
+    expect(find.byKey(const ValueKey('account-management')), findsOneWidget);
   });
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../application/app_services.dart';
 import '../navigation/app_navigation_controller.dart';
 import '../navigation/app_section.dart';
-import 'category_management_screen.dart';
+import 'settings_screen.dart';
 
 final class AppShell extends StatefulWidget {
   const AppShell({
@@ -109,7 +109,7 @@ final class _SectionBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (section == AppSection.settings) {
-      return CategoryManagementScreen(
+      return SettingsScreen(
         services: services,
         budgetId: budgetId,
       );

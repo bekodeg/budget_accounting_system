@@ -69,18 +69,131 @@ final class CategoryAccountDao {
     );
   }
 
-  Stream<List<Account>> watchAccounts(String budgetId) {
+  Stream<List<Account>> watchAccounts(
+    String budgetId, {
+    required bool includeArchived,
+  }) {
+    final query = _db.select(_db.accounts)
+      ..where((row) {
+        final sameBudget = row.budgetId.equals(budgetId);
+        return includeArchived
+            ? sameBudget
+            : sameBudget & row.isArchived.equals(false);
+      })
+      ..orderBy([
+        (row) => OrderingTerm.asc(row.name),
+        (row) => OrderingTerm.asc(row.id),
+      ]);
+
+    return query.watch();
+  }
+
+  Future<Account?> findAccount({
+    required String budgetId,
+    required String accountId,
+  }) {
     return (_db.select(_db.accounts)
           ..where(
             (row) =>
-                row.budgetId.equals(budgetId) & row.isArchived.equals(false),
-          )
-          ..orderBy([(row) => OrderingTerm.asc(row.name)]))
-        .watch();
+                row.id.equals(accountId) & row.budgetId.equals(budgetId),
+          ))
+        .getSingleOrNull();
+  }
+
+  Future<void> createAccount(AccountsCompanion account) async {
+    await _db.into(_db.accounts).insert(account);
   }
 
   Future<void> upsertAccount(AccountsCompanion account) async {
     await _db.into(_db.accounts).insertOnConflictUpdate(account);
+  }
+
+  Future<int> updateAccount({
+    required String budgetId,
+    required String accountId,
+    required String name,
+    required String currency,
+    required BigInt openingBalanceMinor,
+  }) {
+    return (_db.update(_db.accounts)
+          ..where(
+            (row) =>
+                row.id.equals(accountId) & row.budgetId.equals(budgetId),
+          ))
+        .write(
+      AccountsCompanion(
+        name: Value(name),
+        currency: Value(currency),
+        openingBalanceMinor: Value(openingBalanceMinor),
+      ),
+    );
+  }
+
+  Future<int> setAccountArchived({
+    required String budgetId,
+    required String accountId,
+    required bool isArchived,
+  }) {
+    return (_db.update(_db.accounts)
+          ..where(
+            (row) =>
+                row.id.equals(accountId) & row.budgetId.equals(budgetId),
+          ))
+        .write(
+      AccountsCompanion(isArchived: Value(isArchived)),
+    );
+  }
+
+  Future<bool> accountHasTransactions({
+    required String budgetId,
+    required String accountId,
+  }) async {
+    final transaction = _db.budgetTransactions;
+    final query = _db.selectOnly(transaction)
+      ..addColumns([transaction.id])
+      ..where(
+        transaction.budgetId.equals(budgetId) &
+            (transaction.accountId.equals(accountId) |
+                transaction.destinationAccountId.equals(accountId)),
+      )
+      ..limit(1);
+
+    return (await query.getSingleOrNull()) != null;
+  }
+
+  Future<BigInt> getAccountBalanceMinor({
+    required String budgetId,
+    required String accountId,
+    required BigInt openingBalanceMinor,
+  }) async {
+    final transaction = _db.budgetTransactions;
+    final rows = await (_db.select(transaction)
+          ..where(
+            (row) =>
+                row.budgetId.equals(budgetId) &
+                row.deletedAt.isNull() &
+                (row.accountId.equals(accountId) |
+                    row.destinationAccountId.equals(accountId)),
+          ))
+        .get();
+
+    var balance = openingBalanceMinor;
+    for (final item in rows) {
+      if (item.type == 'INCOME' && item.accountId == accountId) {
+        balance += item.amountMinor;
+      } else if (item.type == 'EXPENSE' && item.accountId == accountId) {
+        balance -= item.amountMinor;
+      } else if (item.type == 'TRANSFER') {
+        if (item.accountId == accountId) {
+          balance -= item.amountMinor;
+        }
+        if (item.destinationAccountId == accountId) {
+          balance += item.amountMinor;
+        }
+      }
+    }
+
+    return balance;
   }
 
   Future<List<CategoryTemplate>> getCategoryTemplates() {

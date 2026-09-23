@@ -1,15 +1,22 @@
 import '../application/app_services.dart';
 import '../application/use_cases/apply_category_templates.dart';
+import '../application/use_cases/archive_account.dart';
 import '../application/use_cases/archive_category.dart';
+import '../application/use_cases/create_account.dart';
 import '../application/use_cases/create_category.dart';
 import '../application/use_cases/create_initial_budget.dart';
+import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/rename_category.dart';
+import '../application/use_cases/require_account_in_budget.dart';
 import '../application/use_cases/resolve_app_startup.dart';
 import '../application/use_cases/select_budget.dart';
+import '../application/use_cases/update_account.dart';
+import '../application/use_cases/watch_budget_accounts.dart';
 import '../application/use_cases/watch_budget_categories.dart';
 import '../application/use_cases/watch_user_budgets.dart';
 import '../data/dal/dal.dart';
 import '../data/preferences/shared_preferences_session_store.dart';
+import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/services/secure_id_generator.dart';
@@ -26,6 +33,9 @@ final class AppCompositionRoot {
     final categoryRepository = DriftCategoryRepository(
       dal.categoriesAndAccounts,
     );
+    final accountRepository = DriftAccountRepository(
+      dal.categoriesAndAccounts,
+    );
     final sessionStore = SharedPreferencesSessionStore();
     final idGenerator = SecureIdGenerator();
 
@@ -33,7 +43,12 @@ final class AppCompositionRoot {
       dal: dal,
       services: AppServices(
         applyCategoryTemplates: ApplyCategoryTemplates(categoryRepository),
+        archiveAccount: ArchiveAccount(accountRepository),
         archiveCategory: ArchiveCategory(categoryRepository),
+        createAccount: CreateAccount(
+          accountRepository: accountRepository,
+          idGenerator: idGenerator,
+        ),
         createCategory: CreateCategory(
           categoryRepository: categoryRepository,
           idGenerator: idGenerator,
@@ -44,7 +59,9 @@ final class AppCompositionRoot {
           sessionStore: sessionStore,
           idGenerator: idGenerator,
         ),
+        getAccountBalance: GetAccountBalance(accountRepository),
         renameCategory: RenameCategory(categoryRepository),
+        requireAccountInBudget: RequireAccountInBudget(accountRepository),
         resolveAppStartup: ResolveAppStartup(
           budgetRepository: budgetRepository,
           sessionStore: sessionStore,
@@ -53,6 +70,8 @@ final class AppCompositionRoot {
           budgetRepository: budgetRepository,
           sessionStore: sessionStore,
         ),
+        updateAccount: UpdateAccount(accountRepository),
+        watchBudgetAccounts: WatchBudgetAccounts(accountRepository),
         watchBudgetCategories: WatchBudgetCategories(categoryRepository),
         watchUserBudgets: WatchUserBudgets(budgetRepository),
       ),
