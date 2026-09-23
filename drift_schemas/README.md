@@ -65,7 +65,7 @@ Commit those files before changing `schemaVersion`.
 
 ## Data-integrity rule
 
-A structural schema check is not enough. For each migration that can affect existing rows, the test must:
+A structural schema check is not enough. The repository keeps a `SchemaVerifier` harness in `test/drift/migration_harness_test.dart`. For each migration that can affect existing rows, the test must:
 
 1. create the previous schema;
 2. insert representative rows using the previous schema;
