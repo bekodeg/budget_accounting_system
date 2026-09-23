@@ -46,3 +46,6 @@ Thumbs.db
 *.sqlite-shm
 *.sqlite-wal
 *.db
+
+# Drift migration verifier code is reproducibly generated from schema snapshots
+test/drift/generated_migrations/

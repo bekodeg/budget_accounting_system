@@ -42,6 +42,28 @@ jobs:
       - name: Generate Drift code
         run: dart run build_runner build
 
+      - name: Generate Drift migrations
+        run: dart run drift_dev make-migrations
+
+      - name: Generate Drift migration test helper
+        run: >-
+          dart run drift_dev schema generate
+          --data-classes
+          --companions
+          drift_schemas/app_database/
+          test/drift/generated_migrations/
+
+      - name: Verify Drift migration artifacts are committed
+        shell: bash
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- drift_schemas lib/src/data/database test/drift |
+            grep -v 'test/drift/generated_migrations/' || true)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "Drift migration artifacts are not committed."
+            exit 1
+          fi
+
       - name: Format sources
         run: dart format lib test
 
