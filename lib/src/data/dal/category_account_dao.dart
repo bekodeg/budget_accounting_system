@@ -31,6 +31,10 @@ final class CategoryAccountDao {
     await _db.into(_db.categories).insert(category);
   }
 
+  Future<void> upsertCategory(CategoriesCompanion category) async {
+    await _db.into(_db.categories).insertOnConflictUpdate(category);
+  }
+
   Future<void> insertCategoriesIfMissing(
     List<CategoriesCompanion> categories,
   ) {
