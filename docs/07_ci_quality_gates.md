@@ -4,7 +4,7 @@ GitHub Actions workflow `.github/workflows/flutter-ci.yml` runs for every push t
 
 ## Pull request gate
 
-A pull request must pass the `Analyze and test` job before the Android build starts.
+A pull request must pass the `Analyze and test` job.
 
 The job performs these checks in order:
 
@@ -19,7 +19,7 @@ The job performs these checks in order:
 9. runs the full Flutter test suite with coverage;
 10. publishes an LCOV coverage artifact and a line-coverage summary.
 
-Only after that job succeeds does `Build Android debug APK` run.
+Android is intentionally not built for pull-request events. The same source is built after it reaches `main`, so PR validation avoids spending runner time on an APK that would otherwise be built again after merge.
 
 ## Generated files policy
 
@@ -63,6 +63,10 @@ S1 establishes reporting only. A minimum coverage threshold should be introduced
 
 ## Android build
 
-The Android debug build depends on the test job through `needs: test`. Therefore a PR cannot reach the Android build step when formatting, migration checks, analysis, or tests fail.
+The Android debug APK is built only for pushes to `main` and manual workflow runs.
 
-Branch-protection rules are repository settings, not application code. The workflow provides stable check names (`Analyze and test`, `Build Android debug APK`) that can be selected as required status checks in repository settings.
+The build runs at the end of the existing `Analyze and test` job and reuses the same runner, Flutter SDK, dependencies, and generated Dart code. This avoids a second checkout, Flutter setup, `flutter pub get`, and `build_runner` invocation.
+
+This structure keeps pull requests focused on fast correctness checks while still proving that the merged `main` branch produces an Android APK.
+
+Branch-protection rules are repository settings, not application code. The workflow keeps the stable required check name `Analyze and test`.
