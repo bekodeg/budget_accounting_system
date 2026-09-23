@@ -3,9 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'app_section.dart';
 
 final class AppNavigationController extends ChangeNotifier {
-  AppNavigationController({
-    AppSection initialSection = AppSection.transactions,
-  }) : _section = initialSection;
+  AppNavigationController({AppSection initialSection = AppSection.transactions})
+    : _section = initialSection;
 
   AppSection _section;
 
