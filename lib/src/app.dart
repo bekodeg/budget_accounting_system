@@ -1,26 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-import 'data/dal/dal.dart';
+import 'application/app_services.dart';
+import 'presentation/screens/app_shell.dart';
 
 class BudgetAccountingApp extends StatefulWidget {
-  const BudgetAccountingApp({super.key});
+  const BudgetAccountingApp({
+    required this.services,
+    this.onDispose,
+    super.key,
+  });
+
+  final AppServices services;
+  final Future<void> Function()? onDispose;
 
   @override
   State<BudgetAccountingApp> createState() => _BudgetAccountingAppState();
 }
 
 class _BudgetAccountingAppState extends State<BudgetAccountingApp> {
-  late final BudgetDal _dal;
-
-  @override
-  void initState() {
-    super.initState();
-    _dal = BudgetDal.defaults();
-  }
-
   @override
   void dispose() {
-    _dal.close();
+    final onDispose = widget.onDispose;
+    if (onDispose != null) {
+      unawaited(onDispose());
+    }
     super.dispose();
   }
 
@@ -29,11 +34,7 @@ class _BudgetAccountingAppState extends State<BudgetAccountingApp> {
     return MaterialApp(
       title: 'Budget Accounting',
       theme: ThemeData(useMaterial3: true),
-      home: const Scaffold(
-        body: Center(
-          child: Text('Budget Accounting System'),
-        ),
-      ),
+      home: AppShell(services: widget.services),
     );
   }
 }
