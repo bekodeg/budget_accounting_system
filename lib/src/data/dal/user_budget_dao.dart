@@ -29,11 +29,16 @@ final class UserBudgetDao {
     required UsersCompanion user,
     required BudgetsCompanion budget,
     required BudgetMembersCompanion ownerMembership,
+    List<CategoriesCompanion> initialCategories = const [],
   }) {
     return _db.transaction(() async {
       await _db.into(_db.users).insert(user);
       await _db.into(_db.budgets).insert(budget);
       await _db.into(_db.budgetMembers).insert(ownerMembership);
+
+      for (final category in initialCategories) {
+        await _db.into(_db.categories).insert(category);
+      }
     });
   }
 
