@@ -89,6 +89,36 @@ void main() {
     );
   });
 
+  test('reapplying templates preserves rename and archive state', () async {
+    final repository = FakeCategoryRepository(
+      templates: const [
+        CategoryTemplate(
+          code: 'expense.food',
+          name: 'Продукты',
+          kind: CategoryKind.expense,
+          sortOrder: 10,
+        ),
+      ],
+    );
+    final apply = ApplyCategoryTemplates(repository);
+    final rename = RenameCategory(repository);
+    final archive = ArchiveCategory(repository);
+    const templateId = 'budget-1:template:expense.food';
+
+    await apply('budget-1');
+    await rename(categoryId: templateId, name: 'Супермаркет');
+    await archive(templateId);
+    await apply('budget-1');
+
+    final all = repository.snapshot(
+      'budget-1',
+      includeArchived: true,
+    );
+    expect(all, hasLength(1));
+    expect(all.single.name, 'Супермаркет');
+    expect(all.single.isArchived, isTrue);
+  });
+
   test('renames and archives without deleting category', () async {
     final repository = FakeCategoryRepository();
     final create = CreateCategory(
