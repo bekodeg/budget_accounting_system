@@ -3,10 +3,7 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 
 final class PeriodSummary {
-  const PeriodSummary({
-    required this.incomeMinor,
-    required this.expenseMinor,
-  });
+  const PeriodSummary({required this.incomeMinor, required this.expenseMinor});
 
   final BigInt incomeMinor;
   final BigInt expenseMinor;
@@ -15,10 +12,7 @@ final class PeriodSummary {
 }
 
 final class CategoryTotal {
-  const CategoryTotal({
-    required this.categoryId,
-    required this.amountMinor,
-  });
+  const CategoryTotal({required this.categoryId, required this.amountMinor});
 
   final String? categoryId;
   final BigInt amountMinor;
@@ -69,15 +63,15 @@ final class ReportDao {
       ..groupBy([transactions.categoryId]);
 
     return query.watch().map(
-          (rows) => rows
-              .map(
-                (row) => CategoryTotal(
-                  categoryId: row.read(transactions.categoryId),
-                  amountMinor: row.read(total) ?? BigInt.zero,
-                ),
-              )
-              .toList(),
-        );
+      (rows) => rows
+          .map(
+            (row) => CategoryTotal(
+              categoryId: row.read(transactions.categoryId),
+              amountMinor: row.read(total) ?? BigInt.zero,
+            ),
+          )
+          .toList(),
+    );
   }
 
   Future<BigInt> _sumForType({
