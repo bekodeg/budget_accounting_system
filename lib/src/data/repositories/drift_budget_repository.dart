@@ -9,7 +9,9 @@ final class DriftBudgetRepository implements BudgetRepository {
 
   @override
   Stream<List<BudgetSummary>> watchBudgetsForUser(String userId) {
-    return _dao.watchBudgetsForUser(userId).map(
+    return _dao
+        .watchBudgetsForUser(userId)
+        .map(
           (budgets) => budgets
               .map(
                 (budget) => BudgetSummary(

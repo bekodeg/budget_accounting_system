@@ -2,10 +2,7 @@ import '../errors/domain_validation_error.dart';
 import 'currency.dart';
 
 final class Money {
-  const Money._({
-    required this.minorUnits,
-    required this.currency,
-  });
+  const Money._({required this.minorUnits, required this.currency});
 
   factory Money.positive({
     required BigInt minorUnits,
@@ -18,17 +15,11 @@ final class Money {
       );
     }
 
-    return Money._(
-      minorUnits: minorUnits,
-      currency: currency,
-    );
+    return Money._(minorUnits: minorUnits, currency: currency);
   }
 
   factory Money.zero(Currency currency) {
-    return Money._(
-      minorUnits: BigInt.zero,
-      currency: currency,
-    );
+    return Money._(minorUnits: BigInt.zero, currency: currency);
   }
 
   final BigInt minorUnits;

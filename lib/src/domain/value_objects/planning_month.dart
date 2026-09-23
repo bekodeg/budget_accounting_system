@@ -1,6 +1,5 @@
 final class PlanningMonth {
-  PlanningMonth(DateTime value)
-      : value = DateTime(value.year, value.month);
+  PlanningMonth(DateTime value) : value = DateTime(value.year, value.month);
 
   final DateTime value;
 
@@ -9,8 +8,7 @@ final class PlanningMonth {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PlanningMonth && other.value == value;
+      identical(this, other) || other is PlanningMonth && other.value == value;
 
   @override
   int get hashCode => value.hashCode;

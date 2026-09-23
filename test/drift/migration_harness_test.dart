@@ -24,14 +24,18 @@ void main() {
     final schema = await verifier.schemaAt(1);
 
     final oldDatabase = v1.DatabaseAtV1(schema.newConnection());
-    await oldDatabase.into(oldDatabase.users).insert(
+    await oldDatabase
+        .into(oldDatabase.users)
+        .insert(
           v1.UsersCompanion.insert(
             id: 'u1',
             name: 'Snapshot User',
             publicKey: 'snapshot-key',
           ),
         );
-    await oldDatabase.into(oldDatabase.budgets).insert(
+    await oldDatabase
+        .into(oldDatabase.budgets)
+        .insert(
           v1.BudgetsCompanion.insert(
             id: 'b1',
             name: 'Snapshot Budget',
@@ -46,12 +50,12 @@ void main() {
     await database.close();
 
     final verifiedDatabase = v1.DatabaseAtV1(schema.newConnection());
-    final user = await (verifiedDatabase.select(verifiedDatabase.users)
-          ..where((row) => row.id.equals('u1')))
-        .getSingle();
-    final budget = await (verifiedDatabase.select(verifiedDatabase.budgets)
-          ..where((row) => row.id.equals('b1')))
-        .getSingle();
+    final user = await (verifiedDatabase.select(
+      verifiedDatabase.users,
+    )..where((row) => row.id.equals('u1'))).getSingle();
+    final budget = await (verifiedDatabase.select(
+      verifiedDatabase.budgets,
+    )..where((row) => row.id.equals('b1'))).getSingle();
 
     expect(user.name, 'Snapshot User');
     expect(budget.name, 'Snapshot Budget');

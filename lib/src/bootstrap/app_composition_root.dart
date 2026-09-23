@@ -4,10 +4,8 @@ import '../data/dal/dal.dart';
 import '../data/repositories/drift_budget_repository.dart';
 
 final class AppCompositionRoot {
-  AppCompositionRoot._({
-    required BudgetDal dal,
-    required this.services,
-  }) : _dal = dal;
+  AppCompositionRoot._({required BudgetDal dal, required this.services})
+    : _dal = dal;
 
   factory AppCompositionRoot.defaults() {
     final dal = BudgetDal.defaults();

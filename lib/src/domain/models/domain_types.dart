@@ -1,17 +1,5 @@
-enum TransactionType {
-  income,
-  expense,
-  transfer,
-}
+enum TransactionType { income, expense, transfer }
 
-enum MemberRole {
-  owner,
-  editor,
-  viewer,
-}
+enum MemberRole { owner, editor, viewer }
 
-enum CategoryKind {
-  income,
-  expense,
-  both,
-}
+enum CategoryKind { income, expense, both }

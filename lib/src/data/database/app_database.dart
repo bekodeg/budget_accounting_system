@@ -24,33 +24,33 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   AppDatabase.defaults()
-      : super(
-          driftDatabase(
-            name: 'budget_accounting',
-            native: const DriftNativeOptions(shareAcrossIsolates: true),
-          ),
-        );
+    : super(
+        driftDatabase(
+          name: 'budget_accounting',
+          native: const DriftNativeOptions(shareAcrossIsolates: true),
+        ),
+      );
 
   @override
   int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (Migrator migrator) async {
-          await migrator.createAll();
-          await _seedCategoryTemplates();
-        },
-        onUpgrade: (Migrator migrator, int from, int to) async {
-          throw StateError(
-            'Missing Drift migration from schema $from to $to. '
-            'Run `dart run drift_dev make-migrations` after bumping schemaVersion.',
-          );
-        },
-        beforeOpen: (OpeningDetails details) async {
-          await customStatement('PRAGMA foreign_keys = ON');
-          await customStatement('PRAGMA journal_mode = WAL');
-        },
+    onCreate: (Migrator migrator) async {
+      await migrator.createAll();
+      await _seedCategoryTemplates();
+    },
+    onUpgrade: (Migrator migrator, int from, int to) async {
+      throw StateError(
+        'Missing Drift migration from schema $from to $to. '
+        'Run `dart run drift_dev make-migrations` after bumping schemaVersion.',
       );
+    },
+    beforeOpen: (OpeningDetails details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+      await customStatement('PRAGMA journal_mode = WAL');
+    },
+  );
 
   Future<void> _seedCategoryTemplates() async {
     await batch((Batch batch) {

@@ -7,11 +7,7 @@ void main() {
   test('forwards user id to repository and exposes domain budgets', () async {
     final repository = _FakeBudgetRepository(
       budgets: const [
-        BudgetSummary(
-          id: 'budget-1',
-          name: 'Дом',
-          baseCurrency: 'EUR',
-        ),
+        BudgetSummary(id: 'budget-1', name: 'Дом', baseCurrency: 'EUR'),
       ],
     );
     final useCase = WatchUserBudgets(repository);
@@ -19,23 +15,14 @@ void main() {
     final result = await useCase('user-1').first;
 
     expect(repository.lastUserId, 'user-1');
-    expect(
-      result,
-      const [
-        BudgetSummary(
-          id: 'budget-1',
-          name: 'Дом',
-          baseCurrency: 'EUR',
-        ),
-      ],
-    );
+    expect(result, const [
+      BudgetSummary(id: 'budget-1', name: 'Дом', baseCurrency: 'EUR'),
+    ]);
   });
 }
 
 final class _FakeBudgetRepository implements BudgetRepository {
-  _FakeBudgetRepository({
-    required this.budgets,
-  });
+  _FakeBudgetRepository({required this.budgets});
 
   final List<BudgetSummary> budgets;
   String? lastUserId;

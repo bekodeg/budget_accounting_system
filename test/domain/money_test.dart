@@ -7,10 +7,7 @@ void main() {
   final eur = Currency('EUR');
 
   test('creates positive money in minor units', () {
-    final money = Money.positive(
-      minorUnits: BigInt.from(12345),
-      currency: eur,
-    );
+    final money = Money.positive(minorUnits: BigInt.from(12345), currency: eur);
 
     expect(money.minorUnits, BigInt.from(12345));
     expect(money.currency, eur);

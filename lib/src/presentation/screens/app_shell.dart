@@ -5,10 +5,7 @@ import '../navigation/app_navigation_controller.dart';
 import '../navigation/app_section.dart';
 
 final class AppShell extends StatefulWidget {
-  const AppShell({
-    required this.services,
-    super.key,
-  });
+  const AppShell({required this.services, super.key});
 
   final AppServices services;
 
@@ -37,9 +34,7 @@ final class _AppShellState extends State<AppShell> {
       listenable: _navigation,
       builder: (context, _) {
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Budget Accounting'),
-          ),
+          appBar: AppBar(title: const Text('Budget Accounting')),
           body: _SectionPlaceholder(section: _navigation.section),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _navigation.section.index,
@@ -76,9 +71,7 @@ final class _AppShellState extends State<AppShell> {
 }
 
 final class _SectionPlaceholder extends StatelessWidget {
-  const _SectionPlaceholder({
-    required this.section,
-  });
+  const _SectionPlaceholder({required this.section});
 
   final AppSection section;
 

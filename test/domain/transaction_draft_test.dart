@@ -9,10 +9,8 @@ void main() {
   final eur = Currency('EUR');
   final usd = Currency('USD');
 
-  Money eurAmount(int minorUnits) => Money.positive(
-        minorUnits: BigInt.from(minorUnits),
-        currency: eur,
-      );
+  Money eurAmount(int minorUnits) =>
+      Money.positive(minorUnits: BigInt.from(minorUnits), currency: eur);
 
   test('accepts income without destination account', () {
     final draft = TransactionDraft(
@@ -64,23 +62,26 @@ void main() {
     );
   });
 
-  test('rejects transaction when amount currency differs from source account', () {
-    expect(
-      () => TransactionDraft(
-        type: TransactionType.expense,
-        amount: eurAmount(1000),
-        accountId: 'cash',
-        accountCurrency: usd,
-      ),
-      throwsA(
-        isA<DomainValidationError>().having(
-          (error) => error.code,
-          'code',
-          DomainValidationCode.currencyMismatch,
+  test(
+    'rejects transaction when amount currency differs from source account',
+    () {
+      expect(
+        () => TransactionDraft(
+          type: TransactionType.expense,
+          amount: eurAmount(1000),
+          accountId: 'cash',
+          accountCurrency: usd,
         ),
-      ),
-    );
-  });
+        throwsA(
+          isA<DomainValidationError>().having(
+            (error) => error.code,
+            'code',
+            DomainValidationCode.currencyMismatch,
+          ),
+        ),
+      );
+    },
+  );
 
   test('rejects cross-currency transfer', () {
     expect(

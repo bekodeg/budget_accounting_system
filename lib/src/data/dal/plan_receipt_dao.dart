@@ -32,7 +32,8 @@ final class PlanReceiptDao {
   }
 
   Future<Receipt?> findReceiptById(String id) {
-    return (_db.select(_db.receipts)..where((row) => row.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.receipts,
+    )..where((row) => row.id.equals(id))).getSingleOrNull();
   }
 }
