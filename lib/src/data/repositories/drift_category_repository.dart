@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../domain/models/budget_category.dart';
-import '../../domain/models/category_template.dart';
+import '../../domain/models/category_template.dart' as domain;
 import '../../domain/models/domain_types.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../dal/category_account_dao.dart';
@@ -30,11 +30,11 @@ final class DriftCategoryRepository implements CategoryRepository {
   }
 
   @override
-  Future<List<CategoryTemplate>> getTemplates() async {
+  Future<List<domain.CategoryTemplate>> getTemplates() async {
     final templates = await _dao.getCategoryTemplates();
     return templates
         .map(
-          (template) => CategoryTemplate(
+          (template) => domain.CategoryTemplate(
             code: template.code,
             name: template.name,
             kind: _categoryKindFromStorage(template.kind),
