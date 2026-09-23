@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -52,6 +54,25 @@ jobs:
           --companions
           drift_schemas/app_database/
           test/drift/generated_migrations/
+
+      - name: Generate Drift migration test helpers
+        run: >-
+          dart run drift_dev schema generate
+          --data-classes
+          --companions
+          drift_schemas/app_database
+          test/drift/app_database
+
+      - name: Commit initial Drift migration artifacts
+        if: github.event_name == 'pull_request' && github.head_ref == 'feature/issue-5-drift-migrations'
+        run: |
+          git add drift_schemas test/drift lib/src/data/database/*.steps.dart 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build: commit generated Drift schema artifacts"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
 
       - name: Upload generated migration artifacts
         uses: actions/upload-artifact@v7
