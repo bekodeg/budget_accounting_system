@@ -4,19 +4,28 @@ import 'package:budget_accounting_system/src/application/app_services.dart';
 import 'package:budget_accounting_system/src/application/ports/id_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/session_store.dart';
 import 'package:budget_accounting_system/src/application/use_cases/apply_category_templates.dart';
+import 'package:budget_accounting_system/src/application/use_cases/archive_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_category.dart';
+import 'package:budget_accounting_system/src/application/use_cases/create_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_initial_budget.dart';
+import 'package:budget_accounting_system/src/application/use_cases/get_account_balance.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
+import 'package:budget_accounting_system/src/application/use_cases/require_account_in_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/resolve_app_startup.dart';
 import 'package:budget_accounting_system/src/application/use_cases/select_budget.dart';
+import 'package:budget_accounting_system/src/application/use_cases/update_account.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_budget_accounts.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_categories.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
+import 'package:budget_accounting_system/src/domain/models/account_balance.dart';
 import 'package:budget_accounting_system/src/domain/models/app_session.dart';
+import 'package:budget_accounting_system/src/domain/models/budget_account.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/category_template.dart';
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
+import 'package:budget_accounting_system/src/domain/repositories/account_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/category_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
@@ -25,14 +34,26 @@ AppServices fakeAppServices({
   required FakeBudgetRepository repository,
   required FakeSessionStore sessionStore,
   FakeCategoryRepository? categoryRepository,
+  FakeAccountRepository? accountRepository,
   FakeIdGenerator? idGenerator,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
-  final ids = idGenerator ?? FakeIdGenerator(['user-1', 'budget-1', 'cat-1']);
+  final accounts = accountRepository ?? FakeAccountRepository();
+  final ids = idGenerator ?? FakeIdGenerator([
+    'user-1',
+    'budget-1',
+    'entity-1',
+    'entity-2',
+  ]);
 
   return AppServices(
     applyCategoryTemplates: ApplyCategoryTemplates(categories),
+    archiveAccount: ArchiveAccount(accounts),
     archiveCategory: ArchiveCategory(categories),
+    createAccount: CreateAccount(
+      accountRepository: accounts,
+      idGenerator: ids,
+    ),
     createCategory: CreateCategory(
       categoryRepository: categories,
       idGenerator: ids,
@@ -43,7 +64,9 @@ AppServices fakeAppServices({
       sessionStore: sessionStore,
       idGenerator: ids,
     ),
+    getAccountBalance: GetAccountBalance(accounts),
     renameCategory: RenameCategory(categories),
+    requireAccountInBudget: RequireAccountInBudget(accounts),
     resolveAppStartup: ResolveAppStartup(
       budgetRepository: repository,
       sessionStore: sessionStore,
@@ -52,6 +75,8 @@ AppServices fakeAppServices({
       budgetRepository: repository,
       sessionStore: sessionStore,
     ),
+    updateAccount: UpdateAccount(accounts),
+    watchBudgetAccounts: WatchBudgetAccounts(accounts),
     watchBudgetCategories: WatchBudgetCategories(categories),
     watchUserBudgets: WatchUserBudgets(repository),
   );
@@ -233,6 +258,123 @@ final class FakeCategoryRepository implements CategoryRepository {
         return;
       }
     }
+  }
+}
+
+final class FakeAccountRepository implements AccountRepository {
+  FakeAccountRepository({
+    Map<String, List<BudgetAccount>>? accountsByBudget,
+    Map<String, BigInt>? transactionDeltaByAccount,
+    Set<String>? accountsWithTransactions,
+  })  : accountsByBudget = accountsByBudget ?? {},
+        transactionDeltaByAccount = transactionDeltaByAccount ?? {},
+        accountsWithTransactions = accountsWithTransactions ?? {};
+
+  final Map<String, List<BudgetAccount>> accountsByBudget;
+  final Map<String, BigInt> transactionDeltaByAccount;
+  final Set<String> accountsWithTransactions;
+  final StreamController<String> _changes = StreamController.broadcast();
+
+  List<BudgetAccount> snapshot(
+    String budgetId, {
+    required bool includeArchived,
+  }) {
+    final accounts = accountsByBudget[budgetId] ?? const [];
+    return List.unmodifiable(
+      accounts
+          .where((account) => includeArchived || !account.isArchived)
+          .toList(growable: false),
+    );
+  }
+
+  void _emit(String budgetId) {
+    _changes.add(budgetId);
+  }
+
+  @override
+  Stream<List<BudgetAccount>> watchAccounts(
+    String budgetId, {
+    required bool includeArchived,
+  }) async* {
+    yield snapshot(budgetId, includeArchived: includeArchived);
+    await for (final changedBudgetId in _changes.stream) {
+      if (changedBudgetId == budgetId) {
+        yield snapshot(budgetId, includeArchived: includeArchived);
+      }
+    }
+  }
+
+  @override
+  Future<BudgetAccount?> findAccount({
+    required String budgetId,
+    required String accountId,
+  }) async {
+    for (final account in accountsByBudget[budgetId] ?? const []) {
+      if (account.id == accountId) return account;
+    }
+    return null;
+  }
+
+  @override
+  Future<bool> hasTransactions({
+    required String budgetId,
+    required String accountId,
+  }) async {
+    final account = await findAccount(
+      budgetId: budgetId,
+      accountId: accountId,
+    );
+    return account != null && accountsWithTransactions.contains(accountId);
+  }
+
+  @override
+  Future<void> createAccount(BudgetAccount account) async {
+    accountsByBudget.putIfAbsent(account.budgetId, () => []).add(account);
+    _emit(account.budgetId);
+  }
+
+  @override
+  Future<bool> updateAccount(BudgetAccount account) async {
+    final accounts = accountsByBudget[account.budgetId];
+    if (accounts == null) return false;
+    final index = accounts.indexWhere((item) => item.id == account.id);
+    if (index < 0) return false;
+    accounts[index] = account;
+    _emit(account.budgetId);
+    return true;
+  }
+
+  @override
+  Future<bool> setAccountArchived({
+    required String budgetId,
+    required String accountId,
+    required bool isArchived,
+  }) async {
+    final accounts = accountsByBudget[budgetId];
+    if (accounts == null) return false;
+    final index = accounts.indexWhere((item) => item.id == accountId);
+    if (index < 0) return false;
+    accounts[index] = accounts[index].copyWith(isArchived: isArchived);
+    _emit(budgetId);
+    return true;
+  }
+
+  @override
+  Future<AccountBalance?> getBalance({
+    required String budgetId,
+    required String accountId,
+  }) async {
+    final account = await findAccount(
+      budgetId: budgetId,
+      accountId: accountId,
+    );
+    if (account == null) return null;
+    return AccountBalance(
+      accountId: account.id,
+      minorUnits: account.openingBalanceMinor +
+          (transactionDeltaByAccount[account.id] ?? BigInt.zero),
+      currency: account.currency,
+    );
   }
 }
 
