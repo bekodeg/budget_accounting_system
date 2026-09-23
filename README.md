@@ -101,4 +101,5 @@ dart run drift_dev make-migrations
 - [Синхронизация и конфликты](docs/04_sync_and_conflicts.md)
 - [Отчеты, экспорт и чеки](docs/05_reports_and_receipts.md)
 - [Логика приложения и границы слоев](docs/06_application_logic.md)
+- [CI quality gates](docs/07_ci_quality_gates.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
