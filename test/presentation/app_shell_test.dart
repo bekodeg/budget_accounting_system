@@ -15,6 +15,7 @@ void main() {
       MaterialApp(
         home: AppShell(
           services: services,
+          budgetId: 'budget-1',
           budgetName: 'Дом',
         ),
       ),
@@ -36,6 +37,6 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('section-settings')), findsOneWidget);
+    expect(find.byKey(const ValueKey('category-management')), findsOneWidget);
   });
 }
