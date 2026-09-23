@@ -45,6 +45,14 @@ jobs:
       - name: Generate Drift migrations
         run: dart run drift_dev make-migrations
 
+      - name: Generate Drift migration test helper
+        run: >-
+          dart run drift_dev schema generate
+          --data-classes
+          --companions
+          drift_schemas/app_database/
+          test/drift/generated_migrations/
+
       - name: Upload generated migration artifacts
         uses: actions/upload-artifact@v7
         with:
