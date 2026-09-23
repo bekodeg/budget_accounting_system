@@ -116,4 +116,5 @@ dart run drift_dev make-migrations
 - [Ветки и CI/CD pipeline](docs/07_ci_quality_gates.md)
 - [Первый запуск и локальная сессия](docs/08_onboarding_and_session.md)
 - [Категории бюджета](docs/09_categories.md)
+- [Счета и текущий остаток](docs/10_accounts.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
