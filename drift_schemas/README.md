@@ -31,7 +31,7 @@ dart run build_runner build --delete-conflicting-outputs
 dart run drift_dev make-migrations
 ```
 
-For schema version 1 Drift creates `drift_schemas/drift_schema_v1.json` and migration test support under `test/drift/`.
+For schema version 1 Drift creates `drift_schemas/app_database/drift_schema_v1.json` and migration test support under `test/drift/`.
 
 Commit those files before changing `schemaVersion`.
 
@@ -68,7 +68,7 @@ A structural schema check is not enough. For each migration that can affect exis
 
 ## CI rule
 
-CI runs `make-migrations` from a clean checkout. Generated migration artifacts must match files committed to git. If generation changes tracked files, the pull request is incomplete and must fail.
+CI runs `make-migrations` from a clean checkout and then executes `git diff --exit-code` for the schema/migration paths. Generated migration artifacts must match files committed to git. If generation changes tracked files, the pull request is incomplete and fails.
 
 This catches common mistakes:
 
