@@ -8,10 +8,7 @@ enum DomainValidationCode {
 }
 
 final class DomainValidationError implements Exception {
-  const DomainValidationError({
-    required this.code,
-    required this.message,
-  });
+  const DomainValidationError({required this.code, required this.message});
 
   final DomainValidationCode code;
   final String message;

@@ -8,10 +8,9 @@ final class SyncDao {
   final AppDatabase _db;
 
   Future<void> append(SyncOperationsCompanion operation) async {
-    await _db.into(_db.syncOperations).insert(
-          operation,
-          mode: InsertMode.insertOrIgnore,
-        );
+    await _db
+        .into(_db.syncOperations)
+        .insert(operation, mode: InsertMode.insertOrIgnore);
   }
 
   Future<List<SyncOperation>> getOperationsAfter({

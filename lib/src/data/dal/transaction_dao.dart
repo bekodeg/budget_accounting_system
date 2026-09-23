@@ -8,15 +8,13 @@ final class TransactionDao {
   final AppDatabase _db;
 
   Future<void> upsert(BudgetTransactionsCompanion transaction) async {
-    await _db
-        .into(_db.budgetTransactions)
-        .insertOnConflictUpdate(transaction);
+    await _db.into(_db.budgetTransactions).insertOnConflictUpdate(transaction);
   }
 
   Future<BudgetTransaction?> findById(String id) {
-    return (_db.select(_db.budgetTransactions)
-          ..where((row) => row.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.budgetTransactions,
+    )..where((row) => row.id.equals(id))).getSingleOrNull();
   }
 
   Stream<List<BudgetTransaction>> watchPeriod({
@@ -36,13 +34,10 @@ final class TransactionDao {
         .watch();
   }
 
-  Future<int> softDelete({
-    required String id,
-    required DateTime deletedAt,
-  }) {
-    return (_db.update(_db.budgetTransactions)
-          ..where((row) => row.id.equals(id)))
-        .write(
+  Future<int> softDelete({required String id, required DateTime deletedAt}) {
+    return (_db.update(
+      _db.budgetTransactions,
+    )..where((row) => row.id.equals(id))).write(
       BudgetTransactionsCompanion(
         deletedAt: Value(deletedAt),
         updatedAt: Value(deletedAt),

@@ -12,8 +12,9 @@ final class UserBudgetDao {
   }
 
   Future<User?> findUserById(String id) {
-    return (_db.select(_db.users)..where((row) => row.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.users,
+    )..where((row) => row.id.equals(id))).getSingleOrNull();
   }
 
   Future<void> upsertBudget(BudgetsCompanion budget) async {
@@ -25,25 +26,25 @@ final class UserBudgetDao {
   }
 
   Stream<List<Budget>> watchBudgetsForUser(String userId) {
-    final query = _db.select(_db.budgets).join([
-      innerJoin(
-        _db.budgetMembers,
-        _db.budgetMembers.budgetId.equalsExp(_db.budgets.id),
-      ),
-    ])
-      ..where(
-        _db.budgetMembers.userId.equals(userId) &
-            _db.budgetMembers.revokedAt.isNull(),
-      );
+    final query =
+        _db.select(_db.budgets).join([
+          innerJoin(
+            _db.budgetMembers,
+            _db.budgetMembers.budgetId.equalsExp(_db.budgets.id),
+          ),
+        ])..where(
+          _db.budgetMembers.userId.equals(userId) &
+              _db.budgetMembers.revokedAt.isNull(),
+        );
 
     return query.watch().map(
-          (rows) => rows.map((row) => row.readTable(_db.budgets)).toList(),
-        );
+      (rows) => rows.map((row) => row.readTable(_db.budgets)).toList(),
+    );
   }
 
   Future<List<BudgetMember>> getMembers(String budgetId) {
-    return (_db.select(_db.budgetMembers)
-          ..where((row) => row.budgetId.equals(budgetId)))
-        .get();
+    return (_db.select(
+      _db.budgetMembers,
+    )..where((row) => row.budgetId.equals(budgetId))).get();
   }
 }
