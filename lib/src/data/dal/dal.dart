@@ -16,12 +16,12 @@ export 'user_budget_dao.dart';
 
 final class BudgetDal {
   BudgetDal(this.database)
-      : usersAndBudgets = UserBudgetDao(database),
-        categoriesAndAccounts = CategoryAccountDao(database),
-        transactions = TransactionDao(database),
-        plansAndReceipts = PlanReceiptDao(database),
-        reports = ReportDao(database),
-        sync = SyncDao(database);
+    : usersAndBudgets = UserBudgetDao(database),
+      categoriesAndAccounts = CategoryAccountDao(database),
+      transactions = TransactionDao(database),
+      plansAndReceipts = PlanReceiptDao(database),
+      reports = ReportDao(database),
+      sync = SyncDao(database);
 
   factory BudgetDal.defaults() => BudgetDal(AppDatabase.defaults());
 
