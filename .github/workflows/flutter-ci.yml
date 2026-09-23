@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
@@ -25,8 +25,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -44,41 +42,11 @@ jobs:
       - name: Generate Drift code
         run: dart run build_runner build
 
-      - name: Generate Drift migrations
-        run: dart run drift_dev make-migrations
-
-      - name: Generate Drift migration test helper
-        run: >-
-          dart run drift_dev schema generate
-          --data-classes
-          --companions
-          drift_schemas/app_database/
-          test/drift/generated_migrations/
-
-      - name: Bootstrap generated Drift artifacts
-        if: github.event_name == 'pull_request'
+      - name: Verify Drift migration artifacts
         shell: bash
         run: |
-          git add drift_schemas test/drift
-          find lib/src/data/database -maxdepth 1 -name '*.steps.dart' -print0 |
-            xargs -0 -r git add
-          if ! git diff --cached --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "build: record generated Drift migration artifacts"
-            git push origin "HEAD:${GITHUB_HEAD_REF}"
-          fi
-
-      - name: Upload generated migration artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: drift-migration-artifacts
-          path: |
-            drift_schemas/
-            test/drift/
-            lib/src/data/database/*.steps.dart
-          if-no-files-found: error
-          retention-days: 7
+          dart run drift_dev make-migrations
+          git diff --exit-code --             drift_schemas             lib/src/data/database             test/drift
 
       - name: Format sources
         run: dart format lib test
