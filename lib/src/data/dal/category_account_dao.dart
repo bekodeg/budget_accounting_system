@@ -36,11 +36,10 @@ final class CategoryAccountDao {
   }
 
   Future<List<CategoryTemplate>> getCategoryTemplates() {
-    return (_db.select(_db.categoryTemplates)
-          ..orderBy([
-            (row) => OrderingTerm.asc(row.kind),
-            (row) => OrderingTerm.asc(row.sortOrder),
-          ]))
+    return (_db.select(_db.categoryTemplates)..orderBy([
+          (row) => OrderingTerm.asc(row.kind),
+          (row) => OrderingTerm.asc(row.sortOrder),
+        ]))
         .get();
   }
 }
