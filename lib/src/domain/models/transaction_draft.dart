@@ -45,6 +45,7 @@ final class TransactionDraft {
                 'Cross-currency transfers are not supported in the current version.',
           );
         }
+        break;
       case TransactionType.income:
       case TransactionType.expense:
         if (destinationAccountId != null) {
