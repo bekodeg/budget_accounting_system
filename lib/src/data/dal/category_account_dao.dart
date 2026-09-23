@@ -153,7 +153,6 @@ final class CategoryAccountDao {
       ..addColumns([transaction.id])
       ..where(
         transaction.budgetId.equals(budgetId) &
-            transaction.deletedAt.isNull() &
             (transaction.accountId.equals(accountId) |
                 transaction.destinationAccountId.equals(accountId)),
       )
