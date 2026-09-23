@@ -1,0 +1,151 @@
+name: Stage CI
+
+on:
+  push:
+    branches:
+      - stage
+  pull_request:
+    branches:
+      - stage
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stage-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  promotion:
+    name: Stage promotion gate
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Require dev as source branch
+        shell: bash
+        run: |
+          if [ "${{ github.head_ref }}" != "dev" ]; then
+            echo "stage accepts promotion only from dev."
+            echo "Current source: ${{ github.head_ref }}"
+            exit 1
+          fi
+
+  validate:
+    name: Stage validation
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Print Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Drift code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Verify generated code is reproducible
+        shell: bash
+        run: |
+          find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum > /tmp/codegen-before.sha256
+
+          dart run build_runner build --delete-conflicting-outputs
+
+          find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0 \
+            | sort -z \
+            | xargs -0 -r sha256sum > /tmp/codegen-after.sha256
+
+          diff -u /tmp/codegen-before.sha256 /tmp/codegen-after.sha256
+
+      - name: Generate Drift migrations
+        run: dart run drift_dev make-migrations
+
+      - name: Generate Drift migration test helper
+        run: >-
+          dart run drift_dev schema generate
+          --data-classes
+          --companions
+          drift_schemas/app_database/
+          test/drift/generated_migrations/
+
+      - name: Verify Drift migration artifacts are committed
+        shell: bash
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- drift_schemas lib/src/data/database test/drift |
+            grep -v 'test/drift/generated_migrations/' || true)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "Drift migration artifacts are not committed."
+            exit 1
+          fi
+
+      - name: Verify source formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests with coverage
+        run: flutter test --coverage
+
+      - name: Publish coverage summary
+        if: always() && hashFiles('coverage/lcov.info') != ''
+        shell: bash
+        run: |
+          total="$(awk -F: '/^LF:/{sum+=$2} END{print sum+0}' coverage/lcov.info)"
+          hit="$(awk -F: '/^LH:/{sum+=$2} END{print sum+0}' coverage/lcov.info)"
+          percent="$(awk -v hit="$hit" -v total="$total" 'BEGIN { if (total == 0) print "0.00"; else printf "%.2f", hit * 100 / total }')"
+
+          {
+            echo "## Test coverage"
+            echo
+            echo "- Lines hit: $hit"
+            echo "- Lines found: $total"
+            echo "- Line coverage: $percent%"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage
+        if: always() && hashFiles('coverage/lcov.info') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: stage-flutter-test-coverage
+          path: coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Generate Android host project
+        run: >-
+          flutter create
+          --platforms=android
+          --project-name budget_accounting_system
+          --org com.bekodeg
+          --no-pub
+          .
+
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+
+      - name: Upload stage APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: stage-budget-accounting-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 3
