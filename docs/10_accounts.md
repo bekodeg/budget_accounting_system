@@ -68,6 +68,8 @@ RequireAccountInBudget(
 
 Таким образом transaction flow из #10 должен вызывать этот guard до сохранения операции.
 
+Дополнительно `TransactionDao.upsert` выполняет defensive check source/destination account против `budget_id`. Это не заменяет application guard, а защищает инвариант на data-layer от случайного обхода use case.
+
 ## 10.5. Текущий остаток
 
 Баланс счета рассчитывается без отдельной materialized balance-колонки.
