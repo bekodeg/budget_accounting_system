@@ -192,3 +192,20 @@ UI event
 - **widget** — корневой shell и навигация.
 
 Это позволяет отдельно ловить ошибки бизнес-контракта, mapping/storage и Flutter UI.
+
+
+## 6.10. CI-инварианты
+
+Pull Request и push в `main` проходят один и тот же набор обязательных проверок:
+
+1. `dart format --output=none --set-exit-if-changed lib test` — CI только проверяет форматирование и не исправляет исходники;
+2. `build_runner` генерирует Drift `.g.dart` из чистого checkout;
+3. `drift_dev make-migrations` восстанавливает migration artifacts;
+4. `git diff --exit-code` проверяет, что schema snapshots/steps/tests уже закоммичены;
+5. `flutter analyze`;
+6. `flutter test --coverage`;
+7. Android debug build.
+
+Generated `*.g.dart` намеренно не хранятся в Git и перечислены в `.gitignore`. Поэтому проблема «устаревшего локального generated code» решается не сравнением `.g.dart` с Git, а генерацией с нуля в каждом CI run. В Git хранятся только те generated artifacts, которые являются историей миграций и должны проходить code review.
+
+Coverage сохраняется как `lcov.info` workflow artifact, а процент line coverage публикуется в GitHub Actions job summary.

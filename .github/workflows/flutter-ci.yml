@@ -41,8 +41,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Check source formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
       - name: Generate Drift code
-        run: dart run build_runner build
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Generate Drift migration artifacts
         run: dart run drift_dev make-migrations
@@ -93,14 +96,41 @@ jobs:
             exit 1
           fi
 
-      - name: Format sources
-        run: dart format lib test
-
       - name: Analyze
         run: flutter analyze
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: flutter test --coverage
+
+      - name: Write coverage summary
+        shell: bash
+        run: |
+          coverage_percent="$(
+            awk -F: '
+              /^LF:/ { found += $2 }
+              /^LH:/ { hit += $2 }
+              END {
+                if (found == 0) {
+                  printf "0.00"
+                } else {
+                  printf "%.2f", (hit * 100.0) / found
+                }
+              }
+            ' coverage/lcov.info
+          )"
+          {
+            echo "### Test coverage"
+            echo ""
+            echo "Line coverage: **${coverage_percent}%**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: flutter-coverage
+          path: coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 14
 
   build-android:
     name: Build Android debug APK
@@ -132,7 +162,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate Drift code
-        run: dart run build_runner build
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Build debug APK
         run: flutter build apk --debug
