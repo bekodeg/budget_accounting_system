@@ -43,6 +43,18 @@ lib/
 Drift/DAO доступны только data/bootstrap слоям; UI не должен импортировать SQL, таблицы Drift или `BudgetDal`.
 Подробнее см. [логику приложения и границы слоев](docs/06_application_logic.md).
 
+## Ветки разработки
+
+Используется последовательное продвижение:
+
+```text
+feature/* -> dev -> stage -> main
+```
+
+`dev` предназначен для интеграции разработки и запускает только легкие Git-проверки. Полные Flutter tests, coverage и Android debug build выполняются в `stage` перед продвижением в `main`.
+
+Подробнее: [ветки и CI/CD pipeline](docs/07_ci_quality_gates.md).
+
 ## Локальный запуск
 
 Установить зависимости:
@@ -101,5 +113,5 @@ dart run drift_dev make-migrations
 - [Синхронизация и конфликты](docs/04_sync_and_conflicts.md)
 - [Отчеты, экспорт и чеки](docs/05_reports_and_receipts.md)
 - [Логика приложения и границы слоев](docs/06_application_logic.md)
-- [CI quality gates](docs/07_ci_quality_gates.md)
+- [Ветки и CI/CD pipeline](docs/07_ci_quality_gates.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)

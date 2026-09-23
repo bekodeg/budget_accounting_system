@@ -1,0 +1,48 @@
+name: Main Promotion
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: main-promotion-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  promotion:
+    name: Main promotion gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Require stage as source branch
+        shell: bash
+        run: |
+          if [ "${{ github.head_ref }}" != "stage" ]; then
+            echo "main accepts promotion only from stage."
+            echo "Current source: ${{ github.head_ref }}"
+            exit 1
+          fi
+
+      - name: Verify exact commit passed Stage CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          run_id="$(
+            gh api               -H "Accept: application/vnd.github+json"               "/repos/$GITHUB_REPOSITORY/actions/workflows/stage-ci.yml/runs?branch=stage&event=push&status=success&per_page=100"               --jq ".workflow_runs[] | select(.head_sha == \"$HEAD_SHA\") | .id"               | head -n 1
+          )"
+
+          if [ -z "$run_id" ]; then
+            echo "No successful Stage CI push run found for commit $HEAD_SHA."
+            echo "Promote dev -> stage first and wait for Stage validation to pass."
+            exit 1
+          fi
+
+          echo "Stage CI run $run_id passed for commit $HEAD_SHA."
