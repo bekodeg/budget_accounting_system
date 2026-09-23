@@ -188,6 +188,39 @@ void main() {
     );
 
     expect(balance?.minorUnits, BigInt.from(10000));
+    expect(
+      await repository.hasTransactions(
+        budgetId: 'budget-1',
+        accountId: 'account-1',
+      ),
+      isTrue,
+    );
+  });
+
+  test('transaction DAO rejects source account from another budget', () async {
+    await createAccount(
+      id: 'foreign',
+      budgetId: 'budget-2',
+      openingBalanceMinor: 0,
+    );
+
+    await expectLater(
+      transactionDao.upsert(
+        BudgetTransactionsCompanion.insert(
+          id: 'invalid',
+          budgetId: 'budget-1',
+          occurredAt: DateTime(2026, 9, 23),
+          amountMinor: BigInt.from(1000),
+          currency: 'EUR',
+          type: 'EXPENSE',
+          authorId: 'user-1',
+          accountId: 'foreign',
+        ),
+      ),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(await transactionDao.findById('invalid'), isNull);
   });
 
   test('archive hides account from active list but preserves transaction', () async {
