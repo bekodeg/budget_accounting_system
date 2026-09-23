@@ -8,6 +8,7 @@ typedef CreateInitialBudgetCallback = Future<void> Function({
   required String userName,
   required String budgetName,
   required Currency baseCurrency,
+  required bool applyDefaultCategories,
 });
 
 final class OnboardingScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
   final _budgetNameController = TextEditingController();
   final _currencyController = TextEditingController(text: 'EUR');
 
+  bool _applyDefaultCategories = true;
   bool _submitting = false;
   String? _errorMessage;
 
@@ -53,6 +55,7 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
         userName: _userNameController.text,
         budgetName: _budgetNameController.text,
         baseCurrency: Currency(_currencyController.text),
+        applyDefaultCategories: _applyDefaultCategories,
       );
     } on OnboardingError catch (error) {
       _showError(error.message);
@@ -135,6 +138,23 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
                     helperText: 'Трёхбуквенный код, например EUR, USD, RUB',
                     border: OutlineInputBorder(),
                   ),
+                ),
+                CheckboxListTile(
+                  key: const ValueKey('onboarding-default-categories'),
+                  value: _applyDefaultCategories,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: const Text('Добавить стандартные категории'),
+                  subtitle: const Text(
+                    'Их можно переименовать или архивировать позже.',
+                  ),
+                  onChanged: _submitting
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _applyDefaultCategories = value ?? true;
+                          });
+                        },
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),

@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import '../../application/app_services.dart';
 import '../navigation/app_navigation_controller.dart';
 import '../navigation/app_section.dart';
+import 'category_management_screen.dart';
 
 final class AppShell extends StatefulWidget {
   const AppShell({
     required this.services,
+    required this.budgetId,
     required this.budgetName,
     this.onChooseBudget,
     super.key,
   });
 
   final AppServices services;
+  final String budgetId;
   final String budgetName;
   final VoidCallback? onChooseBudget;
 
@@ -53,7 +56,11 @@ final class _AppShellState extends State<AppShell> {
                 ),
             ],
           ),
-          body: _SectionPlaceholder(section: _navigation.section),
+          body: _SectionBody(
+            section: _navigation.section,
+            services: widget.services,
+            budgetId: widget.budgetId,
+          ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _navigation.section.index,
             onDestinationSelected: (index) {
@@ -88,13 +95,26 @@ final class _AppShellState extends State<AppShell> {
   }
 }
 
-final class _SectionPlaceholder extends StatelessWidget {
-  const _SectionPlaceholder({required this.section});
+final class _SectionBody extends StatelessWidget {
+  const _SectionBody({
+    required this.section,
+    required this.services,
+    required this.budgetId,
+  });
 
   final AppSection section;
+  final AppServices services;
+  final String budgetId;
 
   @override
   Widget build(BuildContext context) {
+    if (section == AppSection.settings) {
+      return CategoryManagementScreen(
+        services: services,
+        budgetId: budgetId,
+      );
+    }
+
     return Center(
       child: Text(
         section.label,

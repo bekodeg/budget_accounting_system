@@ -1,5 +1,7 @@
 import '../../domain/models/app_session.dart';
 import '../../domain/models/budget_summary.dart';
+import '../../domain/models/domain_types.dart';
+import '../../domain/models/initial_budget_category.dart';
 import '../../domain/repositories/budget_repository.dart';
 import '../../domain/value_objects/currency.dart';
 import '../dal/user_budget_dao.dart';
@@ -34,6 +36,7 @@ final class DriftBudgetRepository implements BudgetRepository {
     required String budgetId,
     required String budgetName,
     required Currency baseCurrency,
+    List<InitialBudgetCategory> initialCategories = const [],
   }) async {
     await _dao.createOwnedBudget(
       user: UsersCompanion.insert(
@@ -52,6 +55,16 @@ final class DriftBudgetRepository implements BudgetRepository {
         userId: userId,
         role: 'OWNER',
       ),
+      initialCategories: initialCategories
+          .map(
+            (category) => CategoriesCompanion.insert(
+              id: category.id,
+              budgetId: budgetId,
+              name: category.name,
+              kind: _categoryKindToStorage(category.kind),
+            ),
+          )
+          .toList(growable: false),
     );
 
     return AppSession(userId: userId, budgetId: budgetId);
@@ -68,4 +81,12 @@ final class DriftBudgetRepository implements BudgetRepository {
         )
         .toList(growable: false);
   }
+}
+
+String _categoryKindToStorage(CategoryKind kind) {
+  return switch (kind) {
+    CategoryKind.income => 'INCOME',
+    CategoryKind.expense => 'EXPENSE',
+    CategoryKind.both => 'BOTH',
+  };
 }

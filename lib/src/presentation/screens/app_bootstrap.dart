@@ -39,11 +39,13 @@ final class _AppBootstrapState extends State<AppBootstrap> {
     required String userName,
     required String budgetName,
     required Currency baseCurrency,
+    required bool applyDefaultCategories,
   }) async {
     await widget.services.createInitialBudget(
       userName: userName,
       budgetName: budgetName,
       baseCurrency: baseCurrency,
+      applyDefaultCategories: applyDefaultCategories,
     );
     _forceBudgetSelection = false;
     _reload();
@@ -106,6 +108,7 @@ final class _AppBootstrapState extends State<AppBootstrap> {
 
         return AppShell(
           services: widget.services,
+          budgetId: selectedBudget.id,
           budgetName: selectedBudget.name,
           onChooseBudget: startup.budgets.length > 1
               ? () {
