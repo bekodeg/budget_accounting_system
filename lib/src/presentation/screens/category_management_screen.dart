@@ -267,8 +267,10 @@ final class _CategorySection extends StatelessWidget {
                 switch (action) {
                   case _CategoryAction.rename:
                     onRename(category);
+                    return;
                   case _CategoryAction.archive:
                     onArchive(category);
+                    return;
                 }
               },
               itemBuilder: (context) => const [
