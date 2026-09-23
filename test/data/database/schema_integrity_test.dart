@@ -14,9 +14,9 @@ void main() {
   });
 
   test('schema v1 contains required transaction and sync indexes', () async {
-    final rows = await database.customSelect(
-      "SELECT name FROM sqlite_master WHERE type = 'index'",
-    ).get();
+    final rows = await database
+        .customSelect("SELECT name FROM sqlite_master WHERE type = 'index'")
+        .get();
 
     final indexNames = rows
         .map((row) => row.read<String>('name'))
