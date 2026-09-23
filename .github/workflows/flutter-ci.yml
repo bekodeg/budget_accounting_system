@@ -40,7 +40,18 @@ jobs:
         run: flutter pub get
 
       - name: Generate Drift code
-        run: dart run build_runner build
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Verify generated code is reproducible
+        shell: bash
+        run: |
+          find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0             | sort -z             | xargs -0 -r sha256sum > /tmp/codegen-before.sha256
+
+          dart run build_runner build --delete-conflicting-outputs
+
+          find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0             | sort -z             | xargs -0 -r sha256sum > /tmp/codegen-after.sha256
+
+          diff -u /tmp/codegen-before.sha256 /tmp/codegen-after.sha256
 
       - name: Generate Drift migrations
         run: dart run drift_dev make-migrations
@@ -64,14 +75,39 @@ jobs:
             exit 1
           fi
 
-      - name: Format sources
-        run: dart format lib test
+      - name: Verify source formatting
+        run: dart format --output=none --set-exit-if-changed lib test
 
       - name: Analyze
         run: flutter analyze
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: flutter test --coverage
+
+      - name: Publish coverage summary
+        if: always() && hashFiles('coverage/lcov.info') != ''
+        shell: bash
+        run: |
+          total="$(awk -F: '/^LF:/{sum+=$2} END{print sum+0}' coverage/lcov.info)"
+          hit="$(awk -F: '/^LH:/{sum+=$2} END{print sum+0}' coverage/lcov.info)"
+          percent="$(awk -v hit="$hit" -v total="$total" 'BEGIN { if (total == 0) print "0.00"; else printf "%.2f", hit * 100 / total }')"
+
+          {
+            echo "## Test coverage"
+            echo
+            echo "- Lines hit: $hit"
+            echo "- Lines found: $total"
+            echo "- Line coverage: $percent%"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage
+        if: always() && hashFiles('coverage/lcov.info') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: flutter-test-coverage
+          path: coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 14
 
   build-android:
     name: Build Android debug APK
@@ -103,7 +139,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate Drift code
-        run: dart run build_runner build
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Build debug APK
         run: flutter build apk --debug
