@@ -1,20 +1,27 @@
-import 'package:budget_accounting_system/src/app.dart';
-import 'package:budget_accounting_system/src/application/app_services.dart';
-import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
-import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
-import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
+import 'package:budget_accounting_system/src/presentation/screens/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/onboarding_fakes.dart';
+
 void main() {
   testWidgets('switches between main application sections', (tester) async {
-    final services = AppServices(
-      watchUserBudgets: WatchUserBudgets(_EmptyBudgetRepository()),
+    final services = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(),
     );
 
-    await tester.pumpWidget(BudgetAccountingApp(services: services));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppShell(
+          services: services,
+          budgetName: 'Дом',
+        ),
+      ),
+    );
 
     expect(find.byKey(const ValueKey('section-transactions')), findsOneWidget);
+    expect(find.text('Дом'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.event_note_outlined));
     await tester.pumpAndSettle();
@@ -31,11 +38,4 @@ void main() {
 
     expect(find.byKey(const ValueKey('section-settings')), findsOneWidget);
   });
-}
-
-final class _EmptyBudgetRepository implements BudgetRepository {
-  @override
-  Stream<List<BudgetSummary>> watchBudgetsForUser(String userId) {
-    return Stream.value(const []);
-  }
 }
