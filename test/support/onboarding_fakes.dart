@@ -23,6 +23,7 @@ import 'package:budget_accounting_system/src/application/use_cases/update_transa
 import 'package:budget_accounting_system/src/application/use_cases/update_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_accounts.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_categories.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_dashboard_summary.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_filtered_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
@@ -33,11 +34,13 @@ import 'package:budget_accounting_system/src/domain/models/budget_category.dart'
 import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_transaction_entry.dart';
 import 'package:budget_accounting_system/src/domain/models/category_template.dart';
+import 'package:budget_accounting_system/src/domain/models/dashboard_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/transaction_filter.dart';
 import 'package:budget_accounting_system/src/domain/repositories/account_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/category_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/dashboard_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 
@@ -47,11 +50,13 @@ AppServices fakeAppServices({
   FakeCategoryRepository? categoryRepository,
   FakeAccountRepository? accountRepository,
   FakeTransactionRepository? transactionRepository,
+  FakeDashboardRepository? dashboardRepository,
   FakeIdGenerator? idGenerator,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
   final accounts = accountRepository ?? FakeAccountRepository();
   final transactions = transactionRepository ?? FakeTransactionRepository();
+  final dashboard = dashboardRepository ?? FakeDashboardRepository();
   final ids = idGenerator ?? FakeIdGenerator([
     'user-1',
     'budget-1',
@@ -113,6 +118,7 @@ AppServices fakeAppServices({
     ),
     watchBudgetAccounts: WatchBudgetAccounts(accounts),
     watchBudgetCategories: WatchBudgetCategories(categories),
+    watchDashboardSummary: WatchDashboardSummary(dashboard),
     watchFilteredTransactions: WatchFilteredTransactions(transactions),
     watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
@@ -423,6 +429,35 @@ final class FakeAccountRepository implements AccountRepository {
           (transactionDeltaByAccount[account.id] ?? BigInt.zero),
       currency: account.currency,
     );
+  }
+}
+
+final class FakeDashboardRepository implements DashboardRepository {
+  FakeDashboardRepository({DashboardSummary? summary})
+      : summary = summary ??
+            DashboardSummary(
+              monthStart: DateTime(2026, 9),
+              incomeMinorByCurrency: const {},
+              expenseMinorByCurrency: const {},
+              balanceMinorByCurrency: const {},
+            );
+
+  DashboardSummary summary;
+  final StreamController<DashboardSummary> _changes =
+      StreamController.broadcast();
+
+  void emit(DashboardSummary value) {
+    summary = value;
+    _changes.add(value);
+  }
+
+  @override
+  Stream<DashboardSummary> watchSummary({
+    required String budgetId,
+    required DateTime monthStart,
+  }) async* {
+    yield summary;
+    yield* _changes.stream;
   }
 }
 
