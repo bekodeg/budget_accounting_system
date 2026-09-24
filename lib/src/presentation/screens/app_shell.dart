@@ -4,10 +4,12 @@ import '../../application/app_services.dart';
 import '../navigation/app_navigation_controller.dart';
 import '../navigation/app_section.dart';
 import 'settings_screen.dart';
+import 'transaction_crud_screen.dart';
 
 final class AppShell extends StatefulWidget {
   const AppShell({
     required this.services,
+    required this.userId,
     required this.budgetId,
     required this.budgetName,
     this.onChooseBudget,
@@ -15,6 +17,7 @@ final class AppShell extends StatefulWidget {
   });
 
   final AppServices services;
+  final String userId;
   final String budgetId;
   final String budgetName;
   final VoidCallback? onChooseBudget;
@@ -59,6 +62,7 @@ final class _AppShellState extends State<AppShell> {
           body: _SectionBody(
             section: _navigation.section,
             services: widget.services,
+            userId: widget.userId,
             budgetId: widget.budgetId,
           ),
           bottomNavigationBar: NavigationBar(
@@ -99,15 +103,24 @@ final class _SectionBody extends StatelessWidget {
   const _SectionBody({
     required this.section,
     required this.services,
+    required this.userId,
     required this.budgetId,
   });
 
   final AppSection section;
   final AppServices services;
+  final String userId;
   final String budgetId;
 
   @override
   Widget build(BuildContext context) {
+    if (section == AppSection.transactions) {
+      return TransactionCrudScreen(
+        services: services,
+        budgetId: budgetId,
+        userId: userId,
+      );
+    }
     if (section == AppSection.settings) {
       return SettingsScreen(
         services: services,
