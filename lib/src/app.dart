@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'application/app_services.dart';
-import 'presentation/screens/app_shell.dart';
+import 'presentation/screens/app_bootstrap.dart';
 
 class BudgetAccountingApp extends StatefulWidget {
   const BudgetAccountingApp({
@@ -33,8 +33,10 @@ class _BudgetAccountingAppState extends State<BudgetAccountingApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Budget Accounting',
-      theme: ThemeData(useMaterial3: true),
-      home: AppShell(services: widget.services),
+      theme: ThemeData(useMaterial3: true, brightness: Brightness.light),
+      darkTheme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
+      themeMode: ThemeMode.system,
+      home: AppBootstrap(services: widget.services),
     );
   }
 }
