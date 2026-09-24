@@ -5,6 +5,7 @@ import 'use_cases/create_account.dart';
 import 'use_cases/create_category.dart';
 import 'use_cases/create_initial_budget.dart';
 import 'use_cases/create_transaction.dart';
+import 'use_cases/create_transfer.dart';
 import 'use_cases/delete_transaction.dart';
 import 'use_cases/get_account_balance.dart';
 import 'use_cases/rename_category.dart';
@@ -14,6 +15,7 @@ import 'use_cases/resolve_app_startup.dart';
 import 'use_cases/select_budget.dart';
 import 'use_cases/update_account.dart';
 import 'use_cases/update_transaction.dart';
+import 'use_cases/update_transfer.dart';
 import 'use_cases/watch_budget_accounts.dart';
 import 'use_cases/watch_budget_categories.dart';
 import 'use_cases/watch_transactions.dart';
@@ -28,6 +30,7 @@ final class AppServices {
     required this.createCategory,
     required this.createInitialBudget,
     required this.createTransaction,
+    required this.createTransfer,
     required this.deleteTransaction,
     required this.getAccountBalance,
     required this.renameCategory,
@@ -37,6 +40,7 @@ final class AppServices {
     required this.selectBudget,
     required this.updateAccount,
     required this.updateTransaction,
+    required this.updateTransfer,
     required this.watchBudgetAccounts,
     required this.watchBudgetCategories,
     required this.watchTransactions,
@@ -50,6 +54,7 @@ final class AppServices {
   final CreateCategory createCategory;
   final CreateInitialBudget createInitialBudget;
   final CreateTransaction createTransaction;
+  final CreateTransfer createTransfer;
   final DeleteTransaction deleteTransaction;
   final GetAccountBalance getAccountBalance;
   final RenameCategory renameCategory;
@@ -59,6 +64,7 @@ final class AppServices {
   final SelectBudget selectBudget;
   final UpdateAccount updateAccount;
   final UpdateTransaction updateTransaction;
+  final UpdateTransfer updateTransfer;
   final WatchBudgetAccounts watchBudgetAccounts;
   final WatchBudgetCategories watchBudgetCategories;
   final WatchTransactions watchTransactions;

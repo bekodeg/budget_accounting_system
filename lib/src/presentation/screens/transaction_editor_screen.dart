@@ -35,6 +35,7 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
   late TransactionType _type;
   late DateTime _occurredAt;
   String? _accountId;
+  String? _destinationAccountId;
   String? _categoryId;
   bool _saving = false;
   String? _error;
@@ -45,11 +46,10 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
   void initState() {
     super.initState();
     final transaction = widget.transaction;
-    _type = transaction?.type == TransactionType.income
-        ? TransactionType.income
-        : TransactionType.expense;
+    _type = transaction?.type ?? TransactionType.expense;
     _occurredAt = transaction?.occurredAt ?? DateTime.now();
     _accountId = transaction?.accountId;
+    _destinationAccountId = transaction?.destinationAccountId;
     _categoryId = transaction?.categoryId;
     _amountController = TextEditingController(
       text: transaction == null
@@ -97,29 +97,52 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
   Future<void> _save() async {
     if (_saving) return;
     final accountId = _accountId;
+    if (accountId == null) {
+      _showError('Выберите счет.');
+      return;
+    }
+
+    if (_type == TransactionType.transfer) {
+      final destinationAccountId = _destinationAccountId;
+      if (destinationAccountId == null) {
+        _showError('Выберите счет назначения.');
+        return;
+      }
+      await _saveTransfer(
+        sourceAccountId: accountId,
+        destinationAccountId: destinationAccountId,
+      );
+      return;
+    }
+
     final categoryId = _categoryId;
-    if (accountId == null || categoryId == null) {
-      setState(() {
-        _error = 'Выберите счет и категорию.';
-      });
+    if (categoryId == null) {
+      _showError('Выберите категорию.');
       return;
     }
+    await _saveIncomeExpense(
+      accountId: accountId,
+      categoryId: categoryId,
+    );
+  }
 
-    BigInt amountMinor;
+  BigInt? _parseAmount() {
     try {
-      amountMinor = parseMinorUnitsText(_amountController.text);
+      return parseMinorUnitsText(_amountController.text);
     } on FormatException catch (error) {
-      setState(() {
-        _error = error.message.toString();
-      });
-      return;
+      _showError(error.message.toString());
+      return null;
     }
+  }
 
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
+  Future<void> _saveIncomeExpense({
+    required String accountId,
+    required String categoryId,
+  }) async {
+    final amountMinor = _parseAmount();
+    if (amountMinor == null) return;
 
+    _beginSave();
     try {
       final current = widget.transaction;
       if (current == null) {
@@ -145,7 +168,6 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
           description: _descriptionController.text,
         );
       }
-
       if (mounted) Navigator.pop(context);
     } on AccountError catch (error) {
       _showError(error.message);
@@ -156,12 +178,67 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
     } on Object {
       _showError('Не удалось сохранить операцию.');
     } finally {
-      if (mounted) {
-        setState(() {
-          _saving = false;
-        });
-      }
+      _endSave();
     }
+  }
+
+  Future<void> _saveTransfer({
+    required String sourceAccountId,
+    required String destinationAccountId,
+  }) async {
+    final amountMinor = _parseAmount();
+    if (amountMinor == null) return;
+
+    _beginSave();
+    try {
+      final current = widget.transaction;
+      if (current == null) {
+        await widget.services.createTransfer(
+          budgetId: widget.budgetId,
+          authorId: widget.authorId,
+          occurredAt: _occurredAt,
+          amountMinor: amountMinor,
+          sourceAccountId: sourceAccountId,
+          destinationAccountId: destinationAccountId,
+          description: _descriptionController.text,
+        );
+      } else {
+        await widget.services.updateTransfer(
+          budgetId: widget.budgetId,
+          transactionId: current.id,
+          occurredAt: _occurredAt,
+          amountMinor: amountMinor,
+          sourceAccountId: sourceAccountId,
+          destinationAccountId: destinationAccountId,
+          description: _descriptionController.text,
+        );
+      }
+      if (mounted) Navigator.pop(context);
+    } on AccountError catch (error) {
+      _showError(error.message);
+    } on DomainValidationError catch (error) {
+      _showError(error.message);
+    } on TransactionError catch (error) {
+      _showError(error.message);
+    } on Object {
+      _showError('Не удалось сохранить перевод.');
+    } finally {
+      _endSave();
+    }
+  }
+
+  void _beginSave() {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+  }
+
+  void _endSave() {
+    if (!mounted) return;
+    setState(() {
+      _saving = false;
+    });
   }
 
   void _showError(String message) {
@@ -207,16 +284,38 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
                   accounts.every((account) => account.id != _accountId)) {
                 _accountId = null;
               }
+              if (_accountId == null && accounts.length == 1) {
+                _accountId = accounts.single.id;
+              }
+
+              final destinationAccounts = accounts
+                  .where((account) => account.id != _accountId)
+                  .toList(growable: false);
+              if (_destinationAccountId != null &&
+                  destinationAccounts.every(
+                    (account) => account.id != _destinationAccountId,
+                  )) {
+                _destinationAccountId = null;
+              }
+              if (_type == TransactionType.transfer &&
+                  _destinationAccountId == null &&
+                  destinationAccounts.length == 1) {
+                _destinationAccountId = destinationAccounts.single.id;
+              }
+
               if (_categoryId != null &&
                   categories.every((category) => category.id != _categoryId)) {
                 _categoryId = null;
               }
-              if (_accountId == null && accounts.length == 1) {
-                _accountId = accounts.single.id;
-              }
-              if (_categoryId == null && categories.length == 1) {
+              if (_type != TransactionType.transfer &&
+                  _categoryId == null &&
+                  categories.length == 1) {
                 _categoryId = categories.single.id;
               }
+
+              final canSave = _type == TransactionType.transfer
+                  ? _accountId != null && _destinationAccountId != null
+                  : _accountId != null && _categoryId != null;
 
               return ListView(
                 key: const ValueKey('transaction-editor'),
@@ -235,6 +334,11 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
                         label: Text('Доход'),
                         icon: Icon(Icons.add_circle_outline),
                       ),
+                      ButtonSegment(
+                        value: TransactionType.transfer,
+                        label: Text('Перевод'),
+                        icon: Icon(Icons.swap_horiz),
+                      ),
                     ],
                     selected: {_type},
                     onSelectionChanged: _saving
@@ -243,6 +347,7 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
                             setState(() {
                               _type = selection.single;
                               _categoryId = null;
+                              _destinationAccountId = null;
                             });
                           },
                   ),
@@ -263,9 +368,11 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
                   DropdownButtonFormField<String>(
                     key: const ValueKey('transaction-account'),
                     initialValue: _accountId,
-                    decoration: const InputDecoration(
-                      labelText: 'Счет',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: _type == TransactionType.transfer
+                          ? 'Счет-источник'
+                          : 'Счет',
+                      border: const OutlineInputBorder(),
                     ),
                     items: accounts
                         .map(
@@ -279,28 +386,60 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
                         .toList(growable: false),
                     onChanged: _saving
                         ? null
-                        : (value) => setState(() => _accountId = value),
+                        : (value) {
+                            setState(() {
+                              _accountId = value;
+                              if (_destinationAccountId == value) {
+                                _destinationAccountId = null;
+                              }
+                            });
+                          },
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    key: const ValueKey('transaction-category'),
-                    initialValue: _categoryId,
-                    decoration: const InputDecoration(
-                      labelText: 'Категория',
-                      border: OutlineInputBorder(),
+                  if (_type == TransactionType.transfer)
+                    DropdownButtonFormField<String>(
+                      key: const ValueKey('transaction-destination-account'),
+                      initialValue: _destinationAccountId,
+                      decoration: const InputDecoration(
+                        labelText: 'Счет назначения',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: destinationAccounts
+                          .map(
+                            (account) => DropdownMenuItem(
+                              value: account.id,
+                              child: Text(
+                                '${account.name} · ${account.currency.code}',
+                              ),
+                            ),
+                          )
+                          .toList(growable: false),
+                      onChanged: _saving
+                          ? null
+                          : (value) => setState(
+                                () => _destinationAccountId = value,
+                              ),
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      key: const ValueKey('transaction-category'),
+                      initialValue: _categoryId,
+                      decoration: const InputDecoration(
+                        labelText: 'Категория',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: categories
+                          .map(
+                            (category) => DropdownMenuItem(
+                              value: category.id,
+                              child: Text(category.name),
+                            ),
+                          )
+                          .toList(growable: false),
+                      onChanged: _saving
+                          ? null
+                          : (value) => setState(() => _categoryId = value),
                     ),
-                    items: categories
-                        .map(
-                          (category) => DropdownMenuItem(
-                            value: category.id,
-                            child: Text(category.name),
-                          ),
-                        )
-                        .toList(growable: false),
-                    onChanged: _saving
-                        ? null
-                        : (value) => setState(() => _categoryId = value),
-                  ),
                   const SizedBox(height: 16),
                   ListTile(
                     key: const ValueKey('transaction-date'),
@@ -334,9 +473,7 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
                   const SizedBox(height: 20),
                   FilledButton(
                     key: const ValueKey('save-transaction'),
-                    onPressed: _saving || accounts.isEmpty || categories.isEmpty
-                        ? null
-                        : _save,
+                    onPressed: _saving || !canSave ? null : _save,
                     child: Text(_editing ? 'Сохранить' : 'Добавить'),
                   ),
                 ],
