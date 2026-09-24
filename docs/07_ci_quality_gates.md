@@ -112,6 +112,8 @@ flutter test
 
 При изменении схемы Drift дополнительно выполняется migration workflow, описанный в `drift_schemas/README.md`.
 
+Форматирование должно выполняться версией Dart, совместимой с Flutter SDK из Stage CI. Если локальный SDK отличается, эталонным считается результат `dart format`, запущенный версией Dart, которую сообщает Stage CI.
+
 ## Generated files policy
 
 `*.g.dart` и аналогичные generated Dart files не коммитятся.
