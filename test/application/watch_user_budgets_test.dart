@@ -1,6 +1,9 @@
 import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
+import 'package:budget_accounting_system/src/domain/models/app_session.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
+import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
 import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
+import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -31,5 +34,29 @@ final class _FakeBudgetRepository implements BudgetRepository {
   Stream<List<BudgetSummary>> watchBudgetsForUser(String userId) {
     lastUserId = userId;
     return Stream.value(budgets);
+  }
+
+  @override
+  Future<List<BudgetSummary>> getBudgetsForUser(String userId) async {
+    lastUserId = userId;
+    return budgets;
+  }
+
+  @override
+  Future<String?> findFirstUserIdWithBudget() async {
+    return budgets.isEmpty ? null : 'user-1';
+  }
+
+  @override
+  Future<AppSession> createOwnedBudget({
+    required String userId,
+    required String userName,
+    required String publicKey,
+    required String budgetId,
+    required String budgetName,
+    required Currency baseCurrency,
+    List<InitialBudgetCategory> initialCategories = const [],
+  }) {
+    throw UnimplementedError('Not needed by WatchUserBudgets tests.');
   }
 }

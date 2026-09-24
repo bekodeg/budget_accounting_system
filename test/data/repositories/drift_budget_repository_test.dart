@@ -5,7 +5,7 @@ import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
