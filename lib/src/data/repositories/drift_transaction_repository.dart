@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../domain/models/budget_transaction_entry.dart';
 import '../../domain/models/domain_types.dart';
+import '../../domain/models/transaction_filter.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/value_objects/currency.dart';
 import '../../domain/value_objects/money.dart';
@@ -18,6 +19,25 @@ final class DriftTransactionRepository implements TransactionRepository {
     String budgetId,
   ) {
     return _dao.watchActive(budgetId).map(
+          (items) => items.map(_toDomain).toList(growable: false),
+        );
+  }
+
+  @override
+  Stream<List<BudgetTransactionEntry>> watchFilteredTransactions(
+    TransactionFilter filter,
+  ) {
+    return _dao
+        .watchFiltered(
+          budgetId: filter.budgetId,
+          fromInclusive: filter.fromInclusive,
+          toExclusive: filter.toExclusive,
+          type: filter.type == null ? null : _typeToStorage(filter.type!),
+          categoryId: filter.categoryId,
+          accountId: filter.accountId,
+          authorId: filter.authorId,
+        )
+        .map(
           (items) => items.map(_toDomain).toList(growable: false),
         );
   }
