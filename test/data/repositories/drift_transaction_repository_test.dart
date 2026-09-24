@@ -5,6 +5,7 @@ import 'package:budget_accounting_system/src/data/database/app_database.dart';
 import 'package:budget_accounting_system/src/data/repositories/drift_transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_transaction_entry.dart';
 import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
+import 'package:budget_accounting_system/src/domain/models/transaction_filter.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/money.dart';
 import 'package:drift/drift.dart';
@@ -142,6 +143,74 @@ void main() {
     );
     expect(found?.amount.minorUnits, BigInt.from(500));
     expect(found?.description, 'updated');
+  });
+
+  test('combines period type category account and author filters', () async {
+    await repository.createTransaction(
+      entry(
+        id: 'expense-in-range',
+        amountMinor: 100,
+        occurredAt: DateTime(2026, 9, 24, 10),
+      ),
+    );
+    await repository.createTransaction(
+      entry(
+        id: 'expense-outside',
+        amountMinor: 200,
+        occurredAt: DateTime(2026, 8, 24, 10),
+      ),
+    );
+
+    final items = await repository.watchFilteredTransactions(
+      const TransactionFilter(
+        budgetId: 'budget-1',
+        fromInclusive: null,
+        toExclusive: null,
+        type: TransactionType.expense,
+        categoryId: 'category-1',
+        accountId: 'account-1',
+        authorId: 'user-1',
+      ),
+    ).first;
+
+    expect(
+      items.map((item) => item.id),
+      containsAll(['expense-in-range', 'expense-outside']),
+    );
+
+    final september = await repository.watchFilteredTransactions(
+      TransactionFilter(
+        budgetId: 'budget-1',
+        fromInclusive: DateTime(2026, 9),
+        toExclusive: DateTime(2026, 10),
+        type: TransactionType.expense,
+        categoryId: 'category-1',
+        accountId: 'account-1',
+        authorId: 'user-1',
+      ),
+    ).first;
+
+    expect(
+      september.map((item) => item.id).toList(),
+      ['expense-in-range'],
+    );
+  });
+
+  test('soft delete removes row from filtered queries', () async {
+    await repository.createTransaction(
+      entry(id: 'deleted', amountMinor: 100),
+    );
+    await repository.softDeleteTransaction(
+      budgetId: 'budget-1',
+      transactionId: 'deleted',
+      deletedAt: DateTime(2026, 9, 24, 11),
+    );
+
+    final items = await repository.watchFilteredTransactions(
+      const TransactionFilter(budgetId: 'budget-1'),
+    ).first;
+
+    expect(items, isEmpty);
   });
 
   test('soft delete removes row from active queries but keeps database row', () async {

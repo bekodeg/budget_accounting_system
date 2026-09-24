@@ -1,7 +1,12 @@
 import '../models/budget_transaction_entry.dart';
+import '../models/transaction_filter.dart';
 
 abstract interface class TransactionRepository {
   Stream<List<BudgetTransactionEntry>> watchActiveTransactions(String budgetId);
+
+  Stream<List<BudgetTransactionEntry>> watchFilteredTransactions(
+    TransactionFilter filter,
+  );
 
   Future<BudgetTransactionEntry?> findActiveTransaction({
     required String budgetId,

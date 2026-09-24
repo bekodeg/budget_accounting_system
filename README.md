@@ -119,4 +119,5 @@ dart run drift_dev make-migrations
 - [Счета и текущий остаток](docs/10_accounts.md)
 - [Доходы и расходы](docs/11_transactions.md)
 - [Переводы между счетами](docs/12_transfers.md)
+- [Журнал операций и фильтры](docs/13_transaction_journal.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)

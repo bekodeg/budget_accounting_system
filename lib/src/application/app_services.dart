@@ -18,6 +18,7 @@ import 'use_cases/update_transaction.dart';
 import 'use_cases/update_transfer.dart';
 import 'use_cases/watch_budget_accounts.dart';
 import 'use_cases/watch_budget_categories.dart';
+import 'use_cases/watch_filtered_transactions.dart';
 import 'use_cases/watch_transactions.dart';
 import 'use_cases/watch_user_budgets.dart';
 
@@ -43,6 +44,7 @@ final class AppServices {
     required this.updateTransfer,
     required this.watchBudgetAccounts,
     required this.watchBudgetCategories,
+    required this.watchFilteredTransactions,
     required this.watchTransactions,
     required this.watchUserBudgets,
   });
@@ -67,6 +69,7 @@ final class AppServices {
   final UpdateTransfer updateTransfer;
   final WatchBudgetAccounts watchBudgetAccounts;
   final WatchBudgetCategories watchBudgetCategories;
+  final WatchFilteredTransactions watchFilteredTransactions;
   final WatchTransactions watchTransactions;
   final WatchUserBudgets watchUserBudgets;
 }

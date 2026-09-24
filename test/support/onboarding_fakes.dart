@@ -23,6 +23,7 @@ import 'package:budget_accounting_system/src/application/use_cases/update_transa
 import 'package:budget_accounting_system/src/application/use_cases/update_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_accounts.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_categories.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_filtered_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
 import 'package:budget_accounting_system/src/domain/models/account_balance.dart';
@@ -33,6 +34,7 @@ import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_transaction_entry.dart';
 import 'package:budget_accounting_system/src/domain/models/category_template.dart';
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
+import 'package:budget_accounting_system/src/domain/models/transaction_filter.dart';
 import 'package:budget_accounting_system/src/domain/repositories/account_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/category_repository.dart';
@@ -111,6 +113,7 @@ AppServices fakeAppServices({
     ),
     watchBudgetAccounts: WatchBudgetAccounts(accounts),
     watchBudgetCategories: WatchBudgetCategories(categories),
+    watchFilteredTransactions: WatchFilteredTransactions(transactions),
     watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
   );
@@ -446,6 +449,43 @@ final class FakeTransactionRepository implements TransactionRepository {
     yield snapshot(budgetId);
     await for (final changedBudgetId in _changes.stream) {
       if (changedBudgetId == budgetId) yield snapshot(budgetId);
+    }
+  }
+
+  @override
+  Stream<List<BudgetTransactionEntry>> watchFilteredTransactions(
+    TransactionFilter filter,
+  ) async* {
+    List<BudgetTransactionEntry> apply() {
+      return snapshot(filter.budgetId).where((item) {
+        if (filter.fromInclusive != null &&
+            item.occurredAt.isBefore(filter.fromInclusive!)) {
+          return false;
+        }
+        if (filter.toExclusive != null &&
+            !item.occurredAt.isBefore(filter.toExclusive!)) {
+          return false;
+        }
+        if (filter.type != null && item.type != filter.type) return false;
+        if (filter.categoryId != null &&
+            item.categoryId != filter.categoryId) {
+          return false;
+        }
+        if (filter.accountId != null &&
+            item.accountId != filter.accountId &&
+            item.destinationAccountId != filter.accountId) {
+          return false;
+        }
+        if (filter.authorId != null && item.authorId != filter.authorId) {
+          return false;
+        }
+        return true;
+      }).toList(growable: false);
+    }
+
+    yield apply();
+    await for (final changedBudgetId in _changes.stream) {
+      if (changedBudgetId == filter.budgetId) yield apply();
     }
   }
 
