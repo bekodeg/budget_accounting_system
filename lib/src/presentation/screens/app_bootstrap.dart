@@ -8,10 +8,7 @@ import 'budget_selection_screen.dart';
 import 'onboarding_screen.dart';
 
 final class AppBootstrap extends StatefulWidget {
-  const AppBootstrap({
-    required this.services,
-    super.key,
-  });
+  const AppBootstrap({required this.services, super.key});
 
   final AppServices services;
 
@@ -55,10 +52,7 @@ final class _AppBootstrapState extends State<AppBootstrap> {
     required String userId,
     required String budgetId,
   }) async {
-    await widget.services.selectBudget(
-      userId: userId,
-      budgetId: budgetId,
-    );
+    await widget.services.selectBudget(userId: userId, budgetId: budgetId);
     _forceBudgetSelection = false;
     _reload();
   }
@@ -95,10 +89,8 @@ final class _AppBootstrapState extends State<AppBootstrap> {
         if (startup.needsBudgetSelection || _forceBudgetSelection) {
           return BudgetSelectionScreen(
             budgets: startup.budgets,
-            onSelect: (budgetId) => _selectBudget(
-              userId: userId,
-              budgetId: budgetId,
-            ),
+            onSelect: (budgetId) =>
+                _selectBudget(userId: userId, budgetId: budgetId),
           );
         }
 

@@ -3,9 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../application/ports/session_store.dart';
 
 final class SharedPreferencesSessionStore implements SessionStore {
-  SharedPreferencesSessionStore({
-    SharedPreferencesAsync? preferences,
-  }) : _preferences = preferences ?? SharedPreferencesAsync();
+  SharedPreferencesSessionStore({SharedPreferencesAsync? preferences})
+    : _preferences = preferences ?? SharedPreferencesAsync();
 
   static const _currentUserIdKey = 'session.current_user_id';
   static const _currentBudgetIdKey = 'session.current_budget_id';

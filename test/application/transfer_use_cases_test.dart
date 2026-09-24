@@ -9,9 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/onboarding_fakes.dart';
 
 void main() {
-  FakeAccountRepository accounts({
-    Currency? destinationCurrency,
-  }) {
+  FakeAccountRepository accounts({Currency? destinationCurrency}) {
     return FakeAccountRepository(
       accountsByBudget: {
         'budget-1': [
@@ -88,9 +86,7 @@ void main() {
   });
 
   test('rejects cross-currency transfer', () async {
-    final accountRepository = accounts(
-      destinationCurrency: Currency('USD'),
-    );
+    final accountRepository = accounts(destinationCurrency: Currency('USD'));
     final useCase = CreateTransfer(
       transactionRepository: FakeTransactionRepository(),
       requireAccountInBudget: RequireAccountInBudget(accountRepository),

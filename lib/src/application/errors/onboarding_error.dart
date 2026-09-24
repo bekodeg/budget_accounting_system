@@ -1,14 +1,7 @@
-enum OnboardingErrorCode {
-  emptyUserName,
-  emptyBudgetName,
-  inaccessibleBudget,
-}
+enum OnboardingErrorCode { emptyUserName, emptyBudgetName, inaccessibleBudget }
 
 final class OnboardingError implements Exception {
-  const OnboardingError({
-    required this.code,
-    required this.message,
-  });
+  const OnboardingError({required this.code, required this.message});
 
   final OnboardingErrorCode code;
   final String message;

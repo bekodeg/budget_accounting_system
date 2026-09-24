@@ -14,10 +14,10 @@ final class CreateInitialBudget {
     required CategoryRepository categoryRepository,
     required SessionStore sessionStore,
     required IdGenerator idGenerator,
-  })  : _budgetRepository = budgetRepository,
-        _categoryRepository = categoryRepository,
-        _sessionStore = sessionStore,
-        _idGenerator = idGenerator;
+  }) : _budgetRepository = budgetRepository,
+       _categoryRepository = categoryRepository,
+       _sessionStore = sessionStore,
+       _idGenerator = idGenerator;
 
   final BudgetRepository _budgetRepository;
   final CategoryRepository _categoryRepository;

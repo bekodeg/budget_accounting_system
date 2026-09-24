@@ -80,9 +80,7 @@ void main() {
     expect(find.text('-12.50 EUR'), findsOneWidget);
     expect(find.textContaining('Кофе'), findsOneWidget);
 
-    await tester.tap(
-      find.byKey(const ValueKey('transaction-transaction-1')),
-    );
+    await tester.tap(find.byKey(const ValueKey('transaction-transaction-1')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('transaction-amount')),
@@ -99,9 +97,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Удалить'));
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey('confirm-delete-transaction')),
-    );
+    await tester.tap(find.byKey(const ValueKey('confirm-delete-transaction')));
     await tester.pumpAndSettle();
 
     expect(

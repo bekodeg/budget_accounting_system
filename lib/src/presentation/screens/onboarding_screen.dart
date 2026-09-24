@@ -12,10 +12,7 @@ typedef CreateInitialBudgetCallback = Future<void> Function({
 });
 
 final class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({
-    required this.onCreate,
-    super.key,
-  });
+  const OnboardingScreen({required this.onCreate, super.key});
 
   final CreateInitialBudgetCallback onCreate;
 

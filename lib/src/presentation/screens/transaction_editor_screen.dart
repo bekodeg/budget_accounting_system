@@ -29,7 +29,8 @@ final class TransactionEditorScreen extends StatefulWidget {
       _TransactionEditorScreenState();
 }
 
-final class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
+final class _TransactionEditorScreenState
+    extends State<TransactionEditorScreen> {
   late final TextEditingController _amountController;
   late final TextEditingController _descriptionController;
   late TransactionType _type;
@@ -120,10 +121,7 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
       _showError('Выберите категорию.');
       return;
     }
-    await _saveIncomeExpense(
-      accountId: accountId,
-      categoryId: categoryId,
-    );
+    await _saveIncomeExpense(accountId: accountId, categoryId: categoryId);
   }
 
   BigInt? _parseAmount() {
@@ -416,9 +414,8 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
                           .toList(growable: false),
                       onChanged: _saving
                           ? null
-                          : (value) => setState(
-                                () => _destinationAccountId = value,
-                              ),
+                          : (value) =>
+                                setState(() => _destinationAccountId = value),
                     )
                   else
                     DropdownButtonFormField<String>(
@@ -486,15 +483,14 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
   }
 }
 
-bool _categoryMatches(
-  TransactionType type,
-  BudgetCategory category,
-) {
+bool _categoryMatches(TransactionType type, BudgetCategory category) {
   return switch (type) {
     TransactionType.income =>
-      category.kind == CategoryKind.income || category.kind == CategoryKind.both,
+      category.kind == CategoryKind.income ||
+          category.kind == CategoryKind.both,
     TransactionType.expense =>
-      category.kind == CategoryKind.expense || category.kind == CategoryKind.both,
+      category.kind == CategoryKind.expense ||
+          category.kind == CategoryKind.both,
     TransactionType.transfer => false,
   };
 }

@@ -14,10 +14,10 @@ final class CreateTransaction {
     required RequireAccountInBudget requireAccountInBudget,
     required RequireCategoryInBudget requireCategoryInBudget,
     required IdGenerator idGenerator,
-  })  : _transactionRepository = transactionRepository,
-        _requireAccountInBudget = requireAccountInBudget,
-        _requireCategoryInBudget = requireCategoryInBudget,
-        _idGenerator = idGenerator;
+  }) : _transactionRepository = transactionRepository,
+       _requireAccountInBudget = requireAccountInBudget,
+       _requireCategoryInBudget = requireCategoryInBudget,
+       _idGenerator = idGenerator;
 
   final TransactionRepository _transactionRepository;
   final RequireAccountInBudget _requireAccountInBudget;

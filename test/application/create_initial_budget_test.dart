@@ -134,24 +134,27 @@ void main() {
     expect(sessionStore.currentUserId, isNull);
   });
 
-  test('keeps created budget usable if preferences cannot be written', () async {
-    final repository = FakeBudgetRepository();
-    final sessionStore = FakeSessionStore(failSaveSession: true);
-    final useCase = CreateInitialBudget(
-      budgetRepository: repository,
-      categoryRepository: FakeCategoryRepository(),
-      sessionStore: sessionStore,
-      idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
-    );
+  test(
+    'keeps created budget usable if preferences cannot be written',
+    () async {
+      final repository = FakeBudgetRepository();
+      final sessionStore = FakeSessionStore(failSaveSession: true);
+      final useCase = CreateInitialBudget(
+        budgetRepository: repository,
+        categoryRepository: FakeCategoryRepository(),
+        sessionStore: sessionStore,
+        idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+      );
 
-    final session = await useCase(
-      userName: 'Alice',
-      budgetName: 'Family',
-      baseCurrency: Currency('EUR'),
-    );
+      final session = await useCase(
+        userName: 'Alice',
+        budgetName: 'Family',
+        baseCurrency: Currency('EUR'),
+      );
 
-    expect(session.userId, 'user-1');
-    expect(repository.firstUserId, 'user-1');
-    expect(sessionStore.currentUserId, isNull);
-  });
+      expect(session.userId, 'user-1');
+      expect(repository.firstUserId, 'user-1');
+      expect(sessionStore.currentUserId, isNull);
+    },
+  );
 }

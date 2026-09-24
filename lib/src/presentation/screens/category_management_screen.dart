@@ -54,10 +54,7 @@ final class CategoryManagementScreen extends StatelessWidget {
     }
 
     try {
-      await services.renameCategory(
-        categoryId: category.id,
-        name: name,
-      );
+      await services.renameCategory(categoryId: category.id, name: name);
     } on CategoryError catch (error) {
       if (context.mounted) {
         _showMessage(context, error.message);
@@ -128,15 +125,10 @@ final class CategoryManagementScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<BudgetCategory>>(
-      stream: services.watchBudgetCategories(
-        budgetId,
-        includeArchived: true,
-      ),
+      stream: services.watchBudgetCategories(budgetId, includeArchived: true),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const Center(
-            child: Text('Не удалось загрузить категории.'),
-          );
+          return const Center(child: Text('Не удалось загрузить категории.'));
         }
 
         if (!snapshot.hasData) {
@@ -177,9 +169,7 @@ final class CategoryManagementScreen extends StatelessWidget {
             if (active.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text('Активных категорий пока нет.'),
-                ),
+                child: Center(child: Text('Активных категорий пока нет.')),
               )
             else ...[
               _CategorySection(
@@ -203,10 +193,7 @@ final class CategoryManagementScreen extends StatelessWidget {
             ],
             if (archived.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text(
-                'Архив',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text('Архив', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               for (final category in archived)
                 ListTile(
@@ -295,10 +282,7 @@ final class _CategorySection extends StatelessWidget {
 enum _CategoryAction { rename, archive }
 
 final class _CategoryDraft {
-  const _CategoryDraft({
-    required this.name,
-    required this.kind,
-  });
+  const _CategoryDraft({required this.name, required this.kind});
 
   final String name;
   final CategoryKind kind;
@@ -332,17 +316,13 @@ final class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
             key: const ValueKey('category-name-input'),
             controller: _nameController,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Название',
-            ),
+            decoration: const InputDecoration(labelText: 'Название'),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<CategoryKind>(
             key: const ValueKey('category-kind-input'),
             initialValue: _kind,
-            decoration: const InputDecoration(
-              labelText: 'Тип',
-            ),
+            decoration: const InputDecoration(labelText: 'Тип'),
             items: CategoryKind.values
                 .map(
                   (kind) => DropdownMenuItem(
@@ -371,10 +351,7 @@ final class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
           onPressed: () {
             Navigator.pop(
               context,
-              _CategoryDraft(
-                name: _nameController.text,
-                kind: _kind,
-              ),
+              _CategoryDraft(name: _nameController.text, kind: _kind),
             );
           },
           child: const Text('Создать'),
@@ -385,9 +362,7 @@ final class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
 }
 
 final class _RenameCategoryDialog extends StatefulWidget {
-  const _RenameCategoryDialog({
-    required this.category,
-  });
+  const _RenameCategoryDialog({required this.category});
 
   final BudgetCategory category;
 

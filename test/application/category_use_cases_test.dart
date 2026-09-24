@@ -25,10 +25,7 @@ void main() {
 
     expect(category.id, 'category-1');
     expect(category.name, 'Продукты');
-    expect(
-      repository.snapshot('budget-1', includeArchived: false),
-      [category],
-    );
+    expect(repository.snapshot('budget-1', includeArchived: false), [category]);
   });
 
   test('rejects blank category names', () async {
@@ -38,11 +35,7 @@ void main() {
     );
 
     await expectLater(
-      useCase(
-        budgetId: 'budget-1',
-        name: '   ',
-        kind: CategoryKind.expense,
-      ),
+      useCase(budgetId: 'budget-1', name: '   ', kind: CategoryKind.expense),
       throwsA(
         isA<CategoryError>().having(
           (error) => error.code,
@@ -75,10 +68,7 @@ void main() {
     await useCase('budget-1');
     await useCase('budget-1');
 
-    final categories = repository.snapshot(
-      'budget-1',
-      includeArchived: true,
-    );
+    final categories = repository.snapshot('budget-1', includeArchived: true);
     expect(categories, hasLength(2));
     expect(
       categories.map((category) => category.id),
@@ -110,10 +100,7 @@ void main() {
     await archive(templateId);
     await apply('budget-1');
 
-    final all = repository.snapshot(
-      'budget-1',
-      includeArchived: true,
-    );
+    final all = repository.snapshot('budget-1', includeArchived: true);
     expect(all, hasLength(1));
     expect(all.single.name, 'Супермаркет');
     expect(all.single.isArchived, isTrue);
@@ -136,14 +123,8 @@ void main() {
     await rename(categoryId: category.id, name: 'Продукты');
     await archive(category.id);
 
-    expect(
-      repository.snapshot('budget-1', includeArchived: false),
-      isEmpty,
-    );
-    final all = repository.snapshot(
-      'budget-1',
-      includeArchived: true,
-    );
+    expect(repository.snapshot('budget-1', includeArchived: false), isEmpty);
+    final all = repository.snapshot('budget-1', includeArchived: true);
     expect(all, hasLength(1));
     expect(all.single.name, 'Продукты');
     expect(all.single.isArchived, isTrue);

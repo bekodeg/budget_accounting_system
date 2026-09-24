@@ -123,42 +123,42 @@ void main() {
     expect(await repository.findFirstUserIdWithBudget(), 'user-1');
   });
 
-  test('rolls back user budget and templates when category insert fails', () async {
-    await expectLater(
-      repository.createOwnedBudget(
-        userId: 'user-atomic',
-        userName: 'Atomic',
-        publicKey: 'local-unverified:user-atomic',
-        budgetId: 'budget-atomic',
-        budgetName: 'Atomic budget',
-        baseCurrency: Currency('EUR'),
-        initialCategories: const [
-          InitialBudgetCategory(
-            id: 'duplicate-category',
-            name: 'Первая',
-            kind: CategoryKind.expense,
-          ),
-          InitialBudgetCategory(
-            id: 'duplicate-category',
-            name: 'Вторая',
-            kind: CategoryKind.expense,
-          ),
-        ],
-      ),
-      throwsA(anything),
-    );
+  test(
+    'rolls back user budget and templates when category insert fails',
+    () async {
+      await expectLater(
+        repository.createOwnedBudget(
+          userId: 'user-atomic',
+          userName: 'Atomic',
+          publicKey: 'local-unverified:user-atomic',
+          budgetId: 'budget-atomic',
+          budgetName: 'Atomic budget',
+          baseCurrency: Currency('EUR'),
+          initialCategories: const [
+            InitialBudgetCategory(
+              id: 'duplicate-category',
+              name: 'Первая',
+              kind: CategoryKind.expense,
+            ),
+            InitialBudgetCategory(
+              id: 'duplicate-category',
+              name: 'Вторая',
+              kind: CategoryKind.expense,
+            ),
+          ],
+        ),
+        throwsA(anything),
+      );
 
-    expect(await dao.findUserById('user-atomic'), isNull);
-    expect(
-      await repository.getBudgetsForUser('user-atomic'),
-      isEmpty,
-    );
-    final categories = await database.select(database.categories).get();
-    expect(
-      categories.where((category) => category.budgetId == 'budget-atomic'),
-      isEmpty,
-    );
-  });
+      expect(await dao.findUserById('user-atomic'), isNull);
+      expect(await repository.getBudgetsForUser('user-atomic'), isEmpty);
+      final categories = await database.select(database.categories).get();
+      expect(
+        categories.where((category) => category.budgetId == 'budget-atomic'),
+        isEmpty,
+      );
+    },
+  );
 
   test('rolls back user when budget insert fails', () async {
     await dao.upsertUser(

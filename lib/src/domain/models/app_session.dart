@@ -1,8 +1,5 @@
 final class AppSession {
-  const AppSession({
-    required this.userId,
-    required this.budgetId,
-  });
+  const AppSession({required this.userId, required this.budgetId});
 
   final String userId;
   final String budgetId;

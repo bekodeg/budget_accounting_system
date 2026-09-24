@@ -28,10 +28,7 @@ BigInt parseMinorUnitsText(String raw, {int fractionDigits = 2}) {
   return sign * (whole * scale + fractionValue);
 }
 
-String formatMinorUnits(
-  BigInt minorUnits, {
-  int fractionDigits = 2,
-}) {
+String formatMinorUnits(BigInt minorUnits, {int fractionDigits = 2}) {
   final negative = minorUnits.isNegative;
   final absolute = minorUnits.abs();
   final scale = BigInt.from(10).pow(fractionDigits);
@@ -41,8 +38,6 @@ String formatMinorUnits(
     return '${negative ? '-' : ''}$whole';
   }
 
-  final fraction = (absolute % scale)
-      .toString()
-      .padLeft(fractionDigits, '0');
+  final fraction = (absolute % scale).toString().padLeft(fractionDigits, '0');
   return '${negative ? '-' : ''}$whole.$fraction';
 }

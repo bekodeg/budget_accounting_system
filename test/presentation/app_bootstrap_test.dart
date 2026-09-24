@@ -8,7 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/onboarding_fakes.dart';
 
 void main() {
-  testWidgets('first launch creates local user and opens budget', (tester) async {
+  testWidgets('first launch creates local user and opens budget', (
+    tester,
+  ) async {
     final repository = FakeBudgetRepository();
     final sessionStore = FakeSessionStore();
     final services = fakeAppServices(
@@ -113,38 +115,39 @@ void main() {
     expect(find.text('Дом'), findsOneWidget);
   });
 
-  testWidgets('shows budget picker when several budgets have no last selection', (
-    tester,
-  ) async {
-    final repository = FakeBudgetRepository(
-      firstUserId: 'user-1',
-      budgetsByUser: {
-        'user-1': const [
-          BudgetSummary(id: 'budget-1', name: 'Дом', baseCurrency: 'EUR'),
-          BudgetSummary(id: 'budget-2', name: 'Поездка', baseCurrency: 'USD'),
-        ],
-      },
-    );
-    final sessionStore = FakeSessionStore(currentUserId: 'user-1');
-    final services = fakeAppServices(
-      repository: repository,
-      sessionStore: sessionStore,
-    );
+  testWidgets(
+    'shows budget picker when several budgets have no last selection',
+    (tester) async {
+      final repository = FakeBudgetRepository(
+        firstUserId: 'user-1',
+        budgetsByUser: {
+          'user-1': const [
+            BudgetSummary(id: 'budget-1', name: 'Дом', baseCurrency: 'EUR'),
+            BudgetSummary(id: 'budget-2', name: 'Поездка', baseCurrency: 'USD'),
+          ],
+        },
+      );
+      final sessionStore = FakeSessionStore(currentUserId: 'user-1');
+      final services = fakeAppServices(
+        repository: repository,
+        sessionStore: sessionStore,
+      );
 
-    await tester.pumpWidget(BudgetAccountingApp(services: services));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(BudgetAccountingApp(services: services));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Выберите бюджет'), findsOneWidget);
-    expect(find.text('Дом'), findsOneWidget);
-    expect(find.text('Поездка'), findsOneWidget);
+      expect(find.text('Выберите бюджет'), findsOneWidget);
+      expect(find.text('Дом'), findsOneWidget);
+      expect(find.text('Поездка'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('budget-budget-2')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('budget-budget-2')));
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('transaction-crud')), findsOneWidget);
-    expect(find.text('Поездка'), findsOneWidget);
-    expect(sessionStore.currentBudgetId, 'budget-2');
-  });
+      expect(find.byKey(const ValueKey('transaction-crud')), findsOneWidget);
+      expect(find.text('Поездка'), findsOneWidget);
+      expect(sessionStore.currentBudgetId, 'budget-2');
+    },
+  );
 
   testWidgets('allows switching budget from application shell', (tester) async {
     final repository = FakeBudgetRepository(

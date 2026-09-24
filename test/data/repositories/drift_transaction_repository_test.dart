@@ -95,18 +95,10 @@ void main() {
 
   test('create and watch returns newest operations first', () async {
     await repository.createTransaction(
-      entry(
-        id: 'old',
-        amountMinor: 100,
-        occurredAt: DateTime(2026, 9, 23),
-      ),
+      entry(id: 'old', amountMinor: 100, occurredAt: DateTime(2026, 9, 23)),
     );
     await repository.createTransaction(
-      entry(
-        id: 'new',
-        amountMinor: 200,
-        occurredAt: DateTime(2026, 9, 24),
-      ),
+      entry(id: 'new', amountMinor: 200, occurredAt: DateTime(2026, 9, 24)),
     );
 
     final items = await repository.watchActiveTransactions('budget-1').first;
@@ -161,79 +153,83 @@ void main() {
       ),
     );
 
-    final items = await repository.watchFilteredTransactions(
-      const TransactionFilter(
-        budgetId: 'budget-1',
-        fromInclusive: null,
-        toExclusive: null,
-        type: TransactionType.expense,
-        categoryId: 'category-1',
-        accountId: 'account-1',
-        authorId: 'user-1',
-      ),
-    ).first;
+    final items = await repository
+        .watchFilteredTransactions(
+          const TransactionFilter(
+            budgetId: 'budget-1',
+            fromInclusive: null,
+            toExclusive: null,
+            type: TransactionType.expense,
+            categoryId: 'category-1',
+            accountId: 'account-1',
+            authorId: 'user-1',
+          ),
+        )
+        .first;
 
     expect(
       items.map((item) => item.id),
       containsAll(['expense-in-range', 'expense-outside']),
     );
 
-    final september = await repository.watchFilteredTransactions(
-      TransactionFilter(
-        budgetId: 'budget-1',
-        fromInclusive: DateTime(2026, 9),
-        toExclusive: DateTime(2026, 10),
-        type: TransactionType.expense,
-        categoryId: 'category-1',
-        accountId: 'account-1',
-        authorId: 'user-1',
-      ),
-    ).first;
+    final september = await repository
+        .watchFilteredTransactions(
+          TransactionFilter(
+            budgetId: 'budget-1',
+            fromInclusive: DateTime(2026, 9),
+            toExclusive: DateTime(2026, 10),
+            type: TransactionType.expense,
+            categoryId: 'category-1',
+            accountId: 'account-1',
+            authorId: 'user-1',
+          ),
+        )
+        .first;
 
-    expect(
-      september.map((item) => item.id).toList(),
-      ['expense-in-range'],
-    );
+    expect(september.map((item) => item.id).toList(), ['expense-in-range']);
   });
 
   test('soft delete removes row from filtered queries', () async {
-    await repository.createTransaction(
-      entry(id: 'deleted', amountMinor: 100),
-    );
+    await repository.createTransaction(entry(id: 'deleted', amountMinor: 100));
     await repository.softDeleteTransaction(
       budgetId: 'budget-1',
       transactionId: 'deleted',
       deletedAt: DateTime(2026, 9, 24, 11),
     );
 
-    final items = await repository.watchFilteredTransactions(
-      const TransactionFilter(budgetId: 'budget-1'),
-    ).first;
+    final items = await repository
+        .watchFilteredTransactions(
+          const TransactionFilter(budgetId: 'budget-1'),
+        )
+        .first;
 
     expect(items, isEmpty);
   });
 
-  test('soft delete removes row from active queries but keeps database row', () async {
-    await repository.createTransaction(
-      entry(id: 'transaction-1', amountMinor: 100),
-    );
+  test(
+    'soft delete removes row from active queries but keeps database row',
+    () async {
+      await repository.createTransaction(
+        entry(id: 'transaction-1', amountMinor: 100),
+      );
 
-    expect(
-      await repository.softDeleteTransaction(
-        budgetId: 'budget-1',
-        transactionId: 'transaction-1',
-        deletedAt: DateTime(2026, 9, 24, 11),
-      ),
-      isTrue,
-    );
+      expect(
+        await repository.softDeleteTransaction(
+          budgetId: 'budget-1',
+          transactionId: 'transaction-1',
+          deletedAt: DateTime(2026, 9, 24, 11),
+        ),
+        isTrue,
+      );
 
-    expect(
-      await repository.watchActiveTransactions('budget-1').first,
-      isEmpty,
-    );
-    final raw = await (database.select(database.budgetTransactions)
-          ..where((row) => row.id.equals('transaction-1')))
-        .getSingle();
-    expect(raw.deletedAt, isNotNull);
-  });
+      expect(
+        await repository.watchActiveTransactions('budget-1').first,
+        isEmpty,
+      );
+      final raw = await (database.select(
+        database.budgetTransactions,
+      )..where((row) => row.id.equals('transaction-1'))).getSingle();
+      expect(raw.deletedAt, isNotNull);
+    },
+  );
 }

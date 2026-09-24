@@ -20,10 +20,7 @@ void main() {
       sessionStore: sessionStore,
     );
 
-    final session = await useCase(
-      userId: 'user-1',
-      budgetId: 'budget-1',
-    );
+    final session = await useCase(userId: 'user-1', budgetId: 'budget-1');
 
     expect(session.budgetId, 'budget-1');
     expect(sessionStore.currentUserId, 'user-1');

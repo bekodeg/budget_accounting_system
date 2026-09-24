@@ -11,9 +11,9 @@ final class CreateTransfer {
     required TransactionRepository transactionRepository,
     required RequireAccountInBudget requireAccountInBudget,
     required IdGenerator idGenerator,
-  })  : _transactionRepository = transactionRepository,
-        _requireAccountInBudget = requireAccountInBudget,
-        _idGenerator = idGenerator;
+  }) : _transactionRepository = transactionRepository,
+       _requireAccountInBudget = requireAccountInBudget,
+       _idGenerator = idGenerator;
 
   final TransactionRepository _transactionRepository;
   final RequireAccountInBudget _requireAccountInBudget;
