@@ -41,7 +41,8 @@ final class TransactionDraft {
             destinationCurrency != amount.currency) {
           throw const DomainValidationError(
             code: DomainValidationCode.currencyMismatch,
-            message: 'Cross-currency transfers are not supported in the current version.',
+            message:
+                'Cross-currency transfers are not supported in the current version.',
           );
         }
         break;
@@ -50,7 +51,8 @@ final class TransactionDraft {
         if (destinationAccountId != null) {
           throw const DomainValidationError(
             code: DomainValidationCode.unexpectedDestinationAccount,
-            message: 'Income and expense transactions cannot have a destination account.',
+            message:
+                'Income and expense transactions cannot have a destination account.',
           );
         }
     }
