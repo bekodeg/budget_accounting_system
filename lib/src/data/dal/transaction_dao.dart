@@ -46,6 +46,55 @@ final class TransactionDao {
         .watch();
   }
 
+  Stream<List<BudgetTransaction>> watchFiltered({
+    required String budgetId,
+    DateTime? fromInclusive,
+    DateTime? toExclusive,
+    String? type,
+    String? categoryId,
+    String? accountId,
+    String? authorId,
+  }) {
+    final query = _db.select(_db.budgetTransactions)
+      ..where(
+        (row) => row.budgetId.equals(budgetId) & row.deletedAt.isNull(),
+      );
+
+    if (fromInclusive != null) {
+      query.where(
+        (row) => row.occurredAt.isBiggerOrEqualValue(fromInclusive),
+      );
+    }
+    if (toExclusive != null) {
+      query.where(
+        (row) => row.occurredAt.isSmallerThanValue(toExclusive),
+      );
+    }
+    if (type != null) {
+      query.where((row) => row.type.equals(type));
+    }
+    if (categoryId != null) {
+      query.where((row) => row.categoryId.equals(categoryId));
+    }
+    if (accountId != null) {
+      query.where(
+        (row) =>
+            row.accountId.equals(accountId) |
+            row.destinationAccountId.equals(accountId),
+      );
+    }
+    if (authorId != null) {
+      query.where((row) => row.authorId.equals(authorId));
+    }
+
+    query.orderBy([
+      (row) => OrderingTerm.desc(row.occurredAt),
+      (row) => OrderingTerm.desc(row.updatedAt),
+      (row) => OrderingTerm.desc(row.id),
+    ]);
+    return query.watch();
+  }
+
   Stream<List<BudgetTransaction>> watchPeriod({
     required String budgetId,
     required DateTime fromInclusive,
