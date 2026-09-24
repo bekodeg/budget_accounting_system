@@ -30,6 +30,18 @@ final class DriftCategoryRepository implements CategoryRepository {
   }
 
   @override
+  Future<BudgetCategory?> findCategory({
+    required String budgetId,
+    required String categoryId,
+  }) async {
+    final category = await _dao.findCategory(
+      budgetId: budgetId,
+      categoryId: categoryId,
+    );
+    return category == null ? null : _toDomainCategory(category);
+  }
+
+  @override
   Future<List<domain.CategoryTemplate>> getTemplates() async {
     final templates = await _dao.getCategoryTemplates();
     return templates
