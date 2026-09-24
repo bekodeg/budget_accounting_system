@@ -112,12 +112,14 @@ final class TransactionCrudScreen extends StatelessWidget {
                   child: ListTile(
                     key: ValueKey('transaction-${transaction.id}'),
                     leading: Icon(
-                      transaction.type == TransactionType.income
-                          ? Icons.add_circle_outline
-                          : Icons.remove_circle_outline,
+                      switch (transaction.type) {
+                        TransactionType.income => Icons.add_circle_outline,
+                        TransactionType.expense => Icons.remove_circle_outline,
+                        TransactionType.transfer => Icons.swap_horiz,
+                      },
                     ),
                     title: Text(
-                      '${transaction.type == TransactionType.income ? '+' : '-'}'
+                      '${_amountPrefix(transaction.type)}'
                       '${formatMinorUnits(transaction.amount.minorUnits)} '
                       '${transaction.amount.currency.code}',
                     ),
@@ -170,4 +172,12 @@ String _date(DateTime value) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(value.day)}.${two(value.month)}.${value.year} '
       '${two(value.hour)}:${two(value.minute)}';
+}
+
+String _amountPrefix(TransactionType type) {
+  return switch (type) {
+    TransactionType.income => '+',
+    TransactionType.expense => '-',
+    TransactionType.transfer => '↔ ',
+  };
 }
