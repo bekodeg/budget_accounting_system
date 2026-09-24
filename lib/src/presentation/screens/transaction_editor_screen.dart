@@ -211,6 +211,12 @@ final class _TransactionEditorScreenState extends State<TransactionEditorScreen>
                   categories.every((category) => category.id != _categoryId)) {
                 _categoryId = null;
               }
+              if (_accountId == null && accounts.length == 1) {
+                _accountId = accounts.single.id;
+              }
+              if (_categoryId == null && categories.length == 1) {
+                _categoryId = categories.single.id;
+              }
 
               return ListView(
                 key: const ValueKey('transaction-editor'),
