@@ -22,7 +22,7 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const ValueKey('transaction-crud')), findsOneWidget);
+    expect(find.byKey(const ValueKey('budget-dashboard')), findsOneWidget);
     expect(find.text('Дом'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.event_note_outlined));
