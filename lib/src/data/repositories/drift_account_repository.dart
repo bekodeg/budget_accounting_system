@@ -18,14 +18,9 @@ final class DriftAccountRepository implements AccountRepository {
     required bool includeArchived,
   }) {
     return _dao
-        .watchAccounts(
-          budgetId,
-          includeArchived: includeArchived,
-        )
+        .watchAccounts(budgetId, includeArchived: includeArchived)
         .map(
-          (accounts) => accounts
-              .map(_toDomainAccount)
-              .toList(growable: false),
+          (accounts) => accounts.map(_toDomainAccount).toList(growable: false),
         );
   }
 

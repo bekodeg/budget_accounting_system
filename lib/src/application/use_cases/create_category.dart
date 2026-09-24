@@ -8,8 +8,8 @@ final class CreateCategory {
   const CreateCategory({
     required CategoryRepository categoryRepository,
     required IdGenerator idGenerator,
-  })  : _categoryRepository = categoryRepository,
-        _idGenerator = idGenerator;
+  }) : _categoryRepository = categoryRepository,
+       _idGenerator = idGenerator;
 
   final CategoryRepository _categoryRepository;
   final IdGenerator _idGenerator;

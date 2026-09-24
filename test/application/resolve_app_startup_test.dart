@@ -21,11 +21,7 @@ void main() {
       firstUserId: 'user-1',
       budgetsByUser: {
         'user-1': const [
-          BudgetSummary(
-            id: 'budget-1',
-            name: 'Family',
-            baseCurrency: 'EUR',
-          ),
+          BudgetSummary(id: 'budget-1', name: 'Family', baseCurrency: 'EUR'),
         ],
       },
     );
@@ -43,26 +39,29 @@ void main() {
     expect(sessionStore.currentBudgetId, 'budget-1');
   });
 
-  test('asks user to select when several budgets have no last selection', () async {
-    final repository = FakeBudgetRepository(
-      firstUserId: 'user-1',
-      budgetsByUser: {
-        'user-1': const [
-          BudgetSummary(id: 'budget-1', name: 'Home', baseCurrency: 'EUR'),
-          BudgetSummary(id: 'budget-2', name: 'Trip', baseCurrency: 'USD'),
-        ],
-      },
-    );
-    final useCase = ResolveAppStartup(
-      budgetRepository: repository,
-      sessionStore: FakeSessionStore(currentUserId: 'user-1'),
-    );
+  test(
+    'asks user to select when several budgets have no last selection',
+    () async {
+      final repository = FakeBudgetRepository(
+        firstUserId: 'user-1',
+        budgetsByUser: {
+          'user-1': const [
+            BudgetSummary(id: 'budget-1', name: 'Home', baseCurrency: 'EUR'),
+            BudgetSummary(id: 'budget-2', name: 'Trip', baseCurrency: 'USD'),
+          ],
+        },
+      );
+      final useCase = ResolveAppStartup(
+        budgetRepository: repository,
+        sessionStore: FakeSessionStore(currentUserId: 'user-1'),
+      );
 
-    final state = await useCase();
+      final state = await useCase();
 
-    expect(state.needsBudgetSelection, isTrue);
-    expect(state.selectedBudgetId, isNull);
-  });
+      expect(state.needsBudgetSelection, isTrue);
+      expect(state.selectedBudgetId, isNull);
+    },
+  );
 
   test('falls back to Drift when stored user id is stale', () async {
     final repository = FakeBudgetRepository(

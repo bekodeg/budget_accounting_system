@@ -33,15 +33,15 @@ import '../data/repositories/drift_transaction_repository.dart';
 import '../data/services/secure_id_generator.dart';
 
 final class AppCompositionRoot {
-  AppCompositionRoot._({
-    required BudgetDal dal,
-    required this.services,
-  }) : _dal = dal;
+  AppCompositionRoot._({required BudgetDal dal, required this.services})
+    : _dal = dal;
 
   factory AppCompositionRoot.defaults() {
     final dal = BudgetDal.defaults();
     final budgetRepository = DriftBudgetRepository(dal.usersAndBudgets);
-    final categoryRepository = DriftCategoryRepository(dal.categoriesAndAccounts);
+    final categoryRepository = DriftCategoryRepository(
+      dal.categoriesAndAccounts,
+    );
     final accountRepository = DriftAccountRepository(dal.categoriesAndAccounts);
     final transactionRepository = DriftTransactionRepository(dal.transactions);
     final dashboardRepository = DriftDashboardRepository(dal.reports);
@@ -107,7 +107,9 @@ final class AppCompositionRoot {
         watchBudgetAccounts: WatchBudgetAccounts(accountRepository),
         watchBudgetCategories: WatchBudgetCategories(categoryRepository),
         watchDashboardSummary: WatchDashboardSummary(dashboardRepository),
-        watchFilteredTransactions: WatchFilteredTransactions(transactionRepository),
+        watchFilteredTransactions: WatchFilteredTransactions(
+          transactionRepository,
+        ),
         watchTransactions: WatchTransactions(transactionRepository),
         watchUserBudgets: WatchUserBudgets(budgetRepository),
       ),

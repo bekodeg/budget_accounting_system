@@ -28,9 +28,11 @@ final class RequireCategoryInBudget {
 
     final matchesType = switch (transactionType) {
       TransactionType.income =>
-        category.kind == CategoryKind.income || category.kind == CategoryKind.both,
+        category.kind == CategoryKind.income ||
+            category.kind == CategoryKind.both,
       TransactionType.expense =>
-        category.kind == CategoryKind.expense || category.kind == CategoryKind.both,
+        category.kind == CategoryKind.expense ||
+            category.kind == CategoryKind.both,
       TransactionType.transfer => true,
     };
 

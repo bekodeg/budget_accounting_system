@@ -127,10 +127,7 @@ SELECT metric, currency, total_minor FROM balance
             Variable.withDateTime(toExclusive),
             Variable.withString(budgetId),
           ],
-          readsFrom: {
-            _db.budgetTransactions,
-            _db.accounts,
-          },
+          readsFrom: {_db.budgetTransactions, _db.accounts},
         )
         .watch()
         .map(

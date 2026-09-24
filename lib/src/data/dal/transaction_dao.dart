@@ -16,13 +16,12 @@ final class TransactionDao {
     required String budgetId,
     required String transactionId,
   }) {
-    return (_db.select(_db.budgetTransactions)
-          ..where(
-            (row) =>
-                row.id.equals(transactionId) &
-                row.budgetId.equals(budgetId) &
-                row.deletedAt.isNull(),
-          ))
+    return (_db.select(_db.budgetTransactions)..where(
+          (row) =>
+              row.id.equals(transactionId) &
+              row.budgetId.equals(budgetId) &
+              row.deletedAt.isNull(),
+        ))
         .getSingleOrNull();
   }
 
@@ -35,8 +34,7 @@ final class TransactionDao {
   Stream<List<BudgetTransaction>> watchActive(String budgetId) {
     return (_db.select(_db.budgetTransactions)
           ..where(
-            (row) =>
-                row.budgetId.equals(budgetId) & row.deletedAt.isNull(),
+            (row) => row.budgetId.equals(budgetId) & row.deletedAt.isNull(),
           )
           ..orderBy([
             (row) => OrderingTerm.desc(row.occurredAt),
@@ -56,19 +54,13 @@ final class TransactionDao {
     String? authorId,
   }) {
     final query = _db.select(_db.budgetTransactions)
-      ..where(
-        (row) => row.budgetId.equals(budgetId) & row.deletedAt.isNull(),
-      );
+      ..where((row) => row.budgetId.equals(budgetId) & row.deletedAt.isNull());
 
     if (fromInclusive != null) {
-      query.where(
-        (row) => row.occurredAt.isBiggerOrEqualValue(fromInclusive),
-      );
+      query.where((row) => row.occurredAt.isBiggerOrEqualValue(fromInclusive));
     }
     if (toExclusive != null) {
-      query.where(
-        (row) => row.occurredAt.isSmallerThanValue(toExclusive),
-      );
+      query.where((row) => row.occurredAt.isSmallerThanValue(toExclusive));
     }
     if (type != null) {
       query.where((row) => row.type.equals(type));
@@ -118,13 +110,12 @@ final class TransactionDao {
     required BudgetTransactionsCompanion changes,
   }) async {
     await _validateAccountOwnership(changes);
-    return (_db.update(_db.budgetTransactions)
-          ..where(
-            (row) =>
-                row.id.equals(transactionId) &
-                row.budgetId.equals(budgetId) &
-                row.deletedAt.isNull(),
-          ))
+    return (_db.update(_db.budgetTransactions)..where(
+          (row) =>
+              row.id.equals(transactionId) &
+              row.budgetId.equals(budgetId) &
+              row.deletedAt.isNull(),
+        ))
         .write(changes);
   }
 
@@ -133,19 +124,18 @@ final class TransactionDao {
     required String id,
     required DateTime deletedAt,
   }) {
-    return (_db.update(_db.budgetTransactions)
-          ..where(
-            (row) =>
-                row.id.equals(id) &
-                row.budgetId.equals(budgetId) &
-                row.deletedAt.isNull(),
-          ))
+    return (_db.update(_db.budgetTransactions)..where(
+          (row) =>
+              row.id.equals(id) &
+              row.budgetId.equals(budgetId) &
+              row.deletedAt.isNull(),
+        ))
         .write(
-      BudgetTransactionsCompanion(
-        deletedAt: Value(deletedAt),
-        updatedAt: Value(deletedAt),
-      ),
-    );
+          BudgetTransactionsCompanion(
+            deletedAt: Value(deletedAt),
+            updatedAt: Value(deletedAt),
+          ),
+        );
   }
 
   Future<void> _validateAccountOwnership(
@@ -184,13 +174,14 @@ final class TransactionDao {
     required String budgetId,
     required String accountId,
   }) async {
-    final account = await (_db.select(_db.accounts)
-          ..where(
-            (row) =>
-                row.id.equals(accountId) & row.budgetId.equals(budgetId),
-          )
-          ..limit(1))
-        .getSingleOrNull();
+    final account =
+        await (_db.select(_db.accounts)
+              ..where(
+                (row) =>
+                    row.id.equals(accountId) & row.budgetId.equals(budgetId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
     return account != null;
   }
 }

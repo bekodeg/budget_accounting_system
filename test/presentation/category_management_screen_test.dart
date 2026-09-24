@@ -77,9 +77,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(
-      find.byKey(const ValueKey('category-menu-category-1')),
-    );
+    await tester.tap(find.byKey(const ValueKey('category-menu-category-1')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Переименовать'));
     await tester.pumpAndSettle();
@@ -92,9 +90,7 @@ void main() {
 
     expect(find.text('Продукты'), findsOneWidget);
 
-    await tester.tap(
-      find.byKey(const ValueKey('category-menu-category-1')),
-    );
+    await tester.tap(find.byKey(const ValueKey('category-menu-category-1')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Архивировать'));
     await tester.pumpAndSettle();
@@ -106,10 +102,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      categoryRepository.snapshot(
-        'budget-1',
-        includeArchived: false,
-      ),
+      categoryRepository.snapshot('budget-1', includeArchived: false),
       isEmpty,
     );
   });

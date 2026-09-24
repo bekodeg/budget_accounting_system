@@ -11,9 +11,6 @@ final class WatchDashboardSummary {
     required DateTime month,
   }) {
     final monthStart = DateTime(month.year, month.month);
-    return _repository.watchSummary(
-      budgetId: budgetId,
-      monthStart: monthStart,
-    );
+    return _repository.watchSummary(budgetId: budgetId, monthStart: monthStart);
   }
 }

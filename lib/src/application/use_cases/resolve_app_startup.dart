@@ -7,8 +7,8 @@ final class ResolveAppStartup {
   const ResolveAppStartup({
     required BudgetRepository budgetRepository,
     required SessionStore sessionStore,
-  })  : _budgetRepository = budgetRepository,
-        _sessionStore = sessionStore;
+  }) : _budgetRepository = budgetRepository,
+       _sessionStore = sessionStore;
 
   final BudgetRepository _budgetRepository;
   final SessionStore _sessionStore;

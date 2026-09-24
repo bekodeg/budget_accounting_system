@@ -18,9 +18,9 @@ final class DriftTransactionRepository implements TransactionRepository {
   Stream<List<BudgetTransactionEntry>> watchActiveTransactions(
     String budgetId,
   ) {
-    return _dao.watchActive(budgetId).map(
-          (items) => items.map(_toDomain).toList(growable: false),
-        );
+    return _dao
+        .watchActive(budgetId)
+        .map((items) => items.map(_toDomain).toList(growable: false));
   }
 
   @override
@@ -37,9 +37,7 @@ final class DriftTransactionRepository implements TransactionRepository {
           accountId: filter.accountId,
           authorId: filter.authorId,
         )
-        .map(
-          (items) => items.map(_toDomain).toList(growable: false),
-        );
+        .map((items) => items.map(_toDomain).toList(growable: false));
   }
 
   @override

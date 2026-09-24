@@ -20,11 +20,7 @@ void main() {
     final accounts = CategoryAccountDao(database);
 
     await users.upsertUser(
-      UsersCompanion.insert(
-        id: 'user-1',
-        name: 'Alice',
-        publicKey: 'key',
-      ),
+      UsersCompanion.insert(id: 'user-1', name: 'Alice', publicKey: 'key'),
     );
     await users.upsertBudget(
       BudgetsCompanion.insert(

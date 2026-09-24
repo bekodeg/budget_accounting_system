@@ -122,10 +122,7 @@ final class _SectionBody extends StatelessWidget {
       );
     }
     if (section == AppSection.settings) {
-      return SettingsScreen(
-        services: services,
-        budgetId: budgetId,
-      );
+      return SettingsScreen(services: services, budgetId: budgetId);
     }
 
     return Center(

@@ -21,11 +21,7 @@ void main() {
     final accounts = CategoryAccountDao(database);
 
     await users.upsertUser(
-      UsersCompanion.insert(
-        id: 'user-1',
-        name: 'Alice',
-        publicKey: 'key',
-      ),
+      UsersCompanion.insert(id: 'user-1', name: 'Alice', publicKey: 'key'),
     );
     await users.upsertBudget(
       BudgetsCompanion.insert(
@@ -125,21 +121,21 @@ void main() {
     await database.close();
   });
 
-  test('dashboard keeps currencies separate and transfer cash-flow neutral', () async {
-    final summary = await repository
-        .watchSummary(
-          budgetId: 'budget-1',
-          monthStart: DateTime(2026, 9),
-        )
-        .first;
+  test(
+    'dashboard keeps currencies separate and transfer cash-flow neutral',
+    () async {
+      final summary = await repository
+          .watchSummary(budgetId: 'budget-1', monthStart: DateTime(2026, 9))
+          .first;
 
-    expect(summary.incomeMinorByCurrency['EUR'], BigInt.from(2000));
-    expect(summary.incomeMinorByCurrency['USD'], BigInt.from(300));
-    expect(summary.expenseMinorByCurrency['EUR'], BigInt.from(500));
-    expect(summary.netMinorByCurrency['EUR'], BigInt.from(1500));
-    expect(summary.netMinorByCurrency['USD'], BigInt.from(300));
+      expect(summary.incomeMinorByCurrency['EUR'], BigInt.from(2000));
+      expect(summary.incomeMinorByCurrency['USD'], BigInt.from(300));
+      expect(summary.expenseMinorByCurrency['EUR'], BigInt.from(500));
+      expect(summary.netMinorByCurrency['EUR'], BigInt.from(1500));
+      expect(summary.netMinorByCurrency['USD'], BigInt.from(300));
 
-    expect(summary.balanceMinorByCurrency['EUR'], BigInt.from(11500));
-    expect(summary.balanceMinorByCurrency['USD'], BigInt.from(5300));
-  });
+      expect(summary.balanceMinorByCurrency['EUR'], BigInt.from(11500));
+      expect(summary.balanceMinorByCurrency['USD'], BigInt.from(5300));
+    },
+  );
 }

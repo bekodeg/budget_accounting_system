@@ -7,8 +7,5 @@ abstract interface class SessionStore {
 
   Future<void> saveCurrentBudgetId(String budgetId);
 
-  Future<void> saveSession({
-    required String userId,
-    required String budgetId,
-  });
+  Future<void> saveSession({required String userId, required String budgetId});
 }

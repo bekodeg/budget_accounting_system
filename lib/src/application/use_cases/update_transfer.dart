@@ -10,8 +10,8 @@ final class UpdateTransfer {
   const UpdateTransfer({
     required TransactionRepository transactionRepository,
     required RequireAccountInBudget requireAccountInBudget,
-  })  : _transactionRepository = transactionRepository,
-        _requireAccountInBudget = requireAccountInBudget;
+  }) : _transactionRepository = transactionRepository,
+       _requireAccountInBudget = requireAccountInBudget;
 
   final TransactionRepository _transactionRepository;
   final RequireAccountInBudget _requireAccountInBudget;

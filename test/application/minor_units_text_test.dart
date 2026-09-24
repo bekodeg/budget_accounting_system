@@ -9,10 +9,7 @@ void main() {
   });
 
   test('rejects more than two fraction digits by default', () {
-    expect(
-      () => parseMinorUnitsText('1.234'),
-      throwsA(isA<FormatException>()),
-    );
+    expect(() => parseMinorUnitsText('1.234'), throwsA(isA<FormatException>()));
   });
 
   test('formats signed minor units', () {

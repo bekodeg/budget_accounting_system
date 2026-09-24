@@ -34,27 +34,25 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
   bool _onlyMine = false;
 
   TransactionFilter get _filter => TransactionFilter(
-        budgetId: widget.budgetId,
-        fromInclusive: _fromInclusive,
-        toExclusive: _toExclusive,
-        type: _type,
-        categoryId: _categoryId,
-        accountId: _accountId,
-        authorId: _onlyMine ? widget.userId : null,
-      );
+    budgetId: widget.budgetId,
+    fromInclusive: _fromInclusive,
+    toExclusive: _toExclusive,
+    type: _type,
+    categoryId: _categoryId,
+    accountId: _accountId,
+    authorId: _onlyMine ? widget.userId : null,
+  );
 
   int get _filterCount => [
-        _fromInclusive,
-        _toExclusive,
-        _type,
-        _categoryId,
-        _accountId,
-        _onlyMine ? widget.userId : null,
-      ].where((value) => value != null).length;
+    _fromInclusive,
+    _toExclusive,
+    _type,
+    _categoryId,
+    _accountId,
+    _onlyMine ? widget.userId : null,
+  ].where((value) => value != null).length;
 
-  Future<void> _openEditor({
-    BudgetTransactionEntry? transaction,
-  }) {
+  Future<void> _openEditor({BudgetTransactionEntry? transaction}) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => TransactionEditorScreen(
@@ -224,9 +222,7 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                       for (final transaction in transactions)
                         Card(
                           child: ListTile(
-                            key: ValueKey(
-                              'transaction-${transaction.id}',
-                            ),
+                            key: ValueKey('transaction-${transaction.id}'),
                             leading: Icon(_typeIcon(transaction.type)),
                             title: Text(
                               '${_amountPrefix(transaction.type)}'
@@ -241,9 +237,7 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                                 widget.userId,
                               ),
                             ),
-                            onTap: () => _openEditor(
-                              transaction: transaction,
-                            ),
+                            onTap: () => _openEditor(transaction: transaction),
                             trailing: PopupMenuButton<_TransactionAction>(
                               key: ValueKey(
                                 'transaction-menu-${transaction.id}',
@@ -318,7 +312,8 @@ final class _TransactionFilterSheet extends StatefulWidget {
       _TransactionFilterSheetState();
 }
 
-final class _TransactionFilterSheetState extends State<_TransactionFilterSheet> {
+final class _TransactionFilterSheetState
+    extends State<_TransactionFilterSheet> {
   late DateTime? _fromInclusive;
   late DateTime? _toExclusive;
   late TransactionType? _type;
@@ -351,8 +346,8 @@ final class _TransactionFilterSheetState extends State<_TransactionFilterSheet> 
   }
 
   Future<void> _pickTo() async {
-    final initial = _toExclusive?.subtract(const Duration(days: 1)) ??
-        DateTime.now();
+    final initial =
+        _toExclusive?.subtract(const Duration(days: 1)) ?? DateTime.now();
     final date = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -361,8 +356,11 @@ final class _TransactionFilterSheetState extends State<_TransactionFilterSheet> 
     );
     if (date == null) return;
     setState(() {
-      _toExclusive = DateTime(date.year, date.month, date.day)
-          .add(const Duration(days: 1));
+      _toExclusive = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).add(const Duration(days: 1));
     });
   }
 
@@ -437,10 +435,7 @@ final class _TransactionFilterSheetState extends State<_TransactionFilterSheet> 
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Все счета'),
-                  ),
+                  const DropdownMenuItem(value: null, child: Text('Все счета')),
                   for (final account in widget.accounts)
                     DropdownMenuItem(
                       value: account.id,
@@ -492,11 +487,7 @@ final class _TransactionFilterSheetState extends State<_TransactionFilterSheet> 
                       child: Text(
                         _toExclusive == null
                             ? 'По дату'
-                            : 'По ${_dateOnly(
-                                _toExclusive!.subtract(
-                                  const Duration(days: 1),
-                                ),
-                              )}',
+                            : 'По ${_dateOnly(_toExclusive!.subtract(const Duration(days: 1)))}',
                       ),
                     ),
                   ),

@@ -31,11 +31,9 @@ final class CategoryAccountDao {
     required String budgetId,
     required String categoryId,
   }) {
-    return (_db.select(_db.categories)
-          ..where(
-            (row) =>
-                row.id.equals(categoryId) & row.budgetId.equals(budgetId),
-          ))
+    return (_db.select(_db.categories)..where(
+          (row) => row.id.equals(categoryId) & row.budgetId.equals(budgetId),
+        ))
         .getSingleOrNull();
   }
 
@@ -47,9 +45,7 @@ final class CategoryAccountDao {
     await _db.into(_db.categories).insertOnConflictUpdate(category);
   }
 
-  Future<void> insertCategoriesIfMissing(
-    List<CategoriesCompanion> categories,
-  ) {
+  Future<void> insertCategoriesIfMissing(List<CategoriesCompanion> categories) {
     return _db.transaction(() async {
       for (final category in categories) {
         await _db
@@ -63,22 +59,18 @@ final class CategoryAccountDao {
     required String categoryId,
     required String name,
   }) async {
-    await (_db.update(
-      _db.categories,
-    )..where((row) => row.id.equals(categoryId))).write(
-      CategoriesCompanion(name: Value(name)),
-    );
+    await (_db.update(_db.categories)
+          ..where((row) => row.id.equals(categoryId)))
+        .write(CategoriesCompanion(name: Value(name)));
   }
 
   Future<void> setCategoryArchived({
     required String categoryId,
     required bool isArchived,
   }) async {
-    await (_db.update(
-      _db.categories,
-    )..where((row) => row.id.equals(categoryId))).write(
-      CategoriesCompanion(isArchived: Value(isArchived)),
-    );
+    await (_db.update(_db.categories)
+          ..where((row) => row.id.equals(categoryId)))
+        .write(CategoriesCompanion(isArchived: Value(isArchived)));
   }
 
   Stream<List<Account>> watchAccounts(
@@ -104,11 +96,9 @@ final class CategoryAccountDao {
     required String budgetId,
     required String accountId,
   }) {
-    return (_db.select(_db.accounts)
-          ..where(
-            (row) =>
-                row.id.equals(accountId) & row.budgetId.equals(budgetId),
-          ))
+    return (_db.select(_db.accounts)..where(
+          (row) => row.id.equals(accountId) & row.budgetId.equals(budgetId),
+        ))
         .getSingleOrNull();
   }
 
@@ -127,18 +117,16 @@ final class CategoryAccountDao {
     required String currency,
     required BigInt openingBalanceMinor,
   }) {
-    return (_db.update(_db.accounts)
-          ..where(
-            (row) =>
-                row.id.equals(accountId) & row.budgetId.equals(budgetId),
-          ))
+    return (_db.update(_db.accounts)..where(
+          (row) => row.id.equals(accountId) & row.budgetId.equals(budgetId),
+        ))
         .write(
-      AccountsCompanion(
-        name: Value(name),
-        currency: Value(currency),
-        openingBalanceMinor: Value(openingBalanceMinor),
-      ),
-    );
+          AccountsCompanion(
+            name: Value(name),
+            currency: Value(currency),
+            openingBalanceMinor: Value(openingBalanceMinor),
+          ),
+        );
   }
 
   Future<int> setAccountArchived({
@@ -146,14 +134,10 @@ final class CategoryAccountDao {
     required String accountId,
     required bool isArchived,
   }) {
-    return (_db.update(_db.accounts)
-          ..where(
-            (row) =>
-                row.id.equals(accountId) & row.budgetId.equals(budgetId),
-          ))
-        .write(
-      AccountsCompanion(isArchived: Value(isArchived)),
-    );
+    return (_db.update(_db.accounts)..where(
+          (row) => row.id.equals(accountId) & row.budgetId.equals(budgetId),
+        ))
+        .write(AccountsCompanion(isArchived: Value(isArchived)));
   }
 
   Future<bool> accountHasTransactions({
@@ -179,15 +163,15 @@ final class CategoryAccountDao {
     required BigInt openingBalanceMinor,
   }) async {
     final transaction = _db.budgetTransactions;
-    final rows = await (_db.select(transaction)
-          ..where(
-            (row) =>
-                row.budgetId.equals(budgetId) &
-                row.deletedAt.isNull() &
-                (row.accountId.equals(accountId) |
-                    row.destinationAccountId.equals(accountId)),
-          ))
-        .get();
+    final rows =
+        await (_db.select(transaction)..where(
+              (row) =>
+                  row.budgetId.equals(budgetId) &
+                  row.deletedAt.isNull() &
+                  (row.accountId.equals(accountId) |
+                      row.destinationAccountId.equals(accountId)),
+            ))
+            .get();
 
     var balance = openingBalanceMinor;
     for (final item in rows) {
