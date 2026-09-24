@@ -98,8 +98,9 @@ final class AccountManagementScreen extends StatelessWidget {
     } on AccountError catch (error) {
       if (context.mounted) _showMessage(context, error.message);
     } on Object {
-      if (context.mounted)
+      if (context.mounted) {
         _showMessage(context, 'Не удалось архивировать счет.');
+      }
     }
   }
 
