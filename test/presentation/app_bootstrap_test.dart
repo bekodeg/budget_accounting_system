@@ -37,7 +37,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('onboarding-submit')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('section-transactions')), findsOneWidget);
+    expect(find.byKey(const ValueKey('transaction-crud')), findsOneWidget);
     expect(find.text('Дом'), findsOneWidget);
     expect(sessionStore.currentUserId, 'user-1');
     expect(sessionStore.currentBudgetId, 'budget-1');
@@ -141,7 +141,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('budget-budget-2')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('section-transactions')), findsOneWidget);
+    expect(find.byKey(const ValueKey('transaction-crud')), findsOneWidget);
     expect(find.text('Поездка'), findsOneWidget);
     expect(sessionStore.currentBudgetId, 'budget-2');
   });
