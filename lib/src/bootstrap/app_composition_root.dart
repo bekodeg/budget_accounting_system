@@ -19,6 +19,7 @@ import '../application/use_cases/update_transaction.dart';
 import '../application/use_cases/update_transfer.dart';
 import '../application/use_cases/watch_budget_accounts.dart';
 import '../application/use_cases/watch_budget_categories.dart';
+import '../application/use_cases/watch_dashboard_summary.dart';
 import '../application/use_cases/watch_filtered_transactions.dart';
 import '../application/use_cases/watch_transactions.dart';
 import '../application/use_cases/watch_user_budgets.dart';
@@ -27,6 +28,7 @@ import '../data/preferences/shared_preferences_session_store.dart';
 import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
+import '../data/repositories/drift_dashboard_repository.dart';
 import '../data/repositories/drift_transaction_repository.dart';
 import '../data/services/secure_id_generator.dart';
 
@@ -42,6 +44,7 @@ final class AppCompositionRoot {
     final categoryRepository = DriftCategoryRepository(dal.categoriesAndAccounts);
     final accountRepository = DriftAccountRepository(dal.categoriesAndAccounts);
     final transactionRepository = DriftTransactionRepository(dal.transactions);
+    final dashboardRepository = DriftDashboardRepository(dal.reports);
     final sessionStore = SharedPreferencesSessionStore();
     final idGenerator = SecureIdGenerator();
     final requireAccountInBudget = RequireAccountInBudget(accountRepository);
@@ -103,6 +106,7 @@ final class AppCompositionRoot {
         ),
         watchBudgetAccounts: WatchBudgetAccounts(accountRepository),
         watchBudgetCategories: WatchBudgetCategories(categoryRepository),
+        watchDashboardSummary: WatchDashboardSummary(dashboardRepository),
         watchFilteredTransactions: WatchFilteredTransactions(transactionRepository),
         watchTransactions: WatchTransactions(transactionRepository),
         watchUserBudgets: WatchUserBudgets(budgetRepository),
