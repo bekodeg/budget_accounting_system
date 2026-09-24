@@ -19,6 +19,7 @@ import '../application/use_cases/update_transaction.dart';
 import '../application/use_cases/update_transfer.dart';
 import '../application/use_cases/watch_budget_accounts.dart';
 import '../application/use_cases/watch_budget_categories.dart';
+import '../application/use_cases/watch_filtered_transactions.dart';
 import '../application/use_cases/watch_transactions.dart';
 import '../application/use_cases/watch_user_budgets.dart';
 import '../data/dal/dal.dart';
@@ -102,6 +103,7 @@ final class AppCompositionRoot {
         ),
         watchBudgetAccounts: WatchBudgetAccounts(accountRepository),
         watchBudgetCategories: WatchBudgetCategories(categoryRepository),
+        watchFilteredTransactions: WatchFilteredTransactions(transactionRepository),
         watchTransactions: WatchTransactions(transactionRepository),
         watchUserBudgets: WatchUserBudgets(budgetRepository),
       ),
