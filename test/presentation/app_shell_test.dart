@@ -15,13 +15,14 @@ void main() {
       MaterialApp(
         home: AppShell(
           services: services,
+          userId: 'user-1',
           budgetId: 'budget-1',
           budgetName: 'Дом',
         ),
       ),
     );
 
-    expect(find.byKey(const ValueKey('section-transactions')), findsOneWidget);
+    expect(find.byKey(const ValueKey('transaction-crud')), findsOneWidget);
     expect(find.text('Дом'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.event_note_outlined));
