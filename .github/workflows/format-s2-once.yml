@@ -1,0 +1,36 @@
+name: One-shot S2 formatter
+
+on:
+  push:
+    branches:
+      - fix/s2-formatting
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.13.4
+
+      - name: Format Dart sources
+        run: dart format lib test
+
+      - name: Commit formatting
+        shell: bash
+        run: |
+          if git diff --quiet -- lib test; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib test
+          git commit -m "style: format S2 Dart sources [skip ci]"
+          git push origin "HEAD:fix/s2-formatting"
