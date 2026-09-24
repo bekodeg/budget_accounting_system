@@ -10,6 +10,7 @@ import 'package:budget_accounting_system/src/application/use_cases/create_accoun
 import 'package:budget_accounting_system/src/application/use_cases/create_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_initial_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_transaction.dart';
+import 'package:budget_accounting_system/src/application/use_cases/create_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/delete_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_account_balance.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
@@ -19,6 +20,7 @@ import 'package:budget_accounting_system/src/application/use_cases/resolve_app_s
 import 'package:budget_accounting_system/src/application/use_cases/select_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_transaction.dart';
+import 'package:budget_accounting_system/src/application/use_cases/update_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_accounts.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_categories.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_transactions.dart';
@@ -67,6 +69,11 @@ AppServices fakeAppServices({
       categoryRepository: categories,
       idGenerator: ids,
     ),
+    createTransfer: CreateTransfer(
+      transactionRepository: transactions,
+      requireAccountInBudget: RequireAccountInBudget(accounts),
+      idGenerator: ids,
+    ),
     createTransaction: CreateTransaction(
       transactionRepository: transactions,
       requireAccountInBudget: RequireAccountInBudget(accounts),
@@ -93,6 +100,10 @@ AppServices fakeAppServices({
       sessionStore: sessionStore,
     ),
     updateAccount: UpdateAccount(accounts),
+    updateTransfer: UpdateTransfer(
+      transactionRepository: transactions,
+      requireAccountInBudget: RequireAccountInBudget(accounts),
+    ),
     updateTransaction: UpdateTransaction(
       transactionRepository: transactions,
       requireAccountInBudget: RequireAccountInBudget(accounts),
