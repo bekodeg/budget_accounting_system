@@ -47,7 +47,7 @@ void main() {
     expect(find.byKey(const ValueKey('budget-dashboard')), findsOneWidget);
     expect(find.text('1250.00 EUR'), findsOneWidget);
     expect(find.text('50.00 USD'), findsNWidgets(3));
-    expect(find.text('800.00 EUR'), findsOneWidget);
+    expect(find.text('800.00 EUR'), findsNWidgets(2));
 
     await tester.tap(find.byKey(const ValueKey('dashboard-quick-add')));
     await tester.pumpAndSettle();
