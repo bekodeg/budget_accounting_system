@@ -178,6 +178,7 @@ void main() {
       ),
     );
     await transactionDao.softDelete(
+      budgetId: 'budget-1',
       id: 'income',
       deletedAt: DateTime(2026, 9, 23),
     );
