@@ -108,6 +108,7 @@ final class _AppBootstrapState extends State<AppBootstrap> {
 
         return AppShell(
           services: widget.services,
+          userId: userId,
           budgetId: selectedBudget.id,
           budgetName: selectedBudget.name,
           onChooseBudget: startup.budgets.length > 1

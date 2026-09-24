@@ -27,6 +27,18 @@ final class CategoryAccountDao {
     return query.watch();
   }
 
+  Future<Category?> findCategory({
+    required String budgetId,
+    required String categoryId,
+  }) {
+    return (_db.select(_db.categories)
+          ..where(
+            (row) =>
+                row.id.equals(categoryId) & row.budgetId.equals(budgetId),
+          ))
+        .getSingleOrNull();
+  }
+
   Future<void> createCategory(CategoriesCompanion category) async {
     await _db.into(_db.categories).insert(category);
   }

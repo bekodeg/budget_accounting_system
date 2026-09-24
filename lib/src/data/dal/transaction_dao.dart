@@ -12,10 +12,38 @@ final class TransactionDao {
     await _db.into(_db.budgetTransactions).insertOnConflictUpdate(transaction);
   }
 
+  Future<BudgetTransaction?> findActive({
+    required String budgetId,
+    required String transactionId,
+  }) {
+    return (_db.select(_db.budgetTransactions)
+          ..where(
+            (row) =>
+                row.id.equals(transactionId) &
+                row.budgetId.equals(budgetId) &
+                row.deletedAt.isNull(),
+          ))
+        .getSingleOrNull();
+  }
+
   Future<BudgetTransaction?> findById(String id) {
     return (_db.select(
       _db.budgetTransactions,
     )..where((row) => row.id.equals(id))).getSingleOrNull();
+  }
+
+  Stream<List<BudgetTransaction>> watchActive(String budgetId) {
+    return (_db.select(_db.budgetTransactions)
+          ..where(
+            (row) =>
+                row.budgetId.equals(budgetId) & row.deletedAt.isNull(),
+          )
+          ..orderBy([
+            (row) => OrderingTerm.desc(row.occurredAt),
+            (row) => OrderingTerm.desc(row.updatedAt),
+            (row) => OrderingTerm.desc(row.id),
+          ]))
+        .watch();
   }
 
   Stream<List<BudgetTransaction>> watchPeriod({
@@ -35,10 +63,35 @@ final class TransactionDao {
         .watch();
   }
 
-  Future<int> softDelete({required String id, required DateTime deletedAt}) {
-    return (_db.update(
-      _db.budgetTransactions,
-    )..where((row) => row.id.equals(id))).write(
+  Future<int> updateActive({
+    required String budgetId,
+    required String transactionId,
+    required BudgetTransactionsCompanion changes,
+  }) async {
+    await _validateAccountOwnership(changes);
+    return (_db.update(_db.budgetTransactions)
+          ..where(
+            (row) =>
+                row.id.equals(transactionId) &
+                row.budgetId.equals(budgetId) &
+                row.deletedAt.isNull(),
+          ))
+        .write(changes);
+  }
+
+  Future<int> softDelete({
+    required String budgetId,
+    required String id,
+    required DateTime deletedAt,
+  }) {
+    return (_db.update(_db.budgetTransactions)
+          ..where(
+            (row) =>
+                row.id.equals(id) &
+                row.budgetId.equals(budgetId) &
+                row.deletedAt.isNull(),
+          ))
+        .write(
       BudgetTransactionsCompanion(
         deletedAt: Value(deletedAt),
         updatedAt: Value(deletedAt),

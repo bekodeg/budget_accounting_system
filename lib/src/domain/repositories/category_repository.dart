@@ -7,6 +7,11 @@ abstract interface class CategoryRepository {
     required bool includeArchived,
   });
 
+  Future<BudgetCategory?> findCategory({
+    required String budgetId,
+    required String categoryId,
+  });
+
   Future<List<CategoryTemplate>> getTemplates();
 
   Future<void> insertCategoriesIfMissing(List<BudgetCategory> categories);

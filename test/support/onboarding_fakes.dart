@@ -9,25 +9,32 @@ import 'package:budget_accounting_system/src/application/use_cases/archive_categ
 import 'package:budget_accounting_system/src/application/use_cases/create_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_initial_budget.dart';
+import 'package:budget_accounting_system/src/application/use_cases/create_transaction.dart';
+import 'package:budget_accounting_system/src/application/use_cases/delete_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_account_balance.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_account_in_budget.dart';
+import 'package:budget_accounting_system/src/application/use_cases/require_category_in_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/resolve_app_startup.dart';
 import 'package:budget_accounting_system/src/application/use_cases/select_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_account.dart';
+import 'package:budget_accounting_system/src/application/use_cases/update_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_accounts.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_categories.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
 import 'package:budget_accounting_system/src/domain/models/account_balance.dart';
 import 'package:budget_accounting_system/src/domain/models/app_session.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_account.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
+import 'package:budget_accounting_system/src/domain/models/budget_transaction_entry.dart';
 import 'package:budget_accounting_system/src/domain/models/category_template.dart';
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
 import 'package:budget_accounting_system/src/domain/repositories/account_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/category_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 
 AppServices fakeAppServices({
@@ -35,10 +42,12 @@ AppServices fakeAppServices({
   required FakeSessionStore sessionStore,
   FakeCategoryRepository? categoryRepository,
   FakeAccountRepository? accountRepository,
+  FakeTransactionRepository? transactionRepository,
   FakeIdGenerator? idGenerator,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
   final accounts = accountRepository ?? FakeAccountRepository();
+  final transactions = transactionRepository ?? FakeTransactionRepository();
   final ids = idGenerator ?? FakeIdGenerator([
     'user-1',
     'budget-1',
@@ -58,6 +67,13 @@ AppServices fakeAppServices({
       categoryRepository: categories,
       idGenerator: ids,
     ),
+    createTransaction: CreateTransaction(
+      transactionRepository: transactions,
+      requireAccountInBudget: RequireAccountInBudget(accounts),
+      requireCategoryInBudget: RequireCategoryInBudget(categories),
+      idGenerator: ids,
+    ),
+    deleteTransaction: DeleteTransaction(transactions),
     createInitialBudget: CreateInitialBudget(
       budgetRepository: repository,
       categoryRepository: categories,
@@ -67,6 +83,7 @@ AppServices fakeAppServices({
     getAccountBalance: GetAccountBalance(accounts),
     renameCategory: RenameCategory(categories),
     requireAccountInBudget: RequireAccountInBudget(accounts),
+    requireCategoryInBudget: RequireCategoryInBudget(categories),
     resolveAppStartup: ResolveAppStartup(
       budgetRepository: repository,
       sessionStore: sessionStore,
@@ -76,8 +93,14 @@ AppServices fakeAppServices({
       sessionStore: sessionStore,
     ),
     updateAccount: UpdateAccount(accounts),
+    updateTransaction: UpdateTransaction(
+      transactionRepository: transactions,
+      requireAccountInBudget: RequireAccountInBudget(accounts),
+      requireCategoryInBudget: RequireCategoryInBudget(categories),
+    ),
     watchBudgetAccounts: WatchBudgetAccounts(accounts),
     watchBudgetCategories: WatchBudgetCategories(categories),
+    watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
   );
 }
@@ -195,6 +218,17 @@ final class FakeCategoryRepository implements CategoryRepository {
         yield snapshot(budgetId, includeArchived: includeArchived);
       }
     }
+  }
+
+  @override
+  Future<BudgetCategory?> findCategory({
+    required String budgetId,
+    required String categoryId,
+  }) async {
+    for (final category in categoriesByBudget[budgetId] ?? const []) {
+      if (category.id == categoryId) return category;
+    }
+    return null;
   }
 
   @override
@@ -375,6 +409,78 @@ final class FakeAccountRepository implements AccountRepository {
           (transactionDeltaByAccount[account.id] ?? BigInt.zero),
       currency: account.currency,
     );
+  }
+}
+
+final class FakeTransactionRepository implements TransactionRepository {
+  FakeTransactionRepository({
+    Map<String, List<BudgetTransactionEntry>>? transactionsByBudget,
+  }) : transactionsByBudget = transactionsByBudget ?? {};
+
+  final Map<String, List<BudgetTransactionEntry>> transactionsByBudget;
+  final StreamController<String> _changes = StreamController.broadcast();
+
+  void _emit(String budgetId) => _changes.add(budgetId);
+
+  List<BudgetTransactionEntry> snapshot(String budgetId) {
+    final items = [...transactionsByBudget[budgetId] ?? const []]
+      ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    return List.unmodifiable(items);
+  }
+
+  @override
+  Stream<List<BudgetTransactionEntry>> watchActiveTransactions(
+    String budgetId,
+  ) async* {
+    yield snapshot(budgetId);
+    await for (final changedBudgetId in _changes.stream) {
+      if (changedBudgetId == budgetId) yield snapshot(budgetId);
+    }
+  }
+
+  @override
+  Future<BudgetTransactionEntry?> findActiveTransaction({
+    required String budgetId,
+    required String transactionId,
+  }) async {
+    for (final item in transactionsByBudget[budgetId] ?? const []) {
+      if (item.id == transactionId) return item;
+    }
+    return null;
+  }
+
+  @override
+  Future<void> createTransaction(BudgetTransactionEntry transaction) async {
+    transactionsByBudget
+        .putIfAbsent(transaction.budgetId, () => [])
+        .add(transaction);
+    _emit(transaction.budgetId);
+  }
+
+  @override
+  Future<bool> updateTransaction(BudgetTransactionEntry transaction) async {
+    final items = transactionsByBudget[transaction.budgetId];
+    if (items == null) return false;
+    final index = items.indexWhere((item) => item.id == transaction.id);
+    if (index < 0) return false;
+    items[index] = transaction;
+    _emit(transaction.budgetId);
+    return true;
+  }
+
+  @override
+  Future<bool> softDeleteTransaction({
+    required String budgetId,
+    required String transactionId,
+    required DateTime deletedAt,
+  }) async {
+    final items = transactionsByBudget[budgetId];
+    if (items == null) return false;
+    final before = items.length;
+    items.removeWhere((item) => item.id == transactionId);
+    if (items.length == before) return false;
+    _emit(budgetId);
+    return true;
   }
 }
 
