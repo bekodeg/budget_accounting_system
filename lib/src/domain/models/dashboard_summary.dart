@@ -4,9 +4,9 @@ final class DashboardSummary {
     required Map<String, BigInt> incomeMinorByCurrency,
     required Map<String, BigInt> expenseMinorByCurrency,
     required Map<String, BigInt> balanceMinorByCurrency,
-  })  : incomeMinorByCurrency = Map.unmodifiable(incomeMinorByCurrency),
-        expenseMinorByCurrency = Map.unmodifiable(expenseMinorByCurrency),
-        balanceMinorByCurrency = Map.unmodifiable(balanceMinorByCurrency);
+  }) : incomeMinorByCurrency = Map.unmodifiable(incomeMinorByCurrency),
+       expenseMinorByCurrency = Map.unmodifiable(expenseMinorByCurrency),
+       balanceMinorByCurrency = Map.unmodifiable(balanceMinorByCurrency);
 
   final DateTime monthStart;
   final Map<String, BigInt> incomeMinorByCurrency;
@@ -20,7 +20,8 @@ final class DashboardSummary {
     };
     return Map.unmodifiable({
       for (final currency in currencies)
-        currency: (incomeMinorByCurrency[currency] ?? BigInt.zero) -
+        currency:
+            (incomeMinorByCurrency[currency] ?? BigInt.zero) -
             (expenseMinorByCurrency[currency] ?? BigInt.zero),
     });
   }

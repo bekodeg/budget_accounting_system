@@ -46,11 +46,11 @@ final class BudgetAccount {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        budgetId,
-        name,
-        openingBalanceMinor,
-        currency,
-        isArchived,
-      );
+    id,
+    budgetId,
+    name,
+    openingBalanceMinor,
+    currency,
+    isArchived,
+  );
 }

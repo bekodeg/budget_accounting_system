@@ -115,17 +115,11 @@ void main() {
       findsOneWidget,
     );
     expect(
-      accountRepository.snapshot(
-        'budget-1',
-        includeArchived: false,
-      ),
+      accountRepository.snapshot('budget-1', includeArchived: false),
       isEmpty,
     );
     expect(
-      accountRepository.snapshot(
-        'budget-1',
-        includeArchived: true,
-      ),
+      accountRepository.snapshot('budget-1', includeArchived: true),
       hasLength(1),
     );
   });

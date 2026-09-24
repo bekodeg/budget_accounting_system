@@ -8,8 +8,8 @@ final class CreateAccount {
   const CreateAccount({
     required AccountRepository accountRepository,
     required IdGenerator idGenerator,
-  })  : _accountRepository = accountRepository,
-        _idGenerator = idGenerator;
+  }) : _accountRepository = accountRepository,
+       _idGenerator = idGenerator;
 
   final AccountRepository _accountRepository;
   final IdGenerator _idGenerator;

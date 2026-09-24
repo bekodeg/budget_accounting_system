@@ -75,10 +75,7 @@ final class BudgetDashboardScreen extends StatelessWidget {
 }
 
 final class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader({
-    required this.summary,
-    required this.onQuickAdd,
-  });
+  const _DashboardHeader({required this.summary, required this.onQuickAdd});
 
   final DashboardSummary summary;
   final VoidCallback onQuickAdd;

@@ -18,14 +18,10 @@ final class DriftCategoryRepository implements CategoryRepository {
     required bool includeArchived,
   }) {
     return _dao
-        .watchCategories(
-          budgetId,
-          includeArchived: includeArchived,
-        )
+        .watchCategories(budgetId, includeArchived: includeArchived)
         .map(
-          (categories) => categories
-              .map(_toDomainCategory)
-              .toList(growable: false),
+          (categories) =>
+              categories.map(_toDomainCategory).toList(growable: false),
         );
   }
 
@@ -57,9 +53,7 @@ final class DriftCategoryRepository implements CategoryRepository {
   }
 
   @override
-  Future<void> insertCategoriesIfMissing(
-    List<BudgetCategory> categories,
-  ) {
+  Future<void> insertCategoriesIfMissing(List<BudgetCategory> categories) {
     return _dao.insertCategoriesIfMissing(
       categories.map(_toCompanion).toList(growable: false),
     );
@@ -75,10 +69,7 @@ final class DriftCategoryRepository implements CategoryRepository {
     required String categoryId,
     required String name,
   }) {
-    return _dao.renameCategory(
-      categoryId: categoryId,
-      name: name,
-    );
+    return _dao.renameCategory(categoryId: categoryId, name: name);
   }
 
   @override

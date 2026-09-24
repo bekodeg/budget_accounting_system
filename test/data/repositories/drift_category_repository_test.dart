@@ -114,15 +114,13 @@ void main() {
     final beforeArchive = await repository
         .watchCategories('budget-1', includeArchived: false)
         .first;
-    expect(
-      beforeArchive.map((category) => category.id).toList(),
-      ['expense-1', 'expense-2', 'income-1'],
-    );
+    expect(beforeArchive.map((category) => category.id).toList(), [
+      'expense-1',
+      'expense-2',
+      'income-1',
+    ]);
 
-    await repository.renameCategory(
-      categoryId: 'expense-1',
-      name: 'Продукты',
-    );
+    await repository.renameCategory(categoryId: 'expense-1', name: 'Продукты');
     await repository.setCategoryArchived(
       categoryId: 'expense-1',
       isArchived: true,
@@ -136,9 +134,7 @@ void main() {
         .first;
 
     expect(active.map((category) => category.id), isNot(contains('expense-1')));
-    final archived = all.singleWhere(
-      (category) => category.id == 'expense-1',
-    );
+    final archived = all.singleWhere((category) => category.id == 'expense-1');
     expect(archived.name, 'Продукты');
     expect(archived.isArchived, isTrue);
   });

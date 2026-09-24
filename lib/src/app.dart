@@ -33,14 +33,8 @@ class _BudgetAccountingAppState extends State<BudgetAccountingApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Budget Accounting',
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
+      theme: ThemeData(useMaterial3: true, brightness: Brightness.light),
+      darkTheme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
       themeMode: ThemeMode.system,
       home: AppBootstrap(services: widget.services),
     );

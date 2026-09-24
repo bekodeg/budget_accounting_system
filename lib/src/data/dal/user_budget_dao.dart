@@ -53,33 +53,35 @@ final class UserBudgetDao {
   }
 
   Stream<List<Budget>> watchBudgetsForUser(String userId) {
-    final query = _db.select(_db.budgets).join([
-      innerJoin(
-        _db.budgetMembers,
-        _db.budgetMembers.budgetId.equalsExp(_db.budgets.id),
-      ),
-    ])
-      ..where(
-        _db.budgetMembers.userId.equals(userId) &
-            _db.budgetMembers.revokedAt.isNull(),
-      )
-      ..orderBy([OrderingTerm.asc(_db.budgets.createdAt)]);
+    final query =
+        _db.select(_db.budgets).join([
+            innerJoin(
+              _db.budgetMembers,
+              _db.budgetMembers.budgetId.equalsExp(_db.budgets.id),
+            ),
+          ])
+          ..where(
+            _db.budgetMembers.userId.equals(userId) &
+                _db.budgetMembers.revokedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.asc(_db.budgets.createdAt)]);
 
     return query.watch().map(_readBudgets);
   }
 
   Future<List<Budget>> getBudgetsForUser(String userId) async {
-    final query = _db.select(_db.budgets).join([
-      innerJoin(
-        _db.budgetMembers,
-        _db.budgetMembers.budgetId.equalsExp(_db.budgets.id),
-      ),
-    ])
-      ..where(
-        _db.budgetMembers.userId.equals(userId) &
-            _db.budgetMembers.revokedAt.isNull(),
-      )
-      ..orderBy([OrderingTerm.asc(_db.budgets.createdAt)]);
+    final query =
+        _db.select(_db.budgets).join([
+            innerJoin(
+              _db.budgetMembers,
+              _db.budgetMembers.budgetId.equalsExp(_db.budgets.id),
+            ),
+          ])
+          ..where(
+            _db.budgetMembers.userId.equals(userId) &
+                _db.budgetMembers.revokedAt.isNull(),
+          )
+          ..orderBy([OrderingTerm.asc(_db.budgets.createdAt)]);
 
     final rows = await query.get();
     return _readBudgets(rows);
@@ -92,6 +94,8 @@ final class UserBudgetDao {
   }
 
   List<Budget> _readBudgets(List<TypedResult> rows) {
-    return rows.map((row) => row.readTable(_db.budgets)).toList(growable: false);
+    return rows
+        .map((row) => row.readTable(_db.budgets))
+        .toList(growable: false);
   }
 }

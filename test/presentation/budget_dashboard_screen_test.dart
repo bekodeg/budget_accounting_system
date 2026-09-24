@@ -16,9 +16,7 @@ void main() {
           'EUR': BigInt.from(125000),
           'USD': BigInt.from(5000),
         },
-        expenseMinorByCurrency: {
-          'EUR': BigInt.from(45000),
-        },
+        expenseMinorByCurrency: {'EUR': BigInt.from(45000)},
         balanceMinorByCurrency: {
           'EUR': BigInt.from(80000),
           'USD': BigInt.from(5000),

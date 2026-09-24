@@ -16,40 +16,40 @@ void main() {
   final eur = Currency('EUR');
 
   FakeAccountRepository accounts() => FakeAccountRepository(
-        accountsByBudget: {
-          'budget-1': [
-            BudgetAccount(
-              id: 'account-1',
-              budgetId: 'budget-1',
-              name: 'Карта',
-              openingBalanceMinor: BigInt.zero,
-              currency: eur,
-              isArchived: false,
-            ),
-          ],
-        },
-      );
+    accountsByBudget: {
+      'budget-1': [
+        BudgetAccount(
+          id: 'account-1',
+          budgetId: 'budget-1',
+          name: 'Карта',
+          openingBalanceMinor: BigInt.zero,
+          currency: eur,
+          isArchived: false,
+        ),
+      ],
+    },
+  );
 
   FakeCategoryRepository categories() => FakeCategoryRepository(
-        categoriesByBudget: {
-          'budget-1': const [
-            BudgetCategory(
-              id: 'expense-food',
-              budgetId: 'budget-1',
-              name: 'Продукты',
-              kind: CategoryKind.expense,
-              isArchived: false,
-            ),
-            BudgetCategory(
-              id: 'income-salary',
-              budgetId: 'budget-1',
-              name: 'Зарплата',
-              kind: CategoryKind.income,
-              isArchived: false,
-            ),
-          ],
-        },
-      );
+    categoriesByBudget: {
+      'budget-1': const [
+        BudgetCategory(
+          id: 'expense-food',
+          budgetId: 'budget-1',
+          name: 'Продукты',
+          kind: CategoryKind.expense,
+          isArchived: false,
+        ),
+        BudgetCategory(
+          id: 'income-salary',
+          budgetId: 'budget-1',
+          name: 'Зарплата',
+          kind: CategoryKind.income,
+          isArchived: false,
+        ),
+      ],
+    },
+  );
 
   test('creates expense with current user as author', () async {
     final accountRepository = accounts();
@@ -77,10 +77,7 @@ void main() {
     expect(transaction.authorId, 'user-1');
     expect(transaction.description, 'Завтрак');
     expect(transaction.amount.minorUnits, BigInt.from(1250));
-    expect(
-      transactionRepository.snapshot('budget-1'),
-      [transaction],
-    );
+    expect(transactionRepository.snapshot('budget-1'), [transaction]);
   });
 
   test('rejects category incompatible with transaction type', () async {
@@ -153,8 +150,11 @@ void main() {
     expect(updated.authorId, 'user-1');
     expect(updated.amount.minorUnits, BigInt.from(2500));
     expect(updated.description, 'Магазин');
-    expect(updated.updatedAt.isAfter(created.updatedAt) ||
-        updated.updatedAt.isAtSameMomentAs(created.updatedAt), isTrue);
+    expect(
+      updated.updatedAt.isAfter(created.updatedAt) ||
+          updated.updatedAt.isAtSameMomentAs(created.updatedAt),
+      isTrue,
+    );
   });
 
   test('soft delete removes transaction from active stream', () async {
@@ -179,10 +179,7 @@ void main() {
       categoryId: 'expense-food',
     );
 
-    await delete(
-      budgetId: 'budget-1',
-      transactionId: created.id,
-    );
+    await delete(budgetId: 'budget-1', transactionId: created.id);
 
     expect(transactionRepository.snapshot('budget-1'), isEmpty);
   });

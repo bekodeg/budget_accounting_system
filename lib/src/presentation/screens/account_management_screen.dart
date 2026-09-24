@@ -42,10 +42,7 @@ final class AccountManagementScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _edit(
-    BuildContext context,
-    BudgetAccount account,
-  ) async {
+  Future<void> _edit(BuildContext context, BudgetAccount account) async {
     final draft = await showDialog<_AccountDraft>(
       context: context,
       builder: (context) => _AccountEditorDialog(account: account),
@@ -71,10 +68,7 @@ final class AccountManagementScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _archive(
-    BuildContext context,
-    BudgetAccount account,
-  ) async {
+  Future<void> _archive(BuildContext context, BudgetAccount account) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -100,14 +94,12 @@ final class AccountManagementScreen extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
 
     try {
-      await services.archiveAccount(
-        budgetId: budgetId,
-        accountId: account.id,
-      );
+      await services.archiveAccount(budgetId: budgetId, accountId: account.id);
     } on AccountError catch (error) {
       if (context.mounted) _showMessage(context, error.message);
     } on Object {
-      if (context.mounted) _showMessage(context, 'Не удалось архивировать счет.');
+      if (context.mounted)
+        _showMessage(context, 'Не удалось архивировать счет.');
     }
   }
 
@@ -120,10 +112,7 @@ final class AccountManagementScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<BudgetAccount>>(
-      stream: services.watchBudgetAccounts(
-        budgetId,
-        includeArchived: true,
-      ),
+      stream: services.watchBudgetAccounts(budgetId, includeArchived: true),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(child: Text('Не удалось загрузить счета.'));
@@ -239,10 +228,7 @@ final class _AccountTile extends StatelessWidget {
             }
           },
           itemBuilder: (context) => const [
-            PopupMenuItem(
-              value: _AccountAction.edit,
-              child: Text('Изменить'),
-            ),
+            PopupMenuItem(value: _AccountAction.edit, child: Text('Изменить')),
             PopupMenuItem(
               value: _AccountAction.archive,
               child: Text('Архивировать'),

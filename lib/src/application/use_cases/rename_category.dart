@@ -6,10 +6,7 @@ final class RenameCategory {
 
   final CategoryRepository _repository;
 
-  Future<void> call({
-    required String categoryId,
-    required String name,
-  }) {
+  Future<void> call({required String categoryId, required String name}) {
     final normalizedName = name.trim();
     if (normalizedName.isEmpty) {
       throw const CategoryError(

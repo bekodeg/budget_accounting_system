@@ -30,10 +30,7 @@ void main() {
     expect(account.id, 'account-1');
     expect(account.name, 'Карта');
     expect(account.openingBalanceMinor, BigInt.from(-1250));
-    expect(
-      repository.snapshot('budget-1', includeArchived: false),
-      [account],
-    );
+    expect(repository.snapshot('budget-1', includeArchived: false), [account]);
   });
 
   test('rejects empty account name', () async {
@@ -167,42 +164,40 @@ void main() {
     );
   });
 
-  test('archive keeps account in full history and balance remains readable', () async {
-    final account = BudgetAccount(
-      id: 'account-1',
-      budgetId: 'budget-1',
-      name: 'Карта',
-      openingBalanceMinor: BigInt.from(10000),
-      currency: eur,
-      isArchived: false,
-    );
-    final repository = FakeAccountRepository(
-      accountsByBudget: {
-        'budget-1': [account],
-      },
-      transactionDeltaByAccount: {
-        'account-1': BigInt.from(2500),
-      },
-    );
-    final archive = ArchiveAccount(repository);
-    final balance = GetAccountBalance(repository);
-
-    await archive(budgetId: 'budget-1', accountId: 'account-1');
-
-    expect(
-      repository.snapshot('budget-1', includeArchived: false),
-      isEmpty,
-    );
-    expect(
-      repository.snapshot('budget-1', includeArchived: true),
-      hasLength(1),
-    );
-    expect(
-      (await balance(
+  test(
+    'archive keeps account in full history and balance remains readable',
+    () async {
+      final account = BudgetAccount(
+        id: 'account-1',
         budgetId: 'budget-1',
-        accountId: 'account-1',
-      )).minorUnits,
-      BigInt.from(12500),
-    );
-  });
+        name: 'Карта',
+        openingBalanceMinor: BigInt.from(10000),
+        currency: eur,
+        isArchived: false,
+      );
+      final repository = FakeAccountRepository(
+        accountsByBudget: {
+          'budget-1': [account],
+        },
+        transactionDeltaByAccount: {'account-1': BigInt.from(2500)},
+      );
+      final archive = ArchiveAccount(repository);
+      final balance = GetAccountBalance(repository);
+
+      await archive(budgetId: 'budget-1', accountId: 'account-1');
+
+      expect(repository.snapshot('budget-1', includeArchived: false), isEmpty);
+      expect(
+        repository.snapshot('budget-1', includeArchived: true),
+        hasLength(1),
+      );
+      expect(
+        (await balance(
+          budgetId: 'budget-1',
+          accountId: 'account-1',
+        )).minorUnits,
+        BigInt.from(12500),
+      );
+    },
+  );
 }

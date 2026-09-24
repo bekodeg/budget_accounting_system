@@ -8,9 +8,9 @@ final class AppStartupState {
   });
 
   const AppStartupState.onboarding()
-      : userId = null,
-        budgets = const [],
-        selectedBudgetId = null;
+    : userId = null,
+      budgets = const [],
+      selectedBudgetId = null;
 
   final String? userId;
   final List<BudgetSummary> budgets;

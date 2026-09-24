@@ -12,9 +12,9 @@ final class UpdateTransaction {
     required TransactionRepository transactionRepository,
     required RequireAccountInBudget requireAccountInBudget,
     required RequireCategoryInBudget requireCategoryInBudget,
-  })  : _transactionRepository = transactionRepository,
-        _requireAccountInBudget = requireAccountInBudget,
-        _requireCategoryInBudget = requireCategoryInBudget;
+  }) : _transactionRepository = transactionRepository,
+       _requireAccountInBudget = requireAccountInBudget,
+       _requireCategoryInBudget = requireCategoryInBudget;
 
   final TransactionRepository _transactionRepository;
   final RequireAccountInBudget _requireAccountInBudget;

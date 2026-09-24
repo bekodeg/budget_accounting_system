@@ -7,8 +7,8 @@ final class SelectBudget {
   const SelectBudget({
     required BudgetRepository budgetRepository,
     required SessionStore sessionStore,
-  })  : _budgetRepository = budgetRepository,
-        _sessionStore = sessionStore;
+  }) : _budgetRepository = budgetRepository,
+       _sessionStore = sessionStore;
 
   final BudgetRepository _budgetRepository;
   final SessionStore _sessionStore;
@@ -27,10 +27,7 @@ final class SelectBudget {
       );
     }
 
-    await _sessionStore.saveSession(
-      userId: userId,
-      budgetId: budgetId,
-    );
+    await _sessionStore.saveSession(userId: userId, budgetId: budgetId);
 
     return AppSession(userId: userId, budgetId: budgetId);
   }

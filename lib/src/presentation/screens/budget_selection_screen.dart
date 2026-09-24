@@ -79,9 +79,7 @@ final class _BudgetSelectionScreenState extends State<BudgetSelectionScreen> {
               child: Text(
                 _errorMessage!,
                 key: const ValueKey('budget-selection-error'),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
         ],

@@ -57,21 +57,15 @@ AppServices fakeAppServices({
   final accounts = accountRepository ?? FakeAccountRepository();
   final transactions = transactionRepository ?? FakeTransactionRepository();
   final dashboard = dashboardRepository ?? FakeDashboardRepository();
-  final ids = idGenerator ?? FakeIdGenerator([
-    'user-1',
-    'budget-1',
-    'entity-1',
-    'entity-2',
-  ]);
+  final ids =
+      idGenerator ??
+      FakeIdGenerator(['user-1', 'budget-1', 'entity-1', 'entity-2']);
 
   return AppServices(
     applyCategoryTemplates: ApplyCategoryTemplates(categories),
     archiveAccount: ArchiveAccount(accounts),
     archiveCategory: ArchiveCategory(categories),
-    createAccount: CreateAccount(
-      accountRepository: accounts,
-      idGenerator: ids,
-    ),
+    createAccount: CreateAccount(accountRepository: accounts, idGenerator: ids),
     createCategory: CreateCategory(
       categoryRepository: categories,
       idGenerator: ids,
@@ -185,17 +179,13 @@ final class FakeBudgetRepository implements BudgetRepository {
 
   @override
   Future<List<BudgetSummary>> getBudgetsForUser(String userId) async {
-    return List<BudgetSummary>.unmodifiable(
-      budgetsByUser[userId] ?? const [],
-    );
+    return List<BudgetSummary>.unmodifiable(budgetsByUser[userId] ?? const []);
   }
 
   @override
   Stream<List<BudgetSummary>> watchBudgetsForUser(String userId) {
     return Stream.value(
-      List<BudgetSummary>.unmodifiable(
-        budgetsByUser[userId] ?? const [],
-      ),
+      List<BudgetSummary>.unmodifiable(budgetsByUser[userId] ?? const []),
     );
   }
 }
@@ -204,8 +194,8 @@ final class FakeCategoryRepository implements CategoryRepository {
   FakeCategoryRepository({
     List<CategoryTemplate>? templates,
     Map<String, List<BudgetCategory>>? categoriesByBudget,
-  })  : templates = templates ?? const [],
-        categoriesByBudget = categoriesByBudget ?? {};
+  }) : templates = templates ?? const [],
+       categoriesByBudget = categoriesByBudget ?? {};
 
   final List<CategoryTemplate> templates;
   final Map<String, List<BudgetCategory>> categoriesByBudget;
@@ -320,9 +310,9 @@ final class FakeAccountRepository implements AccountRepository {
     Map<String, List<BudgetAccount>>? accountsByBudget,
     Map<String, BigInt>? transactionDeltaByAccount,
     Set<String>? accountsWithTransactions,
-  })  : accountsByBudget = accountsByBudget ?? {},
-        transactionDeltaByAccount = transactionDeltaByAccount ?? {},
-        accountsWithTransactions = accountsWithTransactions ?? {};
+  }) : accountsByBudget = accountsByBudget ?? {},
+       transactionDeltaByAccount = transactionDeltaByAccount ?? {},
+       accountsWithTransactions = accountsWithTransactions ?? {};
 
   final Map<String, List<BudgetAccount>> accountsByBudget;
   final Map<String, BigInt> transactionDeltaByAccount;
@@ -374,10 +364,7 @@ final class FakeAccountRepository implements AccountRepository {
     required String budgetId,
     required String accountId,
   }) async {
-    final account = await findAccount(
-      budgetId: budgetId,
-      accountId: accountId,
-    );
+    final account = await findAccount(budgetId: budgetId, accountId: accountId);
     return account != null && accountsWithTransactions.contains(accountId);
   }
 
@@ -418,14 +405,12 @@ final class FakeAccountRepository implements AccountRepository {
     required String budgetId,
     required String accountId,
   }) async {
-    final account = await findAccount(
-      budgetId: budgetId,
-      accountId: accountId,
-    );
+    final account = await findAccount(budgetId: budgetId, accountId: accountId);
     if (account == null) return null;
     return AccountBalance(
       accountId: account.id,
-      minorUnits: account.openingBalanceMinor +
+      minorUnits:
+          account.openingBalanceMinor +
           (transactionDeltaByAccount[account.id] ?? BigInt.zero),
       currency: account.currency,
     );
@@ -434,13 +419,14 @@ final class FakeAccountRepository implements AccountRepository {
 
 final class FakeDashboardRepository implements DashboardRepository {
   FakeDashboardRepository({DashboardSummary? summary})
-      : summary = summary ??
-            DashboardSummary(
-              monthStart: DateTime(2026, 9),
-              incomeMinorByCurrency: const {},
-              expenseMinorByCurrency: const {},
-              balanceMinorByCurrency: const {},
-            );
+    : summary =
+          summary ??
+          DashboardSummary(
+            monthStart: DateTime(2026, 9),
+            incomeMinorByCurrency: const {},
+            expenseMinorByCurrency: const {},
+            balanceMinorByCurrency: const {},
+          );
 
   DashboardSummary summary;
   final StreamController<DashboardSummary> _changes =
@@ -492,30 +478,32 @@ final class FakeTransactionRepository implements TransactionRepository {
     TransactionFilter filter,
   ) async* {
     List<BudgetTransactionEntry> apply() {
-      return snapshot(filter.budgetId).where((item) {
-        if (filter.fromInclusive != null &&
-            item.occurredAt.isBefore(filter.fromInclusive!)) {
-          return false;
-        }
-        if (filter.toExclusive != null &&
-            !item.occurredAt.isBefore(filter.toExclusive!)) {
-          return false;
-        }
-        if (filter.type != null && item.type != filter.type) return false;
-        if (filter.categoryId != null &&
-            item.categoryId != filter.categoryId) {
-          return false;
-        }
-        if (filter.accountId != null &&
-            item.accountId != filter.accountId &&
-            item.destinationAccountId != filter.accountId) {
-          return false;
-        }
-        if (filter.authorId != null && item.authorId != filter.authorId) {
-          return false;
-        }
-        return true;
-      }).toList(growable: false);
+      return snapshot(filter.budgetId)
+          .where((item) {
+            if (filter.fromInclusive != null &&
+                item.occurredAt.isBefore(filter.fromInclusive!)) {
+              return false;
+            }
+            if (filter.toExclusive != null &&
+                !item.occurredAt.isBefore(filter.toExclusive!)) {
+              return false;
+            }
+            if (filter.type != null && item.type != filter.type) return false;
+            if (filter.categoryId != null &&
+                item.categoryId != filter.categoryId) {
+              return false;
+            }
+            if (filter.accountId != null &&
+                item.accountId != filter.accountId &&
+                item.destinationAccountId != filter.accountId) {
+              return false;
+            }
+            if (filter.authorId != null && item.authorId != filter.authorId) {
+              return false;
+            }
+            return true;
+          })
+          .toList(growable: false);
     }
 
     yield apply();

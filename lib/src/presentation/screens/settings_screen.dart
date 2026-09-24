@@ -30,10 +30,7 @@ final class SettingsScreen extends StatelessWidget {
           Expanded(
             child: TabBarView(
               children: [
-                AccountManagementScreen(
-                  services: services,
-                  budgetId: budgetId,
-                ),
+                AccountManagementScreen(services: services, budgetId: budgetId),
                 CategoryManagementScreen(
                   services: services,
                   budgetId: budgetId,

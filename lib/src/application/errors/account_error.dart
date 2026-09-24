@@ -5,10 +5,7 @@ enum AccountErrorCode {
 }
 
 final class AccountError implements Exception {
-  const AccountError({
-    required this.code,
-    required this.message,
-  });
+  const AccountError({required this.code, required this.message});
 
   final AccountErrorCode code;
   final String message;
