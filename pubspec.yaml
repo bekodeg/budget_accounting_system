@@ -1,7 +1,7 @@
 name: budget_accounting_system
 description: Offline-first household budget accounting application.
 publish_to: "none"
-version: 0.1.0+1
+version: 0.1.0+2
 
 environment:
   sdk: ">=3.11.0 <4.0.0"

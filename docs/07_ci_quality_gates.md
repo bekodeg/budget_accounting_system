@@ -58,8 +58,10 @@ feature/*, fix/*, chore/*
 7. запускает `flutter analyze`;
 8. запускает полный `flutter test --coverage`;
 9. публикует coverage summary и LCOV artifact;
-10. собирает Android debug APK;
-11. публикует APK для ручного тестирования.
+10. восстанавливает постоянный Android release keystore из GitHub Actions Secrets;
+11. проверяет SHA-256 отпечаток сертификата подписи;
+12. собирает подписанный Android release APK;
+13. публикует APK для ручного тестирования.
 
 Coverage хранится 7 дней. Stage APK хранится 3 дня, чтобы не расходовать artifact storage дольше необходимого.
 
@@ -273,7 +275,7 @@ Release workflow **не пересобирает Android**. Он использ�
 2. определяет второй parent как протестированный `stage` SHA;
 3. проверяет, что дерево файлов `main` совпадает с деревом этого `stage` SHA;
 4. находит успешный push-run `Stage CI` для exact stage SHA;
-5. скачивает artifact `stage-budget-accounting-debug-apk`;
+5. скачивает artifact `stage-budget-accounting-release-apk`;
 6. вычисляет SHA-256 APK;
 7. создает GitHub Release и прикладывает APK и файл checksum;
 8. генерирует release notes средствами GitHub.
@@ -292,7 +294,69 @@ Budget Accounting 0.1.0+1 · main #<run-number>
 
 Workflow идемпотентен: повторный запуск не создает второй release с тем же тегом.
 
-На текущем этапе в GitHub Release публикуется **debug APK**, потому что signing/release keystore еще не настроен. Это пригодный для ручной установки тестовый бинарник, но не production artifact для Google Play. Когда появится release signing, Stage CI должен формировать подписанный release APK/AAB, а release workflow сможет переиспользовать его тем же способом.
+В GitHub Release публикуется **подписанный release APK**, собранный на `stage`. Один и тот же Android signing key должен использоваться для всех последующих версий приложения: это позволяет устанавливать обновления поверх уже установленной версии без удаления локальных данных.
+
+## Постоянная Android-подпись
+
+Keystore никогда не коммитится в Git. Stage CI получает его только из GitHub Actions Secrets и восстанавливает во временный файл внутри runner.
+
+Нужно один раз создать production/test release key на доверенной машине, например:
+
+```bash
+keytool -genkeypair \
+  -v \
+  -keystore budget-accounting-release.jks \
+  -alias budget-accounting \
+  -keyalg RSA \
+  -keysize 4096 \
+  -validity 10000
+```
+
+После создания ключа сохранить резервную копию keystore вне GitHub. Потеря этого файла или паролей приведет к невозможности выпускать APK, которые Android сможет установить как обновление существующего приложения.
+
+Получить SHA-256 сертификата:
+
+```bash
+keytool -list -v \
+  -keystore budget-accounting-release.jks \
+  -alias budget-accounting
+```
+
+Для Linux/macOS получить base64 без переносов строк:
+
+```bash
+base64 < budget-accounting-release.jks | tr -d '\n'
+```
+
+В GitHub открыть:
+
+```text
+Repository
+  -> Settings
+  -> Secrets and variables
+  -> Actions
+  -> New repository secret
+```
+
+Создать пять secrets:
+
+```text
+ANDROID_KEYSTORE_BASE64
+ANDROID_KEYSTORE_PASSWORD
+ANDROID_KEY_ALIAS
+ANDROID_KEY_PASSWORD
+ANDROID_CERT_SHA256
+```
+
+`ANDROID_CERT_SHA256` содержит SHA-256 fingerprint сертификата. Stage CI нормализует регистр и двоеточия и сравнивает фактический fingerprint с закрепленным значением. Это предохраняет release chain от случайной замены keystore.
+
+Стабильный Android application id зафиксирован как:
+
+```text
+com.bekodeg.budget_accounting_system
+```
+
+Его нельзя менять между версиями, которые должны обновляться поверх уже установленного приложения.
 
 ## Почему main не запускает тяжелый CI повторно
 

@@ -139,13 +139,102 @@ jobs:
           --no-pub
           .
 
-      - name: Build Android debug APK
-        run: flutter build apk --debug
+      - name: Validate Android signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        shell: bash
+        run: |
+          for name in             ANDROID_KEYSTORE_BASE64             ANDROID_KEYSTORE_PASSWORD             ANDROID_KEY_ALIAS             ANDROID_KEY_PASSWORD             ANDROID_CERT_SHA256; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: $name"
+              exit 1
+            fi
+          done
 
-      - name: Upload stage APK
+      - name: Restore Android release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          keystore_path="$RUNNER_TEMP/budget-accounting-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$keystore_path"
+          test -s "$keystore_path"
+          chmod 600 "$keystore_path"
+          echo "ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      - name: Verify Android signing certificate
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        shell: bash
+        run: |
+          cert_output="$RUNNER_TEMP/android-signing-certificate.txt"
+          keytool_error="$RUNNER_TEMP/android-signing-keytool-error.txt"
+
+          if ! keytool -list -v \
+            -keystore "$ANDROID_KEYSTORE_PATH" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" \
+            > "$cert_output" 2> "$keytool_error"; then
+            if grep -Eqi 'password.*incorrect|tampered with|password was incorrect' "$keytool_error"; then
+              echo "Android keystore password was rejected."
+            elif grep -Eqi 'invalid keystore format|not a keystore' "$keytool_error"; then
+              echo "Decoded Android keystore is invalid."
+            elif grep -Eqi 'alias.*does not exist|alias.*not found' "$keytool_error"; then
+              echo "Android key alias was not found in the keystore."
+            else
+              echo "Unable to inspect Android signing keystore with keytool."
+            fi
+            exit 1
+          fi
+
+          actual="$(
+            awk -F': ' '/SHA256:/{if (value == "") value=$2} END{print value}' "$cert_output" |
+              tr -d ':[:space:]' |
+              tr '[:lower:]' '[:upper:]'
+          )"
+          expected="$(
+            printf '%s' "$ANDROID_CERT_SHA256" |
+              sed -E 's/^[[:space:]]*SHA256[[:space:]]*:[[:space:]]*//' |
+              tr -d ':[:space:]' |
+              tr '[:lower:]' '[:upper:]'
+          )"
+
+          if [ -z "$actual" ]; then
+            echo "Unable to read SHA-256 fingerprint from the Android signing certificate."
+            exit 1
+          fi
+
+          if [ "$actual" != "$expected" ]; then
+            pretty_actual="$(printf '%s' "$actual" | sed 's/../&:/g; s/:$//')"
+            echo "Android signing certificate SHA-256 does not match the pinned value."
+            echo "Actual certificate SHA-256: $pretty_actual"
+            exit 1
+          fi
+
+      - name: Configure Android release signing
+        run: python3 tool/configure_android_release_signing.py
+
+      - name: Build signed Android release APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: flutter build apk --release
+
+      - name: Verify release APK exists
+        shell: bash
+        run: test -s build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload signed stage APK
         uses: actions/upload-artifact@v7
         with:
-          name: stage-budget-accounting-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: stage-budget-accounting-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 3
