@@ -90,7 +90,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-artifacts
-          gh run download "$STAGE_RUN_ID"             --repo "$GITHUB_REPOSITORY"             --name stage-budget-accounting-debug-apk             --dir release-artifacts
+          gh run download "$STAGE_RUN_ID"             --repo "$GITHUB_REPOSITORY"             --name stage-budget-accounting-release-apk             --dir release-artifacts
 
       - name: Prepare release assets
         id: assets
@@ -146,5 +146,5 @@ jobs:
             echo "- App version: $APP_VERSION"
             echo "- Tested stage commit: $STAGE_SHA"
             echo "- Stage CI run: $STAGE_RUN_ID"
-            echo "- Android artifact: tested stage debug APK"
+            echo "- Android artifact: tested, persistently signed stage release APK"
           } >> "$GITHUB_STEP_SUMMARY"
