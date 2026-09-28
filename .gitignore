@@ -17,6 +17,8 @@ build/
 .vscode/
 
 # Android
+*.jks
+*.keystore
 android/.gradle/
 android/local.properties
 android/key.properties
