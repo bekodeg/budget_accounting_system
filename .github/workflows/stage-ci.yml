@@ -180,7 +180,9 @@ jobs:
           )"
 
           if [ -z "$actual" ] || [ "$actual" != "$expected" ]; then
+            pretty_actual="$(printf '%s' "$actual" | sed 's/../&:/g; s/:$//')"
             echo "Android signing certificate SHA-256 does not match the pinned value."
+            echo "Actual certificate SHA-256: $pretty_actual"
             exit 1
           fi
 
