@@ -173,7 +173,7 @@ jobs:
         shell: bash
         run: |
           actual="$(
-            keytool -list -v               -keystore "$ANDROID_KEYSTORE_PATH"               -storepass "$ANDROID_KEYSTORE_PASSWORD"               -alias "$ANDROID_KEY_ALIAS"               | awk -F': ' '/SHA256:/{print $2; exit}'               | tr -d ':[:space:]'               | tr '[:lower:]' '[:upper:]'
+            keytool -list -v               -keystore "$ANDROID_KEYSTORE_PATH"               -storepass "$ANDROID_KEYSTORE_PASSWORD"               -alias "$ANDROID_KEY_ALIAS"               | awk -F': ' '/SHA256:/{if (value == "") value=$2} END{print value}'               | tr -d ':[:space:]'               | tr '[:lower:]' '[:upper:]'
           )"
           expected="$(
             printf '%s' "$ANDROID_CERT_SHA256"               | sed -E 's/^[[:space:]]*SHA256[[:space:]]*:[[:space:]]*//'               | tr -d ':[:space:]'               | tr '[:lower:]' '[:upper:]'
