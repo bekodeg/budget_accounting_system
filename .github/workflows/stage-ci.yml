@@ -173,14 +173,47 @@ jobs:
         shell: bash
         run: |
           actual="$(
-            keytool -list -v               -keystore "$ANDROID_KEYSTORE_PATH"               -storepass "$ANDROID_KEYSTORE_PASSWORD"               -alias "$ANDROID_KEY_ALIAS"               | awk -F': ' '/SHA256:/{print $2; exit}'               | tr -d ':[:space:]'               | tr '[:lower:]' '[:upper:]'
-          )"
-          expected="$(
-            printf '%s' "$ANDROID_CERT_SHA256"               | sed -E 's/^[[:space:]]*SHA256[[:space:]]*:[[:space:]]*//'               | tr -d ':[:space:]'               | tr '[:lower:]' '[:upper:]'
+            keytool -list -v               -keystore "$ANDROID_KEYSTORE_PATH"               -storepass "$ANDROID_KEYSTORE_PASSWORD"               -alias "$ANDROID_KEY_ALIAS"               | awk -F': ' '/SHA-?256:/{print $2; exit}'               | tr -d ':[:space:]'               | tr '[:lower:]' '[:upper:]'
           )"
 
-          if [ -z "$actual" ] || [ "$actual" != "$expected" ]; then
+          expected_line="$(
+            printf '%s\n' "$ANDROID_CERT_SHA256"               | grep -Eim1 'SHA-?256[[:space:]]*:|^([0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}$|^[0-9A-Fa-f]{64}
+      - name: Configure Android release signing
+        run: python3 tool/configure_android_release_signing.py
+
+      - name: Build signed Android release APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: flutter build apk --release
+
+      - name: Verify release APK exists
+        shell: bash
+        run: test -s build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload signed stage APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: stage-budget-accounting-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 3
+               || true
+          )"
+          expected="$(
+            printf '%s' "$expected_line"               | sed -E 's/^.*SHA-?256[[:space:]]*:[[:space:]]*//'               | tr -d ':[:space:]'               | tr '[:lower:]' '[:upper:]'
+          )"
+
+          if [ -z "$actual" ]; then
+            echo "Unable to read SHA-256 fingerprint from the Android signing certificate."
+            exit 1
+          fi
+
+          if [ -z "$expected" ] || [ "$actual" != "$expected" ]; then
+            pretty_actual="$(printf '%s' "$actual" | sed 's/../&:/g; s/:$//')"
             echo "Android signing certificate SHA-256 does not match the pinned value."
+            echo "Actual certificate SHA-256: $pretty_actual"
             exit 1
           fi
 
