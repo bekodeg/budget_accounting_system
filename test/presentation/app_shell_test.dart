@@ -28,7 +28,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.event_note_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('section-planning')), findsOneWidget);
+    expect(find.byKey(const ValueKey('monthly-plan-screen')), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.bar_chart_outlined));
     await tester.pumpAndSettle();

@@ -122,4 +122,5 @@ dart run drift_dev make-migrations
 - [Журнал операций и фильтры](docs/13_transaction_journal.md)
 - [Dashboard бюджета](docs/14_dashboard.md)
 - [Issues, ошибки и ветки исправлений](docs/15_issue_and_bug_workflow.md)
+- [Месячный план по категориям](docs/15_monthly_plans.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
