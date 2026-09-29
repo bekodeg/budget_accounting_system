@@ -30,5 +30,12 @@ abstract interface class AccountRepository {
   Future<AccountBalance?> getBalance({
     required String budgetId,
     required String accountId,
+    DateTime? atInclusive,
+  });
+
+  Future<List<AccountBalance>> getBalances({
+    required String budgetId,
+    required bool includeArchived,
+    DateTime? atInclusive,
   });
 }
