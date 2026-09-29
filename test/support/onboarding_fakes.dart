@@ -13,6 +13,7 @@ import 'package:budget_accounting_system/src/application/use_cases/create_transa
 import 'package:budget_accounting_system/src/application/use_cases/create_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/delete_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_account_balance.dart';
+import 'package:budget_accounting_system/src/application/use_cases/get_budget_account_balances.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_account_in_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_category_in_budget.dart';
@@ -95,6 +96,7 @@ AppServices fakeAppServices({
       idGenerator: ids,
     ),
     getAccountBalance: GetAccountBalance(accounts),
+    getBudgetAccountBalances: GetBudgetAccountBalances(accounts),
     renameCategory: RenameCategory(categories),
     requireAccountInBudget: RequireAccountInBudget(accounts),
     requireCategoryInBudget: RequireCategoryInBudget(categories),
@@ -416,6 +418,7 @@ final class FakeAccountRepository implements AccountRepository {
   Future<AccountBalance?> getBalance({
     required String budgetId,
     required String accountId,
+    DateTime? atInclusive,
   }) async {
     final account = await findAccount(budgetId: budgetId, accountId: accountId);
     if (account == null) return null;
@@ -426,6 +429,28 @@ final class FakeAccountRepository implements AccountRepository {
           (transactionDeltaByAccount[account.id] ?? BigInt.zero),
       currency: account.currency,
     );
+  }
+
+  @override
+  Future<List<AccountBalance>> getBalances({
+    required String budgetId,
+    required bool includeArchived,
+    DateTime? atInclusive,
+  }) async {
+    final accounts = snapshot(
+      budgetId,
+      includeArchived: includeArchived,
+    );
+    return [
+      for (final account in accounts)
+        AccountBalance(
+          accountId: account.id,
+          minorUnits:
+              account.openingBalanceMinor +
+              (transactionDeltaByAccount[account.id] ?? BigInt.zero),
+          currency: account.currency,
+        ),
+    ];
   }
 }
 
