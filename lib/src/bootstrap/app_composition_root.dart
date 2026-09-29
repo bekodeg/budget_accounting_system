@@ -14,6 +14,7 @@ import '../application/use_cases/require_account_in_budget.dart';
 import '../application/use_cases/require_category_in_budget.dart';
 import '../application/use_cases/resolve_app_startup.dart';
 import '../application/use_cases/select_budget.dart';
+import '../application/use_cases/set_monthly_plan_amount.dart';
 import '../application/use_cases/update_account.dart';
 import '../application/use_cases/update_transaction.dart';
 import '../application/use_cases/update_transfer.dart';
@@ -21,6 +22,7 @@ import '../application/use_cases/watch_budget_accounts.dart';
 import '../application/use_cases/watch_budget_categories.dart';
 import '../application/use_cases/watch_dashboard_summary.dart';
 import '../application/use_cases/watch_filtered_transactions.dart';
+import '../application/use_cases/watch_monthly_plan.dart';
 import '../application/use_cases/watch_transactions.dart';
 import '../application/use_cases/watch_user_budgets.dart';
 import '../data/dal/dal.dart';
@@ -29,6 +31,7 @@ import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
+import '../data/repositories/drift_plan_repository.dart';
 import '../data/repositories/drift_transaction_repository.dart';
 import '../data/services/secure_id_generator.dart';
 
@@ -45,6 +48,7 @@ final class AppCompositionRoot {
     final accountRepository = DriftAccountRepository(dal.categoriesAndAccounts);
     final transactionRepository = DriftTransactionRepository(dal.transactions);
     final dashboardRepository = DriftDashboardRepository(dal.reports);
+    final planRepository = DriftPlanRepository(dal.plansAndReceipts);
     final sessionStore = SharedPreferencesSessionStore();
     final idGenerator = SecureIdGenerator();
     final requireAccountInBudget = RequireAccountInBudget(accountRepository);
@@ -94,6 +98,11 @@ final class AppCompositionRoot {
           budgetRepository: budgetRepository,
           sessionStore: sessionStore,
         ),
+        setMonthlyPlanAmount: SetMonthlyPlanAmount(
+          planRepository: planRepository,
+          categoryRepository: categoryRepository,
+          idGenerator: idGenerator,
+        ),
         updateAccount: UpdateAccount(accountRepository),
         updateTransaction: UpdateTransaction(
           transactionRepository: transactionRepository,
@@ -110,6 +119,7 @@ final class AppCompositionRoot {
         watchFilteredTransactions: WatchFilteredTransactions(
           transactionRepository,
         ),
+        watchMonthlyPlan: WatchMonthlyPlan(planRepository),
         watchTransactions: WatchTransactions(transactionRepository),
         watchUserBudgets: WatchUserBudgets(budgetRepository),
       ),
