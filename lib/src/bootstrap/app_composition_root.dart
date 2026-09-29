@@ -9,6 +9,7 @@ import '../application/use_cases/create_transaction.dart';
 import '../application/use_cases/create_transfer.dart';
 import '../application/use_cases/delete_transaction.dart';
 import '../application/use_cases/get_account_balance.dart';
+import '../application/use_cases/get_budget_account_balances.dart';
 import '../application/use_cases/rename_category.dart';
 import '../application/use_cases/require_account_in_budget.dart';
 import '../application/use_cases/require_category_in_budget.dart';
@@ -87,6 +88,7 @@ final class AppCompositionRoot {
         ),
         deleteTransaction: DeleteTransaction(transactionRepository),
         getAccountBalance: GetAccountBalance(accountRepository),
+        getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
         renameCategory: RenameCategory(categoryRepository),
         requireAccountInBudget: requireAccountInBudget,
         requireCategoryInBudget: requireCategoryInBudget,
