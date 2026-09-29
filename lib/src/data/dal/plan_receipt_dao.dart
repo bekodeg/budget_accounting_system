@@ -71,10 +71,10 @@ final class PlanReceiptDao {
     required String budgetId,
     required DateTime month,
     required String categoryId,
-  }) {
+  }) async {
     final normalizedMonth = DateTime(month.year, month.month);
 
-    return (_db.delete(_db.plans)
+    await (_db.delete(_db.plans)
           ..where(
             (row) =>
                 row.budgetId.equals(budgetId) &
