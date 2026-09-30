@@ -73,6 +73,7 @@ dart run build_runner build --delete-conflicting-outputs
 
 ```bash
 flutter create --platforms=android,ios .
+python3 tool/configure_lan_platform_permissions.py
 ```
 
 После этого:
@@ -127,4 +128,5 @@ dart run drift_dev make-migrations
 - [Локальная identity пользователя и устройства](docs/17_local_identity.md)
 - [Роли участников и авторизация бюджета](docs/18_budget_roles.md)
 - [Offline invitation через QR и файл](docs/19_offline_invites.md)
+- [P2P-соединение в локальной сети](docs/20_lan_p2p.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
