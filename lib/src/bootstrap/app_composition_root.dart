@@ -5,6 +5,7 @@ import '../application/services/lan_handshake_service.dart';
 import '../application/services/lan_peer_session_manager.dart';
 import '../application/services/lan_secure_session_service.dart';
 import '../application/services/lan_session_crypto.dart';
+import '../application/services/sync_coordinator_service.dart';
 import '../application/services/sync_session_service.dart';
 import '../application/services/session_sync_mutation_context_provider.dart';
 import '../application/use_cases/accept_budget_invite.dart';
@@ -160,6 +161,7 @@ final class AppCompositionRoot {
       signatureService: identitySignatureService,
     );
     final syncSessions = SyncSessionService(journal: syncJournal);
+    const syncCoordinator = SyncCoordinatorService();
     final lanPeerSessions = LanPeerSessionManager(
       authorization: authorization,
       getPublicIdentity: getPublicIdentity,
@@ -291,6 +293,7 @@ final class AppCompositionRoot {
         getPublicIdentity: getPublicIdentity,
         inspectBudgetInvite: inspectBudgetInvite,
         lanPeerSessions: lanPeerSessions,
+        syncCoordinator: syncCoordinator,
         syncSessions: syncSessions,
         pickBudgetInviteFile: PickBudgetInviteFile(inviteFileGateway),
         renameCategory: RenameCategory(
