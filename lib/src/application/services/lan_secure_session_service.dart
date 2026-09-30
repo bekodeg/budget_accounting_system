@@ -7,6 +7,7 @@ import '../../domain/models/lan_session.dart';
 import '../../domain/models/public_identity.dart';
 import '../ports/lan_transport_gateway.dart';
 import '../ports/secure_lan_channel.dart';
+import 'budget_transport_secret_manager.dart';
 import 'lan_handshake_service.dart';
 import 'lan_peer_hello_codec.dart';
 import 'lan_session_crypto.dart';
@@ -15,13 +16,16 @@ final class LanSecureSessionService {
   const LanSecureSessionService({
     required LanHandshakeService handshakeService,
     required LanSessionCrypto sessionCrypto,
+    required BudgetTransportSecretManager transportSecretManager,
     LanPeerHelloCodec helloCodec = const LanPeerHelloCodec(),
   }) : _handshakeService = handshakeService,
        _sessionCrypto = sessionCrypto,
+       _transportSecretManager = transportSecretManager,
        _helloCodec = helloCodec;
 
   final LanHandshakeService _handshakeService;
   final LanSessionCrypto _sessionCrypto;
+  final BudgetTransportSecretManager _transportSecretManager;
   final LanPeerHelloCodec _helloCodec;
 
   Future<SecureLanChannel> initiate({
@@ -84,7 +88,7 @@ final class LanSecureSessionService {
     required LanPeerHello localHello,
     required LanPeerHello remoteHello,
   }) async {
-    final secret = await _handshakeService.transportSecretFor(budgetId);
+    final secret = await _transportSecretManager.require(budgetId);
     final sessionKey = await _sessionCrypto.deriveSessionKey(
       budgetSecret: secret,
       local: localHello.peer,
