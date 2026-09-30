@@ -48,6 +48,40 @@ final class MonthlyReportRow {
   final int flag;
 }
 
+final class PeriodReportRow {
+  const PeriodReportRow({
+    required this.kind,
+    required this.keyId,
+    required this.label,
+    required this.currency,
+    required this.amountMinor,
+  });
+
+  final String kind;
+  final String? keyId;
+  final String? label;
+  final String? currency;
+  final BigInt amountMinor;
+}
+
+final class YearReportRow {
+  const YearReportRow({
+    required this.kind,
+    required this.monthNumber,
+    required this.keyId,
+    required this.label,
+    required this.currency,
+    required this.amountMinor,
+  });
+
+  final String kind;
+  final int monthNumber;
+  final String? keyId;
+  final String? label;
+  final String? currency;
+  final BigInt amountMinor;
+}
+
 final class ReportDao {
   ReportDao(this._db);
 
@@ -344,6 +378,294 @@ FROM account_balances
         );
   }
 
+  Stream<List<PeriodReportRow>> watchPeriodReportRows({
+    required String budgetId,
+    required DateTime fromInclusive,
+    required DateTime toExclusive,
+    required Set<String> categoryIds,
+    required Set<String> accountIds,
+    required Set<String> authorIds,
+  }) {
+    final flowFilter = _buildReportFilterSql(
+      alias: 't',
+      categoryIds: categoryIds,
+      accountIds: accountIds,
+      authorIds: authorIds,
+    );
+    final categoryFilter = _buildReportFilterSql(
+      alias: 't',
+      categoryIds: categoryIds,
+      accountIds: accountIds,
+      authorIds: authorIds,
+    );
+
+    final sql =
+        '''
+WITH flow AS (
+  SELECT
+    t.type AS key_id,
+    t.currency AS currency,
+    SUM(t.amount_minor) AS amount_minor
+  FROM transactions t
+  WHERE t.budget_id = ?
+    AND t.deleted_at IS NULL
+    AND t.occurred_at >= ?
+    AND t.occurred_at < ?
+    AND t.type IN ('INCOME', 'EXPENSE')
+    ${flowFilter.clause}
+  GROUP BY t.type, t.currency
+),
+category_actual AS (
+  SELECT
+    t.category_id AS key_id,
+    COALESCE(c.name, 'Без категории') AS label,
+    t.currency AS currency,
+    SUM(t.amount_minor) AS amount_minor
+  FROM transactions t
+  LEFT JOIN categories c
+    ON c.id = t.category_id
+    AND c.budget_id = t.budget_id
+  WHERE t.budget_id = ?
+    AND t.deleted_at IS NULL
+    AND t.occurred_at >= ?
+    AND t.occurred_at < ?
+    AND t.type = 'EXPENSE'
+    ${categoryFilter.clause}
+  GROUP BY t.category_id, c.name, t.currency
+)
+SELECT
+  'FLOW' AS row_kind,
+  key_id,
+  NULL AS label,
+  currency,
+  amount_minor
+FROM flow
+UNION ALL
+SELECT
+  'CATEGORY',
+  key_id,
+  label,
+  currency,
+  amount_minor
+FROM category_actual
+''';
+
+    return _db
+        .customSelect(
+          sql,
+          variables: [
+            Variable.withString(budgetId),
+            Variable.withDateTime(fromInclusive),
+            Variable.withDateTime(toExclusive),
+            ...flowFilter.variables,
+            Variable.withString(budgetId),
+            Variable.withDateTime(fromInclusive),
+            Variable.withDateTime(toExclusive),
+            ...categoryFilter.variables,
+          ],
+          readsFrom: {_db.budgetTransactions, _db.categories},
+        )
+        .watch()
+        .map(
+          (rows) => rows
+              .map(
+                (row) => PeriodReportRow(
+                  kind: row.read<String>('row_kind'),
+                  keyId: row.readNullable<String>('key_id'),
+                  label: row.readNullable<String>('label'),
+                  currency: row.readNullable<String>('currency'),
+                  amountMinor: BigInt.from(row.read<int>('amount_minor')),
+                ),
+              )
+              .toList(growable: false),
+        );
+  }
+
+  Stream<List<YearReportRow>> watchYearReportRows({
+    required String budgetId,
+    required int year,
+  }) {
+    final yearStart = DateTime(year);
+    final nextYear = DateTime(year + 1);
+
+    const sql = '''
+WITH budget_info AS (
+  SELECT base_currency
+  FROM budgets
+  WHERE id = ?
+  LIMIT 1
+),
+month_flow AS (
+  SELECT
+    CAST(strftime('%m', t.occurred_at, 'unixepoch') AS INTEGER) AS month_number,
+    t.type AS key_id,
+    t.currency AS currency,
+    SUM(t.amount_minor) AS amount_minor
+  FROM transactions t
+  WHERE t.budget_id = ?
+    AND t.deleted_at IS NULL
+    AND t.occurred_at >= ?
+    AND t.occurred_at < ?
+    AND t.type IN ('INCOME', 'EXPENSE')
+  GROUP BY month_number, t.type, t.currency
+),
+month_plan AS (
+  SELECT
+    CAST(strftime('%m', p.month, 'unixepoch') AS INTEGER) AS month_number,
+    SUM(p.planned_amount_minor) AS amount_minor
+  FROM plans p
+  WHERE p.budget_id = ?
+    AND p.month >= ?
+    AND p.month < ?
+  GROUP BY month_number
+),
+month_actual_base AS (
+  SELECT
+    CAST(strftime('%m', t.occurred_at, 'unixepoch') AS INTEGER) AS month_number,
+    SUM(t.amount_minor) AS amount_minor
+  FROM transactions t
+  JOIN budgets b ON b.id = t.budget_id
+  WHERE t.budget_id = ?
+    AND t.deleted_at IS NULL
+    AND t.occurred_at >= ?
+    AND t.occurred_at < ?
+    AND t.type = 'EXPENSE'
+    AND t.currency = b.base_currency
+  GROUP BY month_number
+),
+category_plan AS (
+  SELECT
+    p.category_id AS key_id,
+    c.name AS label,
+    b.base_currency AS currency,
+    SUM(p.planned_amount_minor) AS amount_minor
+  FROM plans p
+  JOIN categories c
+    ON c.id = p.category_id
+    AND c.budget_id = p.budget_id
+  JOIN budgets b ON b.id = p.budget_id
+  WHERE p.budget_id = ?
+    AND p.month >= ?
+    AND p.month < ?
+  GROUP BY p.category_id, c.name, b.base_currency
+),
+category_actual AS (
+  SELECT
+    t.category_id AS key_id,
+    COALESCE(c.name, 'Без категории') AS label,
+    t.currency AS currency,
+    SUM(t.amount_minor) AS amount_minor
+  FROM transactions t
+  LEFT JOIN categories c
+    ON c.id = t.category_id
+    AND c.budget_id = t.budget_id
+  WHERE t.budget_id = ?
+    AND t.deleted_at IS NULL
+    AND t.occurred_at >= ?
+    AND t.occurred_at < ?
+    AND t.type = 'EXPENSE'
+  GROUP BY t.category_id, c.name, t.currency
+)
+SELECT
+  'BASE' AS row_kind,
+  0 AS month_number,
+  NULL AS key_id,
+  NULL AS label,
+  base_currency AS currency,
+  0 AS amount_minor
+FROM budget_info
+UNION ALL
+SELECT
+  'MONTH_FLOW',
+  month_number,
+  key_id,
+  NULL,
+  currency,
+  amount_minor
+FROM month_flow
+UNION ALL
+SELECT
+  'MONTH_PLAN',
+  month_number,
+  NULL,
+  NULL,
+  NULL,
+  amount_minor
+FROM month_plan
+UNION ALL
+SELECT
+  'MONTH_ACTUAL_BASE',
+  month_number,
+  NULL,
+  NULL,
+  NULL,
+  amount_minor
+FROM month_actual_base
+UNION ALL
+SELECT
+  'CATEGORY_PLAN',
+  0,
+  key_id,
+  label,
+  currency,
+  amount_minor
+FROM category_plan
+UNION ALL
+SELECT
+  'CATEGORY_ACTUAL',
+  0,
+  key_id,
+  label,
+  currency,
+  amount_minor
+FROM category_actual
+''';
+
+    return _db
+        .customSelect(
+          sql,
+          variables: [
+            Variable.withString(budgetId),
+            Variable.withString(budgetId),
+            Variable.withDateTime(yearStart),
+            Variable.withDateTime(nextYear),
+            Variable.withString(budgetId),
+            Variable.withDateTime(yearStart),
+            Variable.withDateTime(nextYear),
+            Variable.withString(budgetId),
+            Variable.withDateTime(yearStart),
+            Variable.withDateTime(nextYear),
+            Variable.withString(budgetId),
+            Variable.withDateTime(yearStart),
+            Variable.withDateTime(nextYear),
+            Variable.withString(budgetId),
+            Variable.withDateTime(yearStart),
+            Variable.withDateTime(nextYear),
+          ],
+          readsFrom: {
+            _db.budgets,
+            _db.budgetTransactions,
+            _db.categories,
+            _db.plans,
+          },
+        )
+        .watch()
+        .map(
+          (rows) => rows
+              .map(
+                (row) => YearReportRow(
+                  kind: row.read<String>('row_kind'),
+                  monthNumber: row.read<int>('month_number'),
+                  keyId: row.readNullable<String>('key_id'),
+                  label: row.readNullable<String>('label'),
+                  currency: row.readNullable<String>('currency'),
+                  amountMinor: BigInt.from(row.read<int>('amount_minor')),
+                ),
+              )
+              .toList(growable: false),
+        );
+  }
+
   Stream<List<CategoryTotal>> watchExpenseTotalsByCategory({
     required String budgetId,
     required DateTime fromInclusive,
@@ -374,6 +696,33 @@ FROM account_balances
     );
   }
 
+  _ReportFilterSql _buildReportFilterSql({
+    required String alias,
+    required Set<String> categoryIds,
+    required Set<String> accountIds,
+    required Set<String> authorIds,
+  }) {
+    final clauses = <String>[];
+    final variables = <Variable<Object>>[];
+
+    void addSetFilter(String column, Set<String> values) {
+      if (values.isEmpty) return;
+      final sorted = values.toList()..sort();
+      final placeholders = List.filled(sorted.length, '?').join(', ');
+      clauses.add('$column IN ($placeholders)');
+      variables.addAll(sorted.map(Variable.withString));
+    }
+
+    addSetFilter('$alias.category_id', categoryIds);
+    addSetFilter('$alias.account_id', accountIds);
+    addSetFilter('$alias.author_id', authorIds);
+
+    return _ReportFilterSql(
+      clause: clauses.isEmpty ? '' : 'AND ${clauses.join(' AND ')}',
+      variables: variables,
+    );
+  }
+
   Future<BigInt> _sumForType({
     required String budgetId,
     required String type,
@@ -395,4 +744,11 @@ FROM account_balances
     final row = await query.getSingle();
     return row.read(total) ?? BigInt.zero;
   }
+}
+
+final class _ReportFilterSql {
+  const _ReportFilterSql({required this.clause, required this.variables});
+
+  final String clause;
+  final List<Variable<Object>> variables;
 }
