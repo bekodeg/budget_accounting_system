@@ -2,6 +2,8 @@ import '../application/app_services.dart';
 import '../application/use_cases/apply_category_templates.dart';
 import '../application/use_cases/archive_account.dart';
 import '../application/use_cases/archive_category.dart';
+import '../application/use_cases/authorize_budget_action.dart';
+import '../application/use_cases/can_perform_budget_action.dart';
 import '../application/use_cases/create_account.dart';
 import '../application/use_cases/create_category.dart';
 import '../application/use_cases/create_initial_budget.dart';
@@ -20,6 +22,7 @@ import '../application/use_cases/resolve_app_startup.dart';
 import '../application/use_cases/select_budget.dart';
 import '../application/use_cases/set_monthly_plan_amount.dart';
 import '../application/use_cases/update_account.dart';
+import '../application/use_cases/update_member_role.dart';
 import '../application/use_cases/update_transaction.dart';
 import '../application/use_cases/update_transfer.dart';
 import '../application/use_cases/watch_budget_accounts.dart';
@@ -28,6 +31,7 @@ import '../application/use_cases/watch_dashboard_summary.dart';
 import '../application/use_cases/watch_filtered_transactions.dart';
 import '../application/use_cases/watch_monthly_plan.dart';
 import '../application/use_cases/watch_monthly_report.dart';
+import '../application/use_cases/watch_budget_members.dart';
 import '../application/use_cases/watch_period_report.dart';
 import '../application/use_cases/watch_year_report.dart';
 import '../application/use_cases/watch_transactions.dart';
@@ -41,6 +45,7 @@ import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
 import '../data/repositories/drift_extended_report_repository.dart';
 import '../data/repositories/drift_identity_repository.dart';
+import '../data/repositories/drift_membership_repository.dart';
 import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
 import '../data/repositories/drift_report_export_repository.dart';
@@ -70,6 +75,7 @@ final class AppCompositionRoot {
       dal.transactions,
     );
     final identityRepository = DriftIdentityRepository(dal.usersAndBudgets);
+    final membershipRepository = DriftMembershipRepository(dal.usersAndBudgets);
     final sessionStore = SharedPreferencesSessionStore();
     final identityKeyStore = FlutterSecureIdentityKeyStore();
     final identityKeyPairGenerator = Ed25519IdentityKeyPairGenerator();
@@ -80,22 +86,38 @@ final class AppCompositionRoot {
       keyPairGenerator: identityKeyPairGenerator,
       idGenerator: idGenerator,
     );
+    final authorization = AuthorizeBudgetAction(
+      membershipRepository: membershipRepository,
+      sessionStore: sessionStore,
+    );
     final requireAccountInBudget = RequireAccountInBudget(accountRepository);
     final requireCategoryInBudget = RequireCategoryInBudget(categoryRepository);
 
     return AppCompositionRoot._(
       dal: dal,
       services: AppServices(
-        applyCategoryTemplates: ApplyCategoryTemplates(categoryRepository),
-        archiveAccount: ArchiveAccount(accountRepository),
-        archiveCategory: ArchiveCategory(categoryRepository),
+        applyCategoryTemplates: ApplyCategoryTemplates(
+          repository: categoryRepository,
+          authorization: authorization,
+        ),
+        archiveAccount: ArchiveAccount(
+          repository: accountRepository,
+          authorization: authorization,
+        ),
+        archiveCategory: ArchiveCategory(
+          repository: categoryRepository,
+          authorization: authorization,
+        ),
+        canPerformBudgetAction: CanPerformBudgetAction(authorization),
         createAccount: CreateAccount(
           accountRepository: accountRepository,
           idGenerator: idGenerator,
+          authorization: authorization,
         ),
         createCategory: CreateCategory(
           categoryRepository: categoryRepository,
           idGenerator: idGenerator,
+          authorization: authorization,
         ),
         createInitialBudget: CreateInitialBudget(
           budgetRepository: budgetRepository,
@@ -110,23 +132,32 @@ final class AppCompositionRoot {
           requireAccountInBudget: requireAccountInBudget,
           requireCategoryInBudget: requireCategoryInBudget,
           idGenerator: idGenerator,
+          authorization: authorization,
         ),
         createTransfer: CreateTransfer(
           transactionRepository: transactionRepository,
           requireAccountInBudget: requireAccountInBudget,
           idGenerator: idGenerator,
+          authorization: authorization,
         ),
-        deleteTransaction: DeleteTransaction(transactionRepository),
+        deleteTransaction: DeleteTransaction(
+          repository: transactionRepository,
+          authorization: authorization,
+        ),
         exportReport: ExportReport(
           reportRepository: extendedReportRepository,
           exportRepository: reportExportRepository,
           encoder: const ExcelReportDocumentEncoder(),
           shareGateway: const PlatformReportShareGateway(),
+          authorization: authorization,
         ),
         getAccountBalance: GetAccountBalance(accountRepository),
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
         getPublicIdentity: GetPublicIdentity(ensureLocalIdentity),
-        renameCategory: RenameCategory(categoryRepository),
+        renameCategory: RenameCategory(
+          repository: categoryRepository,
+          authorization: authorization,
+        ),
         requireAccountInBudget: requireAccountInBudget,
         requireCategoryInBudget: requireCategoryInBudget,
         resolveAppStartup: ResolveAppStartup(
@@ -142,16 +173,26 @@ final class AppCompositionRoot {
           planRepository: planRepository,
           categoryRepository: categoryRepository,
           idGenerator: idGenerator,
+          authorization: authorization,
         ),
-        updateAccount: UpdateAccount(accountRepository),
+        updateAccount: UpdateAccount(
+          repository: accountRepository,
+          authorization: authorization,
+        ),
+        updateMemberRole: UpdateMemberRole(
+          membershipRepository: membershipRepository,
+          authorization: authorization,
+        ),
         updateTransaction: UpdateTransaction(
           transactionRepository: transactionRepository,
           requireAccountInBudget: requireAccountInBudget,
           requireCategoryInBudget: requireCategoryInBudget,
+          authorization: authorization,
         ),
         updateTransfer: UpdateTransfer(
           transactionRepository: transactionRepository,
           requireAccountInBudget: requireAccountInBudget,
+          authorization: authorization,
         ),
         watchBudgetAccounts: WatchBudgetAccounts(accountRepository),
         watchBudgetCategories: WatchBudgetCategories(categoryRepository),
@@ -161,6 +202,7 @@ final class AppCompositionRoot {
         ),
         watchMonthlyPlan: WatchMonthlyPlan(planRepository),
         watchMonthlyReport: WatchMonthlyReport(monthlyReportRepository),
+        watchBudgetMembers: WatchBudgetMembers(membershipRepository),
         watchPeriodReport: WatchPeriodReport(extendedReportRepository),
         watchYearReport: WatchYearReport(extendedReportRepository),
         watchTransactions: WatchTransactions(transactionRepository),
