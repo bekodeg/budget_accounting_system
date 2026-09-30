@@ -9,6 +9,7 @@ import 'package:budget_accounting_system/src/data/dal/user_budget_dao.dart';
 import 'package:budget_accounting_system/src/data/database/app_database.dart';
 import 'package:budget_accounting_system/src/data/repositories/drift_identity_repository.dart';
 import 'package:budget_accounting_system/src/data/repositories/drift_sync_journal.dart';
+import 'package:budget_accounting_system/src/data/services/drift_sync_materializer.dart';
 import 'package:budget_accounting_system/src/domain/models/sync_mutation.dart';
 import 'package:budget_accounting_system/src/domain/models/sync_protocol.dart';
 import 'package:drift/drift.dart';
@@ -61,6 +62,36 @@ void main() {
     );
     expect(limited.operations, hasLength(2));
     expect(limited.hasMore, isTrue);
+  });
+
+  test('remote create is materialized into the domain table', () async {
+    final operation = SignedSyncOperation(
+      operationId: 'category-create',
+      budgetId: 'budget-1',
+      entityType: 'category',
+      entityId: 'category-remote',
+      type: SyncMutationType.create,
+      patchJson:
+          '{"is_archived":false,"kind":"EXPENSE","name":"Remote food"}',
+      authorId: 'user-a',
+      deviceId: 'device-a',
+      logicalClock: BigInt.one,
+      createdAt: DateTime.utc(2026, 9, 30, 10),
+    );
+
+    await target.journal.ingest(
+      budgetId: 'budget-1',
+      operations: [await source.wire(operation)],
+    );
+
+    final category =
+        await (target.database.select(target.database.categories)
+              ..where((row) => row.id.equals('category-remote')))
+            .getSingleOrNull();
+
+    expect(category, isNotNull);
+    expect(category!.name, 'Remote food');
+    expect(category.kind, 'EXPENSE');
   });
 
   test('verified ingest is idempotent and rejects conflicting replay', () async {
@@ -214,6 +245,10 @@ final class _Fixture {
         syncDao: syncDao,
         identityRepository: DriftIdentityRepository(userBudgetDao),
         signatureService: signatures,
+        materializer: DriftSyncMaterializer(
+          database: database,
+          syncDao: syncDao,
+        ),
       ),
       signatures: signatures,
     );
