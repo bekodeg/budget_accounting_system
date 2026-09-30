@@ -28,6 +28,7 @@ import 'package:budget_accounting_system/src/application/use_cases/watch_budget_
 import 'package:budget_accounting_system/src/application/use_cases/watch_dashboard_summary.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_filtered_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_monthly_plan.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_monthly_report.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
 import 'package:budget_accounting_system/src/domain/models/account_balance.dart';
@@ -40,12 +41,14 @@ import 'package:budget_accounting_system/src/domain/models/category_template.dar
 import 'package:budget_accounting_system/src/domain/models/dashboard_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_plan.dart';
+import 'package:budget_accounting_system/src/domain/models/monthly_report.dart';
 import 'package:budget_accounting_system/src/domain/models/transaction_filter.dart';
 import 'package:budget_accounting_system/src/domain/repositories/account_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/category_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/dashboard_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/plan_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/monthly_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 
@@ -57,6 +60,7 @@ AppServices fakeAppServices({
   FakeTransactionRepository? transactionRepository,
   FakeDashboardRepository? dashboardRepository,
   FakePlanRepository? planRepository,
+  FakeMonthlyReportRepository? monthlyReportRepository,
   FakeIdGenerator? idGenerator,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
@@ -64,6 +68,7 @@ AppServices fakeAppServices({
   final transactions = transactionRepository ?? FakeTransactionRepository();
   final dashboard = dashboardRepository ?? FakeDashboardRepository();
   final plans = planRepository ?? FakePlanRepository();
+  final monthlyReports = monthlyReportRepository ?? FakeMonthlyReportRepository();
   final ids =
       idGenerator ??
       FakeIdGenerator(['user-1', 'budget-1', 'entity-1', 'entity-2']);
@@ -128,6 +133,7 @@ AppServices fakeAppServices({
     watchDashboardSummary: WatchDashboardSummary(dashboard),
     watchFilteredTransactions: WatchFilteredTransactions(transactions),
     watchMonthlyPlan: WatchMonthlyPlan(plans),
+    watchMonthlyReport: WatchMonthlyReport(monthlyReports),
     watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
   );
@@ -480,6 +486,38 @@ final class FakeDashboardRepository implements DashboardRepository {
     required DateTime monthStart,
   }) async* {
     yield summary;
+    yield* _changes.stream;
+  }
+}
+
+final class FakeMonthlyReportRepository implements MonthlyReportRepository {
+  FakeMonthlyReportRepository({MonthlyReport? report})
+    : report =
+          report ??
+          MonthlyReport(
+            monthStart: DateTime(2026, 9),
+            baseCurrency: 'EUR',
+            incomeMinorByCurrency: const {},
+            expenseMinorByCurrency: const {},
+            categories: const [],
+            accountBalances: const [],
+          );
+
+  MonthlyReport report;
+  final StreamController<MonthlyReport> _changes =
+      StreamController<MonthlyReport>.broadcast();
+
+  void emit(MonthlyReport value) {
+    report = value;
+    _changes.add(value);
+  }
+
+  @override
+  Stream<MonthlyReport> watchMonthlyReport({
+    required String budgetId,
+    required DateTime monthStart,
+  }) async* {
+    yield report;
     yield* _changes.stream;
   }
 }
