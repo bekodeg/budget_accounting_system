@@ -163,6 +163,9 @@ jobs:
           --no-pub
           .
 
+      - name: Configure LAN platform permissions
+        run: python3 tool/configure_lan_platform_permissions.py
+
       - name: Validate Android signing secrets
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
