@@ -69,7 +69,6 @@ final class DriftAccountRepository implements AccountRepository {
       name: account.name,
       currency: account.currency.code,
       openingBalanceMinor: account.openingBalanceMinor,
-      atInclusive: atInclusive,
     );
     return updated == 1;
   }
@@ -106,6 +105,7 @@ final class DriftAccountRepository implements AccountRepository {
       budgetId: budgetId,
       accountId: accountId,
       openingBalanceMinor: account.openingBalanceMinor,
+      atInclusive: atInclusive,
     );
 
     return AccountBalance(
