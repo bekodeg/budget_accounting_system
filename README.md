@@ -129,5 +129,6 @@ dart run drift_dev make-migrations
 - [Роли участников и авторизация бюджета](docs/18_budget_roles.md)
 - [Offline invitation через QR и файл](docs/19_offline_invites.md)
 - [P2P-соединение в локальной сети](docs/20_lan_p2p.md)
+- [Coordinator topology для multi-peer sync](docs/22_sync_coordinator.md)
 - [State vector sync protocol](docs/21_state_vector_sync.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
