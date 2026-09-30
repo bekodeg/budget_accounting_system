@@ -43,6 +43,40 @@ final class SyncDao {
         .get();
   }
 
+  Future<List<SyncOperation>> getAllOperationsForBudget(
+    String budgetId,
+  ) {
+    return (_db.select(_db.syncOperations)
+          ..where((row) => row.budgetId.equals(budgetId))
+          ..orderBy([
+            (row) => OrderingTerm.asc(row.logicalClock),
+            (row) => OrderingTerm.asc(row.deviceId),
+            (row) => OrderingTerm.asc(row.opId),
+          ]))
+        .get();
+  }
+
+  Future<List<SyncOperation>> getCheckpointOperations(String budgetId) async {
+    final vector = await getStateVector(budgetId);
+    final result = <SyncOperation>[];
+
+    for (final entry in vector.entries) {
+      final row = await (_db.select(_db.syncOperations)
+            ..where(
+              (item) =>
+                  item.budgetId.equals(budgetId) &
+                  item.deviceId.equals(entry.key) &
+                  item.logicalClock.equals(entry.value),
+            )
+            ..orderBy([(item) => OrderingTerm.asc(item.opId)])
+            ..limit(1))
+          .getSingleOrNull();
+      if (row != null) result.add(row);
+    }
+
+    return result;
+  }
+
   Future<List<SyncOperation>> getOperationsAfter({
     required String budgetId,
     required BigInt logicalClock,
