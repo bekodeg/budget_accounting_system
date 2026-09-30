@@ -5,6 +5,7 @@ import '../application/services/lan_handshake_service.dart';
 import '../application/services/lan_peer_session_manager.dart';
 import '../application/services/lan_secure_session_service.dart';
 import '../application/services/lan_session_crypto.dart';
+import '../application/services/sync_session_service.dart';
 import '../application/services/session_sync_mutation_context_provider.dart';
 import '../application/use_cases/accept_budget_invite.dart';
 import '../application/use_cases/apply_category_templates.dart';
@@ -67,6 +68,7 @@ import '../data/repositories/drift_membership_repository.dart';
 import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
 import '../data/repositories/drift_report_export_repository.dart';
+import '../data/repositories/drift_sync_journal.dart';
 import '../data/repositories/drift_transaction_repository.dart';
 import '../data/repositories/syncing_account_repository.dart';
 import '../data/repositories/syncing_category_repository.dart';
@@ -151,6 +153,13 @@ final class AppCompositionRoot {
       sessionStore: sessionStore,
     );
     final getPublicIdentity = GetPublicIdentity(ensureLocalIdentity);
+    final syncJournal = DriftSyncJournal(
+      database: dal.database,
+      syncDao: dal.sync,
+      identityRepository: identityRepository,
+      signatureService: identitySignatureService,
+    );
+    final syncSessions = SyncSessionService(journal: syncJournal);
     final lanPeerSessions = LanPeerSessionManager(
       authorization: authorization,
       getPublicIdentity: getPublicIdentity,
@@ -282,6 +291,7 @@ final class AppCompositionRoot {
         getPublicIdentity: getPublicIdentity,
         inspectBudgetInvite: inspectBudgetInvite,
         lanPeerSessions: lanPeerSessions,
+        syncSessions: syncSessions,
         pickBudgetInviteFile: PickBudgetInviteFile(inviteFileGateway),
         renameCategory: RenameCategory(
           repository: categoryRepository,
