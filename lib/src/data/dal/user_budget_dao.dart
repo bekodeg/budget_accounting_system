@@ -54,12 +54,70 @@ final class UserBudgetDao {
     });
   }
 
+  Future<Budget?> findBudgetById(String id) {
+    return (_db.select(
+      _db.budgets,
+    )..where((row) => row.id.equals(id))).getSingleOrNull();
+  }
+
   Future<void> upsertBudget(BudgetsCompanion budget) async {
     await _db.into(_db.budgets).insertOnConflictUpdate(budget);
   }
 
   Future<void> upsertMember(BudgetMembersCompanion member) async {
     await _db.into(_db.budgetMembers).insertOnConflictUpdate(member);
+  }
+
+  Future<void> acceptInvitation({
+    required UsersCompanion owner,
+    required DevicesCompanion ownerDevice,
+    required BudgetsCompanion budget,
+    required BudgetMembersCompanion ownerMembership,
+    required BudgetMembersCompanion joiningMembership,
+    required String joiningPublicKey,
+  }) {
+    return _db.transaction(() async {
+      final ownerId = owner.id.value;
+      final existingOwner = await findUserById(ownerId);
+      if (existingOwner == null) {
+        await _db.into(_db.users).insert(owner);
+      } else {
+        final invitedPublicKey = owner.publicKey.value;
+        if (existingOwner.publicKey != invitedPublicKey) {
+          throw StateError('Owner public key conflicts with local identity.');
+        }
+      }
+
+      final existingOwnerDevice = await findDeviceById(ownerDevice.id.value);
+      if (existingOwnerDevice == null) {
+        await _db.into(_db.devices).insert(ownerDevice);
+      } else if (existingOwnerDevice.userId != ownerId) {
+        throw StateError('Owner device conflicts with local identity.');
+      }
+
+      final joiningUserId = joiningMembership.userId.value;
+      final joiningUser = await findUserById(joiningUserId);
+      if (joiningUser == null || joiningUser.publicKey != joiningPublicKey) {
+        throw StateError('Joining identity conflicts with local user.');
+      }
+
+      final budgetId = budget.id.value;
+      final existingBudget = await findBudgetById(budgetId);
+      if (existingBudget == null) {
+        await _db.into(_db.budgets).insert(budget);
+      } else {
+        if (existingBudget.createdBy != budget.createdBy.value ||
+            existingBudget.name != budget.name.value ||
+            existingBudget.baseCurrency != budget.baseCurrency.value) {
+          throw StateError('Invite budget metadata conflicts with local data.');
+        }
+      }
+
+      await _db.into(_db.budgetMembers).insertOnConflictUpdate(ownerMembership);
+      await _db
+          .into(_db.budgetMembers)
+          .insertOnConflictUpdate(joiningMembership);
+    });
   }
 
   Future<void> createOwnedBudget({

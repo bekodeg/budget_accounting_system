@@ -1,10 +1,12 @@
 import '../application/app_services.dart';
+import '../application/use_cases/accept_budget_invite.dart';
 import '../application/use_cases/apply_category_templates.dart';
 import '../application/use_cases/archive_account.dart';
 import '../application/use_cases/archive_category.dart';
 import '../application/use_cases/authorize_budget_action.dart';
 import '../application/use_cases/can_perform_budget_action.dart';
 import '../application/use_cases/create_account.dart';
+import '../application/use_cases/create_budget_invite.dart';
 import '../application/use_cases/create_category.dart';
 import '../application/use_cases/create_initial_budget.dart';
 import '../application/use_cases/create_transaction.dart';
@@ -14,12 +16,15 @@ import '../application/use_cases/export_report.dart';
 import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/get_budget_account_balances.dart';
 import '../application/use_cases/get_public_identity.dart';
+import '../application/use_cases/inspect_budget_invite.dart';
+import '../application/use_cases/pick_budget_invite_file.dart';
 import '../application/use_cases/ensure_local_identity.dart';
 import '../application/use_cases/rename_category.dart';
 import '../application/use_cases/require_account_in_budget.dart';
 import '../application/use_cases/require_category_in_budget.dart';
 import '../application/use_cases/resolve_app_startup.dart';
 import '../application/use_cases/select_budget.dart';
+import '../application/use_cases/share_budget_invite_file.dart';
 import '../application/use_cases/set_monthly_plan_amount.dart';
 import '../application/use_cases/update_account.dart';
 import '../application/use_cases/update_member_role.dart';
@@ -39,20 +44,25 @@ import '../application/use_cases/watch_user_budgets.dart';
 import '../data/dal/dal.dart';
 import '../data/preferences/shared_preferences_session_store.dart';
 import '../data/security/flutter_secure_identity_key_store.dart';
+import '../data/security/secure_invite_consumption_store.dart';
 import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
 import '../data/repositories/drift_extended_report_repository.dart';
 import '../data/repositories/drift_identity_repository.dart';
+import '../data/repositories/drift_invitation_repository.dart';
 import '../data/repositories/drift_membership_repository.dart';
 import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
 import '../data/repositories/drift_report_export_repository.dart';
 import '../data/repositories/drift_transaction_repository.dart';
 import '../data/services/ed25519_identity_key_pair_generator.dart';
+import '../data/services/ed25519_identity_signature_service.dart';
 import '../data/services/excel_report_document_encoder.dart';
+import '../data/services/platform_invite_file_gateway.dart';
 import '../data/services/platform_report_share_gateway.dart';
+import '../data/services/random_secure_token_generator.dart';
 import '../data/services/secure_id_generator.dart';
 
 final class AppCompositionRoot {
@@ -75,10 +85,17 @@ final class AppCompositionRoot {
       dal.transactions,
     );
     final identityRepository = DriftIdentityRepository(dal.usersAndBudgets);
+    final invitationRepository = DriftInvitationRepository(dal.usersAndBudgets);
     final membershipRepository = DriftMembershipRepository(dal.usersAndBudgets);
     final sessionStore = SharedPreferencesSessionStore();
     final identityKeyStore = FlutterSecureIdentityKeyStore();
     final identityKeyPairGenerator = Ed25519IdentityKeyPairGenerator();
+    final identitySignatureService = Ed25519IdentitySignatureService(
+      keyStore: identityKeyStore,
+    );
+    final inviteConsumptionStore = SecureInviteConsumptionStore();
+    const inviteFileGateway = PlatformInviteFileGateway();
+    final secureTokenGenerator = RandomSecureTokenGenerator();
     final idGenerator = SecureIdGenerator();
     final ensureLocalIdentity = EnsureLocalIdentity(
       identityRepository: identityRepository,
@@ -90,12 +107,24 @@ final class AppCompositionRoot {
       membershipRepository: membershipRepository,
       sessionStore: sessionStore,
     );
+    final getPublicIdentity = GetPublicIdentity(ensureLocalIdentity);
+    final inspectBudgetInvite = InspectBudgetInvite(
+      signatureService: identitySignatureService,
+      consumptionStore: inviteConsumptionStore,
+    );
     final requireAccountInBudget = RequireAccountInBudget(accountRepository);
     final requireCategoryInBudget = RequireCategoryInBudget(categoryRepository);
 
     return AppCompositionRoot._(
       dal: dal,
       services: AppServices(
+        acceptBudgetInvite: AcceptBudgetInvite(
+          inspectInvite: inspectBudgetInvite,
+          invitationRepository: invitationRepository,
+          consumptionStore: inviteConsumptionStore,
+          sessionStore: sessionStore,
+          getPublicIdentity: getPublicIdentity,
+        ),
         applyCategoryTemplates: ApplyCategoryTemplates(
           repository: categoryRepository,
           authorization: authorization,
@@ -113,6 +142,14 @@ final class AppCompositionRoot {
           accountRepository: accountRepository,
           idGenerator: idGenerator,
           authorization: authorization,
+        ),
+        createBudgetInvite: CreateBudgetInvite(
+          invitationRepository: invitationRepository,
+          authorization: authorization,
+          getPublicIdentity: getPublicIdentity,
+          signatureService: identitySignatureService,
+          tokenGenerator: secureTokenGenerator,
+          idGenerator: idGenerator,
         ),
         createCategory: CreateCategory(
           categoryRepository: categoryRepository,
@@ -153,7 +190,9 @@ final class AppCompositionRoot {
         ),
         getAccountBalance: GetAccountBalance(accountRepository),
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
-        getPublicIdentity: GetPublicIdentity(ensureLocalIdentity),
+        getPublicIdentity: getPublicIdentity,
+        inspectBudgetInvite: inspectBudgetInvite,
+        pickBudgetInviteFile: PickBudgetInviteFile(inviteFileGateway),
         renameCategory: RenameCategory(
           repository: categoryRepository,
           authorization: authorization,
@@ -169,6 +208,7 @@ final class AppCompositionRoot {
           budgetRepository: budgetRepository,
           sessionStore: sessionStore,
         ),
+        shareBudgetInviteFile: ShareBudgetInviteFile(inviteFileGateway),
         setMonthlyPlanAmount: SetMonthlyPlanAmount(
           planRepository: planRepository,
           categoryRepository: categoryRepository,
