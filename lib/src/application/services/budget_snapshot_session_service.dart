@@ -59,8 +59,7 @@ final class BudgetSnapshotSessionService {
     required String budgetId,
   }) async {
     final decoded = _decodeFrame(await channel.receive());
-    if (
-        decoded['v'] != protocolVersion ||
+    if (decoded['v'] != protocolVersion ||
         decoded['type'] != 'budget_snapshot' ||
         decoded['budget_id'] != budgetId ||
         decoded['body'] is! String ||
