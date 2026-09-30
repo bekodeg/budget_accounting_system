@@ -10,6 +10,7 @@ import 'use_cases/delete_transaction.dart';
 import 'use_cases/export_report.dart';
 import 'use_cases/get_account_balance.dart';
 import 'use_cases/get_budget_account_balances.dart';
+import 'use_cases/get_public_identity.dart';
 import 'use_cases/rename_category.dart';
 import 'use_cases/require_account_in_budget.dart';
 import 'use_cases/require_category_in_budget.dart';
@@ -44,6 +45,7 @@ final class AppServices {
     required this.exportReport,
     required this.getAccountBalance,
     required this.getBudgetAccountBalances,
+    required this.getPublicIdentity,
     required this.renameCategory,
     required this.requireAccountInBudget,
     required this.requireCategoryInBudget,
@@ -77,6 +79,7 @@ final class AppServices {
   final ExportReport exportReport;
   final GetAccountBalance getAccountBalance;
   final GetBudgetAccountBalances getBudgetAccountBalances;
+  final GetPublicIdentity getPublicIdentity;
   final RenameCategory renameCategory;
   final RequireAccountInBudget requireAccountInBudget;
   final RequireCategoryInBudget requireCategoryInBudget;

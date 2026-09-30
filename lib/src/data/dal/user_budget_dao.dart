@@ -17,6 +17,33 @@ final class UserBudgetDao {
     )..where((row) => row.id.equals(id))).getSingleOrNull();
   }
 
+  Future<Device?> findDeviceById(String id) {
+    return (_db.select(
+      _db.devices,
+    )..where((row) => row.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<void> migrateLegacyIdentity({
+    required String userId,
+    required String publicKey,
+    required String deviceId,
+  }) {
+    return _db.transaction(() async {
+      final user = await findUserById(userId);
+      if (user == null) {
+        throw StateError('Cannot migrate identity for missing user $userId.');
+      }
+
+      await (_db.update(_db.users)..where((row) => row.id.equals(userId))).write(
+        UsersCompanion(publicKey: Value(publicKey)),
+      );
+      await _db.into(_db.devices).insert(
+            DevicesCompanion.insert(id: deviceId, userId: userId),
+            mode: InsertMode.insertOrIgnore,
+          );
+    });
+  }
+
   Future<void> upsertBudget(BudgetsCompanion budget) async {
     await _db.into(_db.budgets).insertOnConflictUpdate(budget);
   }
@@ -29,10 +56,12 @@ final class UserBudgetDao {
     required UsersCompanion user,
     required BudgetsCompanion budget,
     required BudgetMembersCompanion ownerMembership,
+    required DevicesCompanion device,
     List<CategoriesCompanion> initialCategories = const [],
   }) {
     return _db.transaction(() async {
       await _db.into(_db.users).insert(user);
+      await _db.into(_db.devices).insert(device);
       await _db.into(_db.budgets).insert(budget);
       await _db.into(_db.budgetMembers).insert(ownerMembership);
 

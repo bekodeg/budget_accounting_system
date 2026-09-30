@@ -92,7 +92,8 @@ void main() {
     final session = await repository.createOwnedBudget(
       userId: 'user-1',
       userName: 'Alice',
-      publicKey: 'local-unverified:user-1',
+      publicKey: 'ed25519:test-public',
+      deviceId: 'device-1',
       budgetId: 'budget-1',
       budgetName: 'Household',
       baseCurrency: Currency('EUR'),
@@ -107,6 +108,7 @@ void main() {
 
     final user = await dao.findUserById('user-1');
     final memberships = await dao.getMembers('budget-1');
+    final device = await dao.findDeviceById('device-1');
     final budgets = await repository.getBudgetsForUser('user-1');
     final categories = await database.select(database.categories).get();
 
@@ -114,6 +116,7 @@ void main() {
     expect(user?.name, 'Alice');
     expect(memberships, hasLength(1));
     expect(memberships.single.role, 'OWNER');
+    expect(device?.userId, 'user-1');
     expect(categories, hasLength(1));
     expect(categories.single.name, 'Продукты');
     expect(categories.single.kind, 'EXPENSE');
@@ -130,7 +133,8 @@ void main() {
         repository.createOwnedBudget(
           userId: 'user-atomic',
           userName: 'Atomic',
-          publicKey: 'local-unverified:user-atomic',
+          publicKey: 'ed25519:atomic-public',
+          deviceId: 'device-atomic',
           budgetId: 'budget-atomic',
           budgetName: 'Atomic budget',
           baseCurrency: Currency('EUR'),
@@ -181,7 +185,8 @@ void main() {
       repository.createOwnedBudget(
         userId: 'user-2',
         userName: 'Bob',
-        publicKey: 'local-unverified:user-2',
+        publicKey: 'ed25519:user-2-public',
+        deviceId: 'device-2',
         budgetId: 'budget-1',
         budgetName: 'Duplicate',
         baseCurrency: Currency('EUR'),

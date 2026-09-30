@@ -124,4 +124,5 @@ dart run drift_dev make-migrations
 - [Issues, ошибки и ветки исправлений](docs/15_issue_and_bug_workflow.md)
 - [Месячный план по категориям](docs/15_monthly_plans.md)
 - [Экспорт отчетов CSV/XLSX](docs/16_report_export.md)
+- [Локальная identity пользователя и устройства](docs/17_local_identity.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)

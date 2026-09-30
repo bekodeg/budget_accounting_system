@@ -1,3 +1,4 @@
+import 'package:budget_accounting_system/src/application/use_cases/ensure_local_identity.dart';
 import 'package:budget_accounting_system/src/application/use_cases/resolve_app_startup.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,6 +88,39 @@ void main() {
     expect(state.selectedBudgetId, 'budget-1');
     expect(sessionStore.currentUserId, 'user-1');
     expect(sessionStore.currentBudgetId, 'budget-1');
+  });
+
+  test('migrates legacy identity before restoring the session', () async {
+    final budgetRepository = FakeBudgetRepository(
+      firstUserId: 'user-1',
+      budgetsByUser: {
+        'user-1': const [
+          BudgetSummary(id: 'budget-1', name: 'Home', baseCurrency: 'EUR'),
+        ],
+      },
+    );
+    final identityRepository = FakeIdentityRepository(
+      publicKeysByUser: {'user-1': 'local-unverified:user-1'},
+    );
+    final keyStore = FakeIdentityKeyStore();
+    final ensureIdentity = EnsureLocalIdentity(
+      identityRepository: identityRepository,
+      keyStore: keyStore,
+      keyPairGenerator: FakeIdentityKeyPairGenerator(),
+      idGenerator: FakeIdGenerator(['device-1']),
+    );
+    final useCase = ResolveAppStartup(
+      budgetRepository: budgetRepository,
+      sessionStore: FakeSessionStore(),
+      ensureLocalIdentity: ensureIdentity,
+    );
+
+    final state = await useCase();
+
+    expect(state.selectedBudgetId, 'budget-1');
+    expect(identityRepository.publicKeysByUser['user-1'], 'ed25519:public-test-key');
+    expect(identityRepository.devicesById['device-1']?.userId, 'user-1');
+    expect(keyStore.privateKeyByDevice['device-1'], 'private-test-key');
   });
 
   test('restores valid last selected budget', () async {
