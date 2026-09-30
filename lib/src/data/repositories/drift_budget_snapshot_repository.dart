@@ -4,8 +4,10 @@ import 'package:drift/drift.dart';
 
 import '../../application/errors/budget_snapshot_error.dart';
 import '../../application/ports/budget_snapshot_repository.dart';
+import '../../application/ports/identity_signature_service.dart';
 import '../../application/services/budget_snapshot_codec.dart';
 import '../../application/services/sync_merge_engine.dart';
+import '../../application/services/sync_operation_codec.dart';
 import '../../domain/models/budget_snapshot.dart';
 import '../../domain/models/sync_mutation.dart';
 import '../dal/sync_dao.dart';
@@ -15,17 +17,23 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
   const DriftBudgetSnapshotRepository({
     required AppDatabase database,
     required SyncDao syncDao,
+    required IdentitySignatureService signatureService,
     BudgetSnapshotCodec codec = const BudgetSnapshotCodec(),
     SyncMergeEngine mergeEngine = const SyncMergeEngine(),
+    SyncOperationCodec operationCodec = const SyncOperationCodec(),
   }) : _database = database,
        _syncDao = syncDao,
+       _signatureService = signatureService,
        _codec = codec,
-       _mergeEngine = mergeEngine;
+       _mergeEngine = mergeEngine,
+       _operationCodec = operationCodec;
 
   final AppDatabase _database;
   final SyncDao _syncDao;
+  final IdentitySignatureService _signatureService;
   final BudgetSnapshotCodec _codec;
   final SyncMergeEngine _mergeEngine;
+  final SyncOperationCodec _operationCodec;
 
   @override
   Future<BudgetSnapshotPackage> create(String budgetId) {
@@ -154,6 +162,37 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
     }
     for (final row in checkpoint) {
       _requireBudget(row, expectedBudgetId);
+    }
+
+    final usersById = {
+      for (final row in users) _string(row, 'id'): row,
+    };
+    final devicesById = {
+      for (final row in devices) _string(row, 'id'): row,
+    };
+    for (final row in checkpoint) {
+      final operation = _snapshotOperation(row);
+      final author = usersById[operation.authorId];
+      final device = devicesById[operation.deviceId];
+      if (author == null ||
+          device == null ||
+          _string(device, 'user_id') != operation.authorId) {
+        throw const BudgetSnapshotError(
+          BudgetSnapshotErrorCode.invalidSignature,
+          'Snapshot checkpoint identity is invalid.',
+        );
+      }
+      final valid = await _signatureService.verify(
+        publicKey: _string(author, 'public_key'),
+        message: _operationCodec.signingBytes(operation),
+        signature: _string(row, 'signature'),
+      );
+      if (!valid) {
+        throw const BudgetSnapshotError(
+          BudgetSnapshotErrorCode.invalidSignature,
+          'Snapshot checkpoint signature is invalid.',
+        );
+      }
     }
 
     await _database.transaction(() async {
@@ -371,6 +410,29 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
       createdAt: row.createdAt,
     );
   }
+}
+
+SignedSyncOperation _snapshotOperation(Map<String, dynamic> row) {
+  return SignedSyncOperation(
+    operationId: _string(row, 'op_id'),
+    budgetId: _string(row, 'budget_id'),
+    entityType: _string(row, 'entity_type'),
+    entityId: _string(row, 'entity_id'),
+    type: switch (_string(row, 'op_type')) {
+      'CREATE' => SyncMutationType.create,
+      'PATCH' => SyncMutationType.patch,
+      'DELETE' => SyncMutationType.delete,
+      final value => throw BudgetSnapshotError(
+          BudgetSnapshotErrorCode.invalidFormat,
+          'Unsupported snapshot operation type: $value.',
+        ),
+    },
+    patchJson: _string(row, 'patch'),
+    authorId: _string(row, 'author_id'),
+    deviceId: _string(row, 'device_id'),
+    logicalClock: BigInt.parse(_string(row, 'logical_clock')),
+    createdAt: _date(row, 'created_at'),
+  );
 }
 
 Map<String, Object?> _userMap(User row) => {
