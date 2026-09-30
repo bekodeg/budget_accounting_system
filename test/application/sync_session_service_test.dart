@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:budget_accounting_system/src/application/errors/sync_protocol_error.dart';
 import 'package:budget_accounting_system/src/application/ports/secure_lan_channel.dart';
 import 'package:budget_accounting_system/src/application/ports/sync_journal.dart';
+import 'package:budget_accounting_system/src/application/services/sync_merge_engine.dart';
 import 'package:budget_accounting_system/src/application/services/sync_session_service.dart';
 import 'package:budget_accounting_system/src/domain/models/lan_session.dart';
 import 'package:budget_accounting_system/src/domain/models/sync_mutation.dart';
@@ -41,7 +42,15 @@ void main() {
 
     expect(journalA.operationIds, {'a-1', 'a-2', 'a-3', 'b-1', 'b-2'});
     expect(journalB.operationIds, journalA.operationIds);
-    expect(await journalA.stateVector(budgetId), await journalB.stateVector(budgetId));
+    expect(
+      await journalA.stateVector(budgetId),
+      await journalB.stateVector(budgetId),
+    );
+    const mergeEngine = SyncMergeEngine();
+    final mergedA = mergeEngine.merge(journalA.signedOperations);
+    final mergedB = mergeEngine.merge(journalB.signedOperations);
+    expect(mergedA.values, mergedB.values);
+    expect(mergedA.isDeleted, mergedB.isDeleted);
     expect(firstMetrics[0].sentBatches, greaterThanOrEqualTo(2));
     expect(firstMetrics[0].sentOperations, 3);
     expect(firstMetrics[1].sentOperations, 2);
@@ -214,6 +223,10 @@ final class _MemoryJournal implements SyncJournal {
   final Map<String, SyncWireOperation> _operations;
 
   Set<String> get operationIds => Set.unmodifiable(_operations.keys);
+
+  List<SignedSyncOperation> get signedOperations => _operations.values
+      .map((wire) => wire.operation)
+      .toList(growable: false);
 
   @override
   Future<SyncStateVector> stateVector(String budgetId) async {
