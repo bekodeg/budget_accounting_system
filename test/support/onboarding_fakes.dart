@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:budget_accounting_system/src/application/app_services.dart';
@@ -8,14 +9,20 @@ import 'package:budget_accounting_system/src/application/errors/authorization_er
 import 'package:budget_accounting_system/src/application/ports/id_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_key_pair_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_key_store.dart';
+import 'package:budget_accounting_system/src/application/ports/identity_signature_service.dart';
+import 'package:budget_accounting_system/src/application/ports/invite_consumption_store.dart';
+import 'package:budget_accounting_system/src/application/ports/invite_file_gateway.dart';
+import 'package:budget_accounting_system/src/application/ports/secure_token_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/session_store.dart';
 import 'package:budget_accounting_system/src/application/ports/report_document_encoder.dart';
 import 'package:budget_accounting_system/src/application/ports/report_share_gateway.dart';
+import 'package:budget_accounting_system/src/application/use_cases/accept_budget_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/apply_category_templates.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/can_perform_budget_action.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_account.dart';
+import 'package:budget_accounting_system/src/application/use_cases/create_budget_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_initial_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_transaction.dart';
@@ -26,11 +33,14 @@ import 'package:budget_accounting_system/src/application/use_cases/ensure_local_
 import 'package:budget_accounting_system/src/application/use_cases/get_account_balance.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_budget_account_balances.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_public_identity.dart';
+import 'package:budget_accounting_system/src/application/use_cases/inspect_budget_invite.dart';
+import 'package:budget_accounting_system/src/application/use_cases/pick_budget_invite_file.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_account_in_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_category_in_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/resolve_app_startup.dart';
 import 'package:budget_accounting_system/src/application/use_cases/select_budget.dart';
+import 'package:budget_accounting_system/src/application/use_cases/share_budget_invite_file.dart';
 import 'package:budget_accounting_system/src/application/use_cases/set_monthly_plan_amount.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_member_role.dart';
@@ -53,6 +63,7 @@ import 'package:budget_accounting_system/src/domain/models/budget_account.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_member_profile.dart';
+import 'package:budget_accounting_system/src/domain/models/budget_invite.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_transaction_entry.dart';
 import 'package:budget_accounting_system/src/domain/models/category_template.dart';
 import 'package:budget_accounting_system/src/domain/models/dashboard_summary.dart';
@@ -61,6 +72,7 @@ import 'package:budget_accounting_system/src/domain/models/local_device.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_plan.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_report.dart';
 import 'package:budget_accounting_system/src/domain/models/period_report.dart';
+import 'package:budget_accounting_system/src/domain/models/public_identity.dart';
 import 'package:budget_accounting_system/src/domain/models/report_export.dart';
 import 'package:budget_accounting_system/src/domain/models/report_filter.dart';
 import 'package:budget_accounting_system/src/domain/models/year_report.dart';
@@ -74,6 +86,7 @@ import 'package:budget_accounting_system/src/domain/repositories/report_export_r
 import 'package:budget_accounting_system/src/domain/repositories/monthly_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/extended_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/identity_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/invitation_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/membership_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
@@ -92,6 +105,11 @@ AppServices fakeAppServices({
   FakeIdentityKeyStore? identityKeyStore,
   FakeIdentityKeyPairGenerator? identityKeyPairGenerator,
   FakeMembershipRepository? membershipRepository,
+  FakeInvitationRepository? invitationRepository,
+  FakeIdentitySignatureService? identitySignatureService,
+  FakeInviteConsumptionStore? inviteConsumptionStore,
+  FakeInviteFileGateway? inviteFileGateway,
+  FakeSecureTokenGenerator? secureTokenGenerator,
   BudgetAuthorizationGuard? authorization,
   FakeIdGenerator? idGenerator,
 }) {
@@ -109,6 +127,12 @@ AppServices fakeAppServices({
   final identityGenerator =
       identityKeyPairGenerator ?? FakeIdentityKeyPairGenerator();
   final memberships = membershipRepository ?? FakeMembershipRepository();
+  final invitations = invitationRepository ?? FakeInvitationRepository();
+  final signatures = identitySignatureService ?? FakeIdentitySignatureService();
+  final inviteConsumption =
+      inviteConsumptionStore ?? FakeInviteConsumptionStore();
+  final inviteFiles = inviteFileGateway ?? FakeInviteFileGateway();
+  final tokens = secureTokenGenerator ?? FakeSecureTokenGenerator();
   final auth = authorization ?? FakeBudgetAuthorizationGuard();
   final ids =
       idGenerator ??
@@ -126,7 +150,20 @@ AppServices fakeAppServices({
     idGenerator: ids,
   );
 
+  final getPublicIdentity = GetPublicIdentity(ensureLocalIdentity);
+  final inspectInvite = InspectBudgetInvite(
+    signatureService: signatures,
+    consumptionStore: inviteConsumption,
+  );
+
   return AppServices(
+    acceptBudgetInvite: AcceptBudgetInvite(
+      inspectInvite: inspectInvite,
+      invitationRepository: invitations,
+      consumptionStore: inviteConsumption,
+      sessionStore: sessionStore,
+      getPublicIdentity: getPublicIdentity,
+    ),
     applyCategoryTemplates: ApplyCategoryTemplates(
       repository: categories,
       authorization: auth,
@@ -144,6 +181,14 @@ AppServices fakeAppServices({
       accountRepository: accounts,
       idGenerator: ids,
       authorization: auth,
+    ),
+    createBudgetInvite: CreateBudgetInvite(
+      invitationRepository: invitations,
+      authorization: auth,
+      getPublicIdentity: getPublicIdentity,
+      signatureService: signatures,
+      tokenGenerator: tokens,
+      idGenerator: ids,
     ),
     createCategory: CreateCategory(
       categoryRepository: categories,
@@ -184,7 +229,9 @@ AppServices fakeAppServices({
     ),
     getAccountBalance: GetAccountBalance(accounts),
     getBudgetAccountBalances: GetBudgetAccountBalances(accounts),
-    getPublicIdentity: GetPublicIdentity(ensureLocalIdentity),
+    getPublicIdentity: getPublicIdentity,
+    inspectBudgetInvite: inspectInvite,
+    pickBudgetInviteFile: PickBudgetInviteFile(inviteFiles),
     renameCategory: RenameCategory(
       repository: categories,
       authorization: auth,
@@ -199,6 +246,7 @@ AppServices fakeAppServices({
       budgetRepository: repository,
       sessionStore: sessionStore,
     ),
+    shareBudgetInviteFile: ShareBudgetInviteFile(inviteFiles),
     setMonthlyPlanAmount: SetMonthlyPlanAmount(
       planRepository: plans,
       categoryRepository: categories,
@@ -236,6 +284,106 @@ AppServices fakeAppServices({
     watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
   );
+}
+
+final class FakeIdentitySignatureService
+    implements IdentitySignatureService {
+  @override
+  Future<String> sign({
+    required String deviceId,
+    required Uint8List message,
+  }) async {
+    return base64Url.encode(message);
+  }
+
+  @override
+  Future<bool> verify({
+    required String publicKey,
+    required Uint8List message,
+    required String signature,
+  }) async {
+    return signature == base64Url.encode(message);
+  }
+}
+
+final class FakeInviteConsumptionStore implements InviteConsumptionStore {
+  final Set<String> consumed = {};
+
+  @override
+  Future<bool> isConsumed(String inviteId) async => consumed.contains(inviteId);
+
+  @override
+  Future<void> markConsumed(String inviteId) async {
+    consumed.add(inviteId);
+  }
+
+  @override
+  Future<void> unmarkConsumed(String inviteId) async {
+    consumed.remove(inviteId);
+  }
+}
+
+final class FakeInviteFileGateway implements InviteFileGateway {
+  String? pickedPayload;
+  String? sharedFileName;
+  String? sharedPayload;
+
+  @override
+  Future<String?> pick() async => pickedPayload;
+
+  @override
+  Future<void> share({
+    required String fileName,
+    required String payload,
+  }) async {
+    sharedFileName = fileName;
+    sharedPayload = payload;
+  }
+}
+
+final class FakeSecureTokenGenerator implements SecureTokenGenerator {
+  int _counter = 0;
+
+  @override
+  String nextToken({int bytes = 32}) {
+    _counter += 1;
+    return 'token-$bytes-$_counter';
+  }
+}
+
+final class FakeInvitationRepository implements InvitationRepository {
+  FakeInvitationRepository({
+    Map<String, BudgetSummary>? budgets,
+  }) : budgets = budgets ?? {
+          'budget-1': const BudgetSummary(
+            id: 'budget-1',
+            name: 'Test budget',
+            baseCurrency: 'EUR',
+          ),
+        };
+
+  final Map<String, BudgetSummary> budgets;
+  final List<({BudgetInvite invite, PublicIdentity joiningIdentity})> accepted =
+      [];
+
+  @override
+  Future<BudgetSummary?> findBudget(String budgetId) async => budgets[budgetId];
+
+  @override
+  Future<void> acceptInvite({
+    required BudgetInvite invite,
+    required PublicIdentity joiningIdentity,
+  }) async {
+    accepted.add((invite: invite, joiningIdentity: joiningIdentity));
+    budgets.putIfAbsent(
+      invite.budgetId,
+      () => BudgetSummary(
+        id: invite.budgetId,
+        name: invite.budgetName,
+        baseCurrency: invite.baseCurrency,
+      ),
+    );
+  }
 }
 
 final class FakeBudgetAuthorizationGuard
