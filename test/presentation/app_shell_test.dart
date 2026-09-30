@@ -33,6 +33,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.bar_chart_outlined));
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const ValueKey('reports-screen')), findsOneWidget);
     expect(find.byKey(const ValueKey('monthly-report-screen')), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.settings_outlined));

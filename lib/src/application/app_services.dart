@@ -7,6 +7,8 @@ import 'use_cases/create_initial_budget.dart';
 import 'use_cases/create_transaction.dart';
 import 'use_cases/create_transfer.dart';
 import 'use_cases/delete_transaction.dart';
+import 'use_cases/export_report.dart';
+import 'use_cases/export_report.dart';
 import 'use_cases/get_account_balance.dart';
 import 'use_cases/get_budget_account_balances.dart';
 import 'use_cases/rename_category.dart';
@@ -24,6 +26,8 @@ import 'use_cases/watch_dashboard_summary.dart';
 import 'use_cases/watch_filtered_transactions.dart';
 import 'use_cases/watch_monthly_plan.dart';
 import 'use_cases/watch_monthly_report.dart';
+import 'use_cases/watch_period_report.dart';
+import 'use_cases/watch_year_report.dart';
 import 'use_cases/watch_transactions.dart';
 import 'use_cases/watch_user_budgets.dart';
 
@@ -38,6 +42,8 @@ final class AppServices {
     required this.createTransaction,
     required this.createTransfer,
     required this.deleteTransaction,
+    required this.exportReport,
+    required this.exportReport,
     required this.getAccountBalance,
     required this.getBudgetAccountBalances,
     required this.renameCategory,
@@ -55,6 +61,8 @@ final class AppServices {
     required this.watchFilteredTransactions,
     required this.watchMonthlyPlan,
     required this.watchMonthlyReport,
+    required this.watchPeriodReport,
+    required this.watchYearReport,
     required this.watchTransactions,
     required this.watchUserBudgets,
   });
@@ -68,6 +76,8 @@ final class AppServices {
   final CreateTransaction createTransaction;
   final CreateTransfer createTransfer;
   final DeleteTransaction deleteTransaction;
+  final ExportReport exportReport;
+  final ExportReport exportReport;
   final GetAccountBalance getAccountBalance;
   final GetBudgetAccountBalances getBudgetAccountBalances;
   final RenameCategory renameCategory;
@@ -85,6 +95,8 @@ final class AppServices {
   final WatchFilteredTransactions watchFilteredTransactions;
   final WatchMonthlyPlan watchMonthlyPlan;
   final WatchMonthlyReport watchMonthlyReport;
+  final WatchPeriodReport watchPeriodReport;
+  final WatchYearReport watchYearReport;
   final WatchTransactions watchTransactions;
   final WatchUserBudgets watchUserBudgets;
 }

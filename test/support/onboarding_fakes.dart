@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:budget_accounting_system/src/application/app_services.dart';
 import 'package:budget_accounting_system/src/application/ports/id_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/session_store.dart';
+import 'package:budget_accounting_system/src/application/ports/report_document_encoder.dart';
+import 'package:budget_accounting_system/src/application/ports/report_share_gateway.dart';
 import 'package:budget_accounting_system/src/application/use_cases/apply_category_templates.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_category.dart';
@@ -12,6 +15,7 @@ import 'package:budget_accounting_system/src/application/use_cases/create_initia
 import 'package:budget_accounting_system/src/application/use_cases/create_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/delete_transaction.dart';
+import 'package:budget_accounting_system/src/application/use_cases/export_report.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_account_balance.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_budget_account_balances.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
@@ -29,6 +33,8 @@ import 'package:budget_accounting_system/src/application/use_cases/watch_dashboa
 import 'package:budget_accounting_system/src/application/use_cases/watch_filtered_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_monthly_plan.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_monthly_report.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_period_report.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_year_report.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
 import 'package:budget_accounting_system/src/domain/models/account_balance.dart';
@@ -42,13 +48,19 @@ import 'package:budget_accounting_system/src/domain/models/dashboard_summary.dar
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_plan.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_report.dart';
+import 'package:budget_accounting_system/src/domain/models/period_report.dart';
+import 'package:budget_accounting_system/src/domain/models/report_export.dart';
+import 'package:budget_accounting_system/src/domain/models/report_filter.dart';
+import 'package:budget_accounting_system/src/domain/models/year_report.dart';
 import 'package:budget_accounting_system/src/domain/models/transaction_filter.dart';
 import 'package:budget_accounting_system/src/domain/repositories/account_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/category_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/dashboard_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/plan_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/report_export_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/monthly_report_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/extended_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 
@@ -61,6 +73,7 @@ AppServices fakeAppServices({
   FakeDashboardRepository? dashboardRepository,
   FakePlanRepository? planRepository,
   FakeMonthlyReportRepository? monthlyReportRepository,
+  FakeExtendedReportRepository? extendedReportRepository,
   FakeIdGenerator? idGenerator,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
@@ -70,6 +83,8 @@ AppServices fakeAppServices({
   final plans = planRepository ?? FakePlanRepository();
   final monthlyReports =
       monthlyReportRepository ?? FakeMonthlyReportRepository();
+  final extendedReports =
+      extendedReportRepository ?? FakeExtendedReportRepository();
   final ids =
       idGenerator ??
       FakeIdGenerator(['user-1', 'budget-1', 'entity-1', 'entity-2']);
@@ -95,6 +110,12 @@ AppServices fakeAppServices({
       idGenerator: ids,
     ),
     deleteTransaction: DeleteTransaction(transactions),
+    exportReport: ExportReport(
+      reportRepository: extendedReports,
+      exportRepository: FakeReportExportRepository(),
+      encoder: FakeReportDocumentEncoder(),
+      shareGateway: FakeReportShareGateway(),
+    ),
     createInitialBudget: CreateInitialBudget(
       budgetRepository: repository,
       categoryRepository: categories,
@@ -135,9 +156,42 @@ AppServices fakeAppServices({
     watchFilteredTransactions: WatchFilteredTransactions(transactions),
     watchMonthlyPlan: WatchMonthlyPlan(plans),
     watchMonthlyReport: WatchMonthlyReport(monthlyReports),
+    watchPeriodReport: WatchPeriodReport(extendedReports),
+    watchYearReport: WatchYearReport(extendedReports),
     watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
   );
+}
+
+final class FakeReportExportRepository implements ReportExportRepository {
+  @override
+  Future<List<ReportExportTransaction>> listTransactions(
+    ReportFilter filter,
+  ) async {
+    return const [];
+  }
+}
+
+final class FakeReportDocumentEncoder implements ReportDocumentEncoder {
+  @override
+  Uint8List encodeCsv(ReportExportBundle bundle) => Uint8List(0);
+
+  @override
+  Uint8List encodeXlsx(ReportExportBundle bundle) => Uint8List(0);
+}
+
+final class FakeReportShareGateway implements ReportShareGateway {
+  @override
+  Future<ReportExportResult> share({
+    required String baseName,
+    required Uint8List csvBytes,
+    required Uint8List xlsxBytes,
+  }) async {
+    return ReportExportResult(
+      csvFileName: '$baseName.csv',
+      xlsxFileName: '$baseName.xlsx',
+    );
+  }
 }
 
 final class FakeBudgetRepository implements BudgetRepository {
@@ -485,6 +539,72 @@ final class FakeDashboardRepository implements DashboardRepository {
   }) async* {
     yield summary;
     yield* _changes.stream;
+  }
+}
+
+final class FakeExtendedReportRepository implements ExtendedReportRepository {
+  FakeExtendedReportRepository({
+    PeriodReport? periodReport,
+    YearReport? yearReport,
+  }) : periodReport =
+           periodReport ??
+           PeriodReport(
+             fromInclusive: DateTime(2026, 9),
+             toExclusive: DateTime(2026, 10),
+             incomeMinorByCurrency: const {},
+             expenseMinorByCurrency: const {},
+             categories: const [],
+           ),
+       yearReport =
+           yearReport ??
+           YearReport(
+             year: 2026,
+             baseCurrency: 'EUR',
+             months: [
+               for (var month = 1; month <= 12; month++)
+                 YearMonthReport(
+                   monthStart: DateTime(2026, month),
+                   incomeMinorByCurrency: const {},
+                   expenseMinorByCurrency: const {},
+                   plannedAmountMinor: BigInt.zero,
+                   actualBaseCurrencyMinor: BigInt.zero,
+                 ),
+             ],
+             categories: const [],
+           );
+
+  PeriodReport periodReport;
+  YearReport yearReport;
+  ReportFilter? lastPeriodFilter;
+  final StreamController<PeriodReport> _periodChanges =
+      StreamController<PeriodReport>.broadcast();
+  final StreamController<YearReport> _yearChanges =
+      StreamController<YearReport>.broadcast();
+
+  void emitPeriod(PeriodReport value) {
+    periodReport = value;
+    _periodChanges.add(value);
+  }
+
+  void emitYear(YearReport value) {
+    yearReport = value;
+    _yearChanges.add(value);
+  }
+
+  @override
+  Stream<PeriodReport> watchPeriodReport(ReportFilter filter) async* {
+    lastPeriodFilter = filter;
+    yield periodReport;
+    yield* _periodChanges.stream;
+  }
+
+  @override
+  Stream<YearReport> watchYearReport({
+    required String budgetId,
+    required int year,
+  }) async* {
+    yield yearReport;
+    yield* _yearChanges.stream;
   }
 }
 

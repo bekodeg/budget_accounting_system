@@ -104,6 +104,44 @@ final class TransactionDao {
         .watch();
   }
 
+  Future<List<BudgetTransaction>> getForReport({
+    required String budgetId,
+    required DateTime fromInclusive,
+    required DateTime toExclusive,
+    required Set<String> categoryIds,
+    required Set<String> accountIds,
+    required Set<String> authorIds,
+  }) {
+    final query = _db.select(_db.budgetTransactions)
+      ..where(
+        (row) =>
+            row.budgetId.equals(budgetId) &
+            row.occurredAt.isBiggerOrEqualValue(fromInclusive) &
+            row.occurredAt.isSmallerThanValue(toExclusive) &
+            row.deletedAt.isNull(),
+      );
+
+    if (categoryIds.isNotEmpty) {
+      query.where((row) => row.categoryId.isIn(categoryIds));
+    }
+    if (accountIds.isNotEmpty) {
+      query.where(
+        (row) =>
+            row.accountId.isIn(accountIds) |
+            row.destinationAccountId.isIn(accountIds),
+      );
+    }
+    if (authorIds.isNotEmpty) {
+      query.where((row) => row.authorId.isIn(authorIds));
+    }
+
+    query.orderBy([
+      (row) => OrderingTerm.asc(row.occurredAt),
+      (row) => OrderingTerm.asc(row.id),
+    ]);
+    return query.get();
+  }
+
   Future<int> updateActive({
     required String budgetId,
     required String transactionId,
