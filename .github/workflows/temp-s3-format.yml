@@ -6,7 +6,7 @@ on:
       - fix/s3-stage-formatting
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   format:
@@ -14,13 +14,49 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: fix/s3-stage-formatting
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
           pub-cache: true
-      - name: Format S3 files and print diff
+      - name: Format and commit S3 files
         shell: bash
         run: |
-          dart format             lib/src/data/dal/category_account_dao.dart             lib/src/data/dal/plan_receipt_dao.dart             lib/src/data/repositories/drift_monthly_report_repository.dart             lib/src/domain/models/monthly_plan.dart             lib/src/domain/models/monthly_report.dart             lib/src/presentation/screens/monthly_plan_screen.dart             lib/src/presentation/screens/monthly_report_screen.dart             test/application/monthly_plan_use_cases_test.dart             test/data/repositories/account_balance_aggregation_test.dart             test/data/repositories/drift_monthly_report_repository_test.dart             test/presentation/monthly_plan_screen_test.dart             test/presentation/monthly_report_screen_test.dart             test/support/onboarding_fakes.dart
-          git diff --             lib/src/data/dal/category_account_dao.dart             lib/src/data/dal/plan_receipt_dao.dart             lib/src/data/repositories/drift_monthly_report_repository.dart             lib/src/domain/models/monthly_plan.dart             lib/src/domain/models/monthly_report.dart             lib/src/presentation/screens/monthly_plan_screen.dart             lib/src/presentation/screens/monthly_report_screen.dart             test/application/monthly_plan_use_cases_test.dart             test/data/repositories/account_balance_aggregation_test.dart             test/data/repositories/drift_monthly_report_repository_test.dart             test/presentation/monthly_plan_screen_test.dart             test/presentation/monthly_report_screen_test.dart             test/support/onboarding_fakes.dart
+          dart format \
+            lib/src/data/dal/category_account_dao.dart \
+            lib/src/data/dal/plan_receipt_dao.dart \
+            lib/src/data/repositories/drift_monthly_report_repository.dart \
+            lib/src/domain/models/monthly_plan.dart \
+            lib/src/domain/models/monthly_report.dart \
+            lib/src/presentation/screens/monthly_plan_screen.dart \
+            lib/src/presentation/screens/monthly_report_screen.dart \
+            test/application/monthly_plan_use_cases_test.dart \
+            test/data/repositories/account_balance_aggregation_test.dart \
+            test/data/repositories/drift_monthly_report_repository_test.dart \
+            test/presentation/monthly_plan_screen_test.dart \
+            test/presentation/monthly_report_screen_test.dart \
+            test/support/onboarding_fakes.dart
+          if git diff --quiet; then
+            echo "No formatting changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            lib/src/data/dal/category_account_dao.dart \
+            lib/src/data/dal/plan_receipt_dao.dart \
+            lib/src/data/repositories/drift_monthly_report_repository.dart \
+            lib/src/domain/models/monthly_plan.dart \
+            lib/src/domain/models/monthly_report.dart \
+            lib/src/presentation/screens/monthly_plan_screen.dart \
+            lib/src/presentation/screens/monthly_report_screen.dart \
+            test/application/monthly_plan_use_cases_test.dart \
+            test/data/repositories/account_balance_aggregation_test.dart \
+            test/data/repositories/drift_monthly_report_repository_test.dart \
+            test/presentation/monthly_plan_screen_test.dart \
+            test/presentation/monthly_report_screen_test.dart \
+            test/support/onboarding_fakes.dart
+          git commit -m "fix: format S3 Dart sources"
+          git push origin HEAD:fix/s3-stage-formatting
