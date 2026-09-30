@@ -39,10 +39,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: BudgetMembersScreen(
-            services: services,
-            budgetId: 'budget-1',
-          ),
+          body: BudgetMembersScreen(services: services, budgetId: 'budget-1'),
         ),
       ),
     );
@@ -68,9 +65,7 @@ void main() {
   testWidgets('VIEWER sees roles without management controls', (tester) async {
     final memberships = FakeMembershipRepository(
       membersByBudget: {
-        'budget-1': [
-          member('viewer-1', 'Viewer', MemberRole.viewer),
-        ],
+        'budget-1': [member('viewer-1', 'Viewer', MemberRole.viewer)],
       },
     );
     final services = fakeAppServices(
@@ -86,10 +81,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: BudgetMembersScreen(
-            services: services,
-            budgetId: 'budget-1',
-          ),
+          body: BudgetMembersScreen(services: services, budgetId: 'budget-1'),
         ),
       ),
     );

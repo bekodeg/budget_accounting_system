@@ -75,10 +75,7 @@ final class BudgetInvite {
 }
 
 final class BudgetInvitePreview {
-  const BudgetInvitePreview({
-    required this.invite,
-    required this.rawPayload,
-  });
+  const BudgetInvitePreview({required this.invite, required this.rawPayload});
 
   final BudgetInvite invite;
   final String rawPayload;

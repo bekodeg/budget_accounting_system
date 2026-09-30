@@ -36,7 +36,9 @@ final class UpdateMemberRole {
     }
 
     if (target.role == MemberRole.owner && role != MemberRole.owner) {
-      final ownerCount = await _membershipRepository.countActiveOwners(budgetId);
+      final ownerCount = await _membershipRepository.countActiveOwners(
+        budgetId,
+      );
       if (ownerCount <= 1) {
         throw const AuthorizationError(
           code: AuthorizationErrorCode.lastOwner,

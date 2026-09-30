@@ -223,25 +223,28 @@ final class _AccountTile extends StatelessWidget {
         trailing: onEdit == null || onArchive == null
             ? null
             : PopupMenuButton<_AccountAction>(
-          key: ValueKey('account-menu-${account.id}'),
-          onSelected: (action) {
-            switch (action) {
-              case _AccountAction.edit:
-                onEdit?.call();
-                return;
-              case _AccountAction.archive:
-                onArchive?.call();
-                return;
-            }
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: _AccountAction.edit, child: Text('Изменить')),
-            PopupMenuItem(
-              value: _AccountAction.archive,
-              child: Text('Архивировать'),
-            ),
-          ],
-        ),
+                key: ValueKey('account-menu-${account.id}'),
+                onSelected: (action) {
+                  switch (action) {
+                    case _AccountAction.edit:
+                      onEdit?.call();
+                      return;
+                    case _AccountAction.archive:
+                      onArchive?.call();
+                      return;
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: _AccountAction.edit,
+                    child: Text('Изменить'),
+                  ),
+                  PopupMenuItem(
+                    value: _AccountAction.archive,
+                    child: Text('Архивировать'),
+                  ),
+                ],
+              ),
       ),
     );
   }

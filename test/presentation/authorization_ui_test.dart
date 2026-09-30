@@ -34,10 +34,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: SettingsScreen(
-            services: services,
-            budgetId: 'budget-1',
-          ),
+          body: SettingsScreen(services: services, budgetId: 'budget-1'),
         ),
       ),
     );

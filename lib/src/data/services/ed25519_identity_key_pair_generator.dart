@@ -39,4 +39,5 @@ final class Ed25519IdentityKeyPairGenerator
   }
 }
 
-String _encodePublicKey(List<int> bytes) => 'ed25519:${base64Url.encode(bytes)}';
+String _encodePublicKey(List<int> bytes) =>
+    'ed25519:${base64Url.encode(bytes)}';

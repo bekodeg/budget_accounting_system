@@ -118,7 +118,10 @@ void main() {
     final state = await useCase();
 
     expect(state.selectedBudgetId, 'budget-1');
-    expect(identityRepository.publicKeysByUser['user-1'], 'ed25519:public-test-key');
+    expect(
+      identityRepository.publicKeysByUser['user-1'],
+      'ed25519:public-test-key',
+    );
     expect(identityRepository.devicesById['device-1']?.userId, 'user-1');
     expect(keyStore.privateKeyByDevice['device-1'], 'private-test-key');
   });

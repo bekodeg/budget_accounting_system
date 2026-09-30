@@ -26,7 +26,7 @@ void main() {
         exportRepository: exportRepository,
         encoder: encoder,
         shareGateway: shareGateway,
-      authorization: FakeBudgetAuthorizationGuard(),
+        authorization: FakeBudgetAuthorizationGuard(),
       );
       final filter = ReportFilter(
         budgetId: 'Дом / 2026',

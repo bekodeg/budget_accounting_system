@@ -42,53 +42,56 @@ void main() {
     );
   }
 
-  test('creates versioned signed EDITOR invitation and validates preview', () async {
-    final identities = FakeIdentityRepository();
-    final keys = FakeIdentityKeyStore();
-    final getOwnerIdentity = identityFor(
-      userId: 'owner-1',
-      deviceId: 'owner-device',
-      publicKey: 'ed25519:owner-public',
-      repository: identities,
-      keyStore: keys,
-    );
-    final signatures = FakeIdentitySignatureService();
-    final consumed = FakeInviteConsumptionStore();
-    final invitations = FakeInvitationRepository();
-    final create = CreateBudgetInvite(
-      invitationRepository: invitations,
-      authorization: FakeBudgetAuthorizationGuard(
+  test(
+    'creates versioned signed EDITOR invitation and validates preview',
+    () async {
+      final identities = FakeIdentityRepository();
+      final keys = FakeIdentityKeyStore();
+      final getOwnerIdentity = identityFor(
         userId: 'owner-1',
-        role: MemberRole.owner,
-      ),
-      getPublicIdentity: getOwnerIdentity,
-      signatureService: signatures,
-      tokenGenerator: FakeSecureTokenGenerator(),
-      idGenerator: FakeIdGenerator(['invite-1']),
-      now: () => fixedNow,
-    );
-    final inspect = InspectBudgetInvite(
-      signatureService: signatures,
-      consumptionStore: consumed,
-      now: () => fixedNow.add(const Duration(minutes: 1)),
-    );
+        deviceId: 'owner-device',
+        publicKey: 'ed25519:owner-public',
+        repository: identities,
+        keyStore: keys,
+      );
+      final signatures = FakeIdentitySignatureService();
+      final consumed = FakeInviteConsumptionStore();
+      final invitations = FakeInvitationRepository();
+      final create = CreateBudgetInvite(
+        invitationRepository: invitations,
+        authorization: FakeBudgetAuthorizationGuard(
+          userId: 'owner-1',
+          role: MemberRole.owner,
+        ),
+        getPublicIdentity: getOwnerIdentity,
+        signatureService: signatures,
+        tokenGenerator: FakeSecureTokenGenerator(),
+        idGenerator: FakeIdGenerator(['invite-1']),
+        now: () => fixedNow,
+      );
+      final inspect = InspectBudgetInvite(
+        signatureService: signatures,
+        consumptionStore: consumed,
+        now: () => fixedNow.add(const Duration(minutes: 1)),
+      );
 
-    final generated = await create(
-      budgetId: 'budget-1',
-      role: MemberRole.editor,
-    );
-    final preview = await inspect(generated.rawPayload);
+      final generated = await create(
+        budgetId: 'budget-1',
+        role: MemberRole.editor,
+      );
+      final preview = await inspect(generated.rawPayload);
 
-    expect(preview.invite.version, 1);
-    expect(preview.invite.inviteId, 'invite-1');
-    expect(preview.invite.role, MemberRole.editor);
-    expect(preview.invite.ownerUserId, 'owner-1');
-    expect(preview.invite.ownerDeviceId, 'owner-device');
-    expect(preview.invite.crypto.signatureAlgorithm, 'ed25519');
-    expect(preview.invite.crypto.kdf, 'hkdf-sha256');
-    expect(preview.invite.crypto.transportCipher, 'chacha20-poly1305');
-    expect(preview.invite.expiresAt, fixedNow.add(const Duration(hours: 24)));
-  });
+      expect(preview.invite.version, 1);
+      expect(preview.invite.inviteId, 'invite-1');
+      expect(preview.invite.role, MemberRole.editor);
+      expect(preview.invite.ownerUserId, 'owner-1');
+      expect(preview.invite.ownerDeviceId, 'owner-device');
+      expect(preview.invite.crypto.signatureAlgorithm, 'ed25519');
+      expect(preview.invite.crypto.kdf, 'hkdf-sha256');
+      expect(preview.invite.crypto.transportCipher, 'chacha20-poly1305');
+      expect(preview.invite.expiresAt, fixedNow.add(const Duration(hours: 24)));
+    },
+  );
 
   test('rejects tampered signature and expired invite', () async {
     final codec = const BudgetInviteCodec();

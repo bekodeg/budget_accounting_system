@@ -143,33 +143,30 @@ void main() {
     expect(sessionStore.currentUserId, isNull);
   });
 
-  test(
-    'removes secure identity when database creation fails',
-    () async {
-      final repository = FakeBudgetRepository(createError: StateError('db'));
-      final keyStore = FakeIdentityKeyStore();
-      final useCase = CreateInitialBudget(
-        budgetRepository: repository,
-        categoryRepository: FakeCategoryRepository(),
-        sessionStore: FakeSessionStore(),
-        idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
-        identityKeyStore: keyStore,
-        identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
-      );
+  test('removes secure identity when database creation fails', () async {
+    final repository = FakeBudgetRepository(createError: StateError('db'));
+    final keyStore = FakeIdentityKeyStore();
+    final useCase = CreateInitialBudget(
+      budgetRepository: repository,
+      categoryRepository: FakeCategoryRepository(),
+      sessionStore: FakeSessionStore(),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
+      identityKeyStore: keyStore,
+      identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
+    );
 
-      await expectLater(
-        useCase(
-          userName: 'Alice',
-          budgetName: 'Family',
-          baseCurrency: Currency('EUR'),
-        ),
-        throwsStateError,
-      );
+    await expectLater(
+      useCase(
+        userName: 'Alice',
+        budgetName: 'Family',
+        baseCurrency: Currency('EUR'),
+      ),
+      throwsStateError,
+    );
 
-      expect(keyStore.deviceByUser, isEmpty);
-      expect(keyStore.privateKeyByDevice, isEmpty);
-    },
-  );
+    expect(keyStore.deviceByUser, isEmpty);
+    expect(keyStore.privateKeyByDevice, isEmpty);
+  });
 
   test(
     'keeps created budget usable if preferences cannot be written',
