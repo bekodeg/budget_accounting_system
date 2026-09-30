@@ -1,3 +1,4 @@
+import 'services/budget_snapshot_session_service.dart';
 import 'services/lan_peer_session_manager.dart';
 import 'services/sync_coordinator_service.dart';
 import 'services/sync_session_service.dart';
@@ -65,6 +66,7 @@ final class AppServices {
     required this.getBudgetAccountBalances,
     required this.getPublicIdentity,
     required this.inspectBudgetInvite,
+    this.budgetSnapshotSessions,
     this.lanPeerSessions,
     this.syncCoordinator,
     this.syncSessions,
@@ -112,6 +114,7 @@ final class AppServices {
   final GetBudgetAccountBalances getBudgetAccountBalances;
   final GetPublicIdentity getPublicIdentity;
   final InspectBudgetInvite inspectBudgetInvite;
+  final BudgetSnapshotSessionService? budgetSnapshotSessions;
   final LanPeerSessionManager? lanPeerSessions;
   final SyncCoordinatorService? syncCoordinator;
   final SyncSessionService? syncSessions;
