@@ -56,6 +56,7 @@ final class DriftInvitationRepository implements InvitationRepository {
         role: _role(invite),
         revokedAt: const Value(null),
       ),
+      joiningPublicKey: joiningIdentity.publicKey,
     );
   }
 }
