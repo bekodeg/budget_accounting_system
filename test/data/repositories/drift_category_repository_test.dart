@@ -125,8 +125,13 @@ void main() {
       'income-1',
     ]);
 
-    await repository.renameCategory(categoryId: 'expense-1', name: 'Продукты');
+    await repository.renameCategory(
+      budgetId: 'budget-1',
+      categoryId: 'expense-1',
+      name: 'Продукты',
+    );
     await repository.setCategoryArchived(
+      budgetId: 'budget-1',
       categoryId: 'expense-1',
       isArchived: true,
     );
@@ -177,6 +182,7 @@ void main() {
     );
 
     await repository.setCategoryArchived(
+      budgetId: 'budget-1',
       categoryId: 'category-1',
       isArchived: true,
     );
