@@ -4,12 +4,13 @@ import '../../application/errors/onboarding_error.dart';
 import '../../domain/errors/domain_validation_error.dart';
 import '../../domain/value_objects/currency.dart';
 
-typedef CreateInitialBudgetCallback = Future<void> Function({
-  required String userName,
-  required String budgetName,
-  required Currency baseCurrency,
-  required bool applyDefaultCategories,
-});
+typedef CreateInitialBudgetCallback =
+    Future<void> Function({
+      required String userName,
+      required String budgetName,
+      required Currency baseCurrency,
+      required bool applyDefaultCategories,
+    });
 
 final class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({required this.onCreate, super.key});
