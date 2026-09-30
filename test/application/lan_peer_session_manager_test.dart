@@ -16,7 +16,7 @@ import 'package:budget_accounting_system/src/domain/models/lan_peer_endpoint.dar
 import 'package:budget_accounting_system/src/domain/models/local_device.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../support/onboarding_fakes.dart';
+import '../support/onboarding_fakes.dart';
 
 void main() {
   const budgetId = 'budget-1';
