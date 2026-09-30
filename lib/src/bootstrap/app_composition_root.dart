@@ -1,4 +1,5 @@
 import '../application/app_services.dart';
+import '../application/services/budget_snapshot_session_service.dart';
 import '../application/services/budget_transport_secret_manager.dart';
 import '../application/services/lan_discovery_token_service.dart';
 import '../application/services/lan_handshake_service.dart';
@@ -9,6 +10,7 @@ import '../application/services/sync_coordinator_service.dart';
 import '../application/services/sync_session_service.dart';
 import '../application/services/session_sync_mutation_context_provider.dart';
 import '../application/use_cases/accept_budget_invite.dart';
+import '../application/use_cases/apply_budget_snapshot.dart';
 import '../application/use_cases/apply_category_templates.dart';
 import '../application/use_cases/archive_account.dart';
 import '../application/use_cases/archive_category.dart';
@@ -16,6 +18,7 @@ import '../application/use_cases/authorize_budget_action.dart';
 import '../application/use_cases/can_perform_budget_action.dart';
 import '../application/use_cases/create_account.dart';
 import '../application/use_cases/create_budget_invite.dart';
+import '../application/use_cases/create_budget_snapshot.dart';
 import '../application/use_cases/create_category.dart';
 import '../application/use_cases/create_initial_budget.dart';
 import '../application/use_cases/create_transaction.dart';
@@ -60,6 +63,7 @@ import '../data/security/flutter_secure_identity_key_store.dart';
 import '../data/security/secure_invite_consumption_store.dart';
 import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
+import '../data/repositories/drift_budget_snapshot_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
 import '../data/repositories/drift_extended_report_repository.dart';
@@ -166,6 +170,12 @@ final class AppCompositionRoot {
       signatureService: identitySignatureService,
       materializer: syncMaterializer,
     );
+    final snapshotRepository = DriftBudgetSnapshotRepository(
+      database: dal.database,
+      syncDao: dal.sync,
+      signatureService: identitySignatureService,
+    );
+    final budgetSnapshotSessions = BudgetSnapshotSessionService(snapshotRepository);
     final syncSessions = SyncSessionService(journal: syncJournal);
     const syncCoordinator = SyncCoordinatorService();
     final lanPeerSessions = LanPeerSessionManager(
@@ -230,6 +240,7 @@ final class AppCompositionRoot {
           getPublicIdentity: getPublicIdentity,
           transportSecretManager: transportSecretManager,
         ),
+        applyBudgetSnapshot: ApplyBudgetSnapshot(snapshotRepository),
         applyCategoryTemplates: ApplyCategoryTemplates(
           repository: categoryRepository,
           authorization: authorization,
@@ -257,6 +268,7 @@ final class AppCompositionRoot {
           transportSecretManager: transportSecretManager,
           idGenerator: idGenerator,
         ),
+        createBudgetSnapshot: CreateBudgetSnapshot(snapshotRepository),
         createCategory: CreateCategory(
           categoryRepository: categoryRepository,
           idGenerator: idGenerator,
@@ -298,6 +310,7 @@ final class AppCompositionRoot {
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
         getPublicIdentity: getPublicIdentity,
         inspectBudgetInvite: inspectBudgetInvite,
+        budgetSnapshotSessions: budgetSnapshotSessions,
         lanPeerSessions: lanPeerSessions,
         syncCoordinator: syncCoordinator,
         syncSessions: syncSessions,

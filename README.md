@@ -130,5 +130,6 @@ dart run drift_dev make-migrations
 - [Offline invitation через QR и файл](docs/19_offline_invites.md)
 - [P2P-соединение в локальной сети](docs/20_lan_p2p.md)
 - [Coordinator topology для multi-peer sync](docs/22_sync_coordinator.md)
+- [Первичная синхронизация snapshot + tail](docs/23_snapshot_bootstrap.md)
 - [State vector sync protocol](docs/21_state_vector_sync.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
