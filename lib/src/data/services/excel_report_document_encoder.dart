@@ -63,7 +63,11 @@ final class ExcelReportDocumentEncoder implements ReportDocumentEncoder {
     final summary = excel['Summary'];
     summary.appendRow(_cells(['Metric', 'Currency', 'Amount minor', 'Amount']));
     _appendCurrencyMap(summary, 'Income', bundle.summary.incomeMinorByCurrency);
-    _appendCurrencyMap(summary, 'Expense', bundle.summary.expenseMinorByCurrency);
+    _appendCurrencyMap(
+      summary,
+      'Expense',
+      bundle.summary.expenseMinorByCurrency,
+    );
     _appendCurrencyMap(summary, 'Net', bundle.summary.netMinorByCurrency);
 
     final byCategory = excel['By Category'];
