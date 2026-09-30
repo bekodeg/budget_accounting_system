@@ -9,6 +9,7 @@ import '../application/use_cases/create_transaction.dart';
 import '../application/use_cases/create_transfer.dart';
 import '../application/use_cases/delete_transaction.dart';
 import '../application/use_cases/export_report.dart';
+import '../application/use_cases/export_report.dart';
 import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/get_budget_account_balances.dart';
 import '../application/use_cases/rename_category.dart';
@@ -39,10 +40,13 @@ import '../data/repositories/drift_dashboard_repository.dart';
 import '../data/repositories/drift_extended_report_repository.dart';
 import '../data/repositories/drift_report_export_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
+import '../data/repositories/drift_report_export_repository.dart';
 import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_transaction_repository.dart';
 import '../data/services/excel_report_document_encoder.dart';
 import '../data/services/platform_report_share_gateway.dart';
+import '../data/services/local_report_document_encoder.dart';
+import '../data/services/local_report_share_gateway.dart';
 import '../data/services/secure_id_generator.dart';
 
 final class AppCompositionRoot {
@@ -61,6 +65,9 @@ final class AppCompositionRoot {
     final planRepository = DriftPlanRepository(dal.plansAndReceipts);
     final monthlyReportRepository = DriftMonthlyReportRepository(dal.reports);
     final extendedReportRepository = DriftExtendedReportRepository(dal.reports);
+    final reportExportRepository = DriftReportExportRepository(dal.transactions);
+    const reportDocumentEncoder = LocalReportDocumentEncoder();
+    final reportShareGateway = LocalReportShareGateway();
     final reportExportRepository = DriftReportExportRepository(dal.transactions);
     final sessionStore = SharedPreferencesSessionStore();
     final idGenerator = SecureIdGenerator();
@@ -99,6 +106,12 @@ final class AppCompositionRoot {
           idGenerator: idGenerator,
         ),
         deleteTransaction: DeleteTransaction(transactionRepository),
+        exportReport: ExportReport(
+          reportRepository: extendedReportRepository,
+          exportRepository: reportExportRepository,
+          encoder: reportDocumentEncoder,
+          shareGateway: reportShareGateway,
+        ),
         exportReport: ExportReport(
           reportRepository: extendedReportRepository,
           exportRepository: reportExportRepository,
