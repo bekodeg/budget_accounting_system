@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart';
 
@@ -148,7 +149,7 @@ final class DriftSyncJournal implements SyncJournal {
           );
         }
 
-        List<int> signatureBytes;
+        Uint8List signatureBytes;
         try {
           signatureBytes = base64Url.decode(wire.signature);
         } on FormatException {
