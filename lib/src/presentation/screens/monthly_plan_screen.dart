@@ -36,16 +36,11 @@ final class _MonthlyPlanScreenState extends State<MonthlyPlanScreen> {
     });
   }
 
-  Future<void> _edit(
-    BudgetCategory category,
-    BigInt currentAmount,
-  ) async {
+  Future<void> _edit(BudgetCategory category, BigInt currentAmount) async {
     final raw = await showDialog<String>(
       context: context,
-      builder: (context) => _PlanAmountDialog(
-        category: category,
-        currentAmount: currentAmount,
-      ),
+      builder: (context) =>
+          _PlanAmountDialog(category: category, currentAmount: currentAmount),
     );
     if (raw == null || !mounted) return;
 
@@ -166,9 +161,7 @@ final class _MonthlyPlanScreenState extends State<MonthlyPlanScreen> {
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 32),
                     child: Center(
-                      child: Text(
-                        'Нет расходных категорий для планирования.',
-                      ),
+                      child: Text('Нет расходных категорий для планирования.'),
                     ),
                   ),
                 for (final category in active)

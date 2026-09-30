@@ -269,10 +269,7 @@ void main() {
     );
 
     final september = await repository
-        .watchMonthlyReport(
-          budgetId: 'budget-1',
-          monthStart: DateTime(2026, 9),
-        )
+        .watchMonthlyReport(budgetId: 'budget-1', monthStart: DateTime(2026, 9))
         .first;
     final october = await repository
         .watchMonthlyReport(
@@ -283,16 +280,16 @@ void main() {
 
     expect(september.expenseMinorByCurrency, isEmpty);
     expect(
-      september.categories.singleWhere(
-        (item) => item.categoryId == 'food',
-      ).plannedAmountMinor,
+      september.categories
+          .singleWhere((item) => item.categoryId == 'food')
+          .plannedAmountMinor,
       BigInt.from(10000),
     );
     expect(october.expenseMinorByCurrency['EUR'], BigInt.from(2500));
     expect(
-      october.categories.singleWhere(
-        (item) => item.categoryId == 'food',
-      ).plannedAmountMinor,
+      october.categories
+          .singleWhere((item) => item.categoryId == 'food')
+          .plannedAmountMinor,
       BigInt.zero,
     );
   });

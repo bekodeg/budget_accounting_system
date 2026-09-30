@@ -42,10 +42,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: MonthlyPlanScreen(
-            services: services,
-            budgetId: 'budget-1',
-          ),
+          body: MonthlyPlanScreen(services: services, budgetId: 'budget-1'),
         ),
       ),
     );

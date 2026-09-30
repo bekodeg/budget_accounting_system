@@ -68,7 +68,8 @@ AppServices fakeAppServices({
   final transactions = transactionRepository ?? FakeTransactionRepository();
   final dashboard = dashboardRepository ?? FakeDashboardRepository();
   final plans = planRepository ?? FakePlanRepository();
-  final monthlyReports = monthlyReportRepository ?? FakeMonthlyReportRepository();
+  final monthlyReports =
+      monthlyReportRepository ?? FakeMonthlyReportRepository();
   final ids =
       idGenerator ??
       FakeIdGenerator(['user-1', 'budget-1', 'entity-1', 'entity-2']);
@@ -443,10 +444,7 @@ final class FakeAccountRepository implements AccountRepository {
     required bool includeArchived,
     DateTime? atInclusive,
   }) async {
-    final accounts = snapshot(
-      budgetId,
-      includeArchived: includeArchived,
-    );
+    final accounts = snapshot(budgetId, includeArchived: includeArchived);
     return [
       for (final account in accounts)
         AccountBalance(

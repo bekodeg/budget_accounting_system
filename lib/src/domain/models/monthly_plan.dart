@@ -28,13 +28,14 @@ final class MonthlyPlan {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        budgetId,
-        month,
-        categoryId,
-        plannedAmountMinor,
-        updatedAt,
-      );
+    id,
+    budgetId,
+    month,
+    categoryId,
+    plannedAmountMinor,
+    updatedAt,
+  );
 }
 
-DateTime normalizePlanMonth(DateTime value) => DateTime(value.year, value.month);
+DateTime normalizePlanMonth(DateTime value) =>
+    DateTime(value.year, value.month);

@@ -34,17 +34,19 @@ final class PlanReceiptDao {
     final normalizedMonth = DateTime(month.year, month.month);
 
     return _db.transaction(() async {
-      final existing = await (_db.select(_db.plans)
-            ..where(
-              (row) =>
-                  row.budgetId.equals(budgetId) &
-                  row.month.equals(normalizedMonth) &
-                  row.categoryId.equals(categoryId),
-            ))
-          .getSingleOrNull();
+      final existing =
+          await (_db.select(_db.plans)..where(
+                (row) =>
+                    row.budgetId.equals(budgetId) &
+                    row.month.equals(normalizedMonth) &
+                    row.categoryId.equals(categoryId),
+              ))
+              .getSingleOrNull();
 
       if (existing == null) {
-        await _db.into(_db.plans).insert(
+        await _db
+            .into(_db.plans)
+            .insert(
               PlansCompanion.insert(
                 id: id,
                 budgetId: budgetId,
@@ -57,13 +59,14 @@ final class PlanReceiptDao {
         return;
       }
 
-      await (_db.update(_db.plans)..where((row) => row.id.equals(existing.id)))
-          .write(
-            PlansCompanion(
-              plannedAmountMinor: Value(plannedAmountMinor),
-              updatedAt: Value(updatedAt),
-            ),
-          );
+      await (_db.update(
+        _db.plans,
+      )..where((row) => row.id.equals(existing.id))).write(
+        PlansCompanion(
+          plannedAmountMinor: Value(plannedAmountMinor),
+          updatedAt: Value(updatedAt),
+        ),
+      );
     });
   }
 
@@ -74,13 +77,12 @@ final class PlanReceiptDao {
   }) async {
     final normalizedMonth = DateTime(month.year, month.month);
 
-    await (_db.delete(_db.plans)
-          ..where(
-            (row) =>
-                row.budgetId.equals(budgetId) &
-                row.month.equals(normalizedMonth) &
-                row.categoryId.equals(categoryId),
-          ))
+    await (_db.delete(_db.plans)..where(
+          (row) =>
+              row.budgetId.equals(budgetId) &
+              row.month.equals(normalizedMonth) &
+              row.categoryId.equals(categoryId),
+        ))
         .go();
   }
 

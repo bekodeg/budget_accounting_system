@@ -18,8 +18,7 @@ final class MonthlyCategoryReport {
   BigInt get actualPlanCurrencyMinor =>
       actualMinorByCurrency[planCurrency] ?? BigInt.zero;
 
-  BigInt get remainingMinor =>
-      plannedAmountMinor - actualPlanCurrencyMinor;
+  BigInt get remainingMinor => plannedAmountMinor - actualPlanCurrencyMinor;
 }
 
 final class MonthlyAccountReportBalance {
