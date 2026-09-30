@@ -14,12 +14,14 @@ final class TransactionCrudScreen extends StatefulWidget {
     required this.services,
     required this.budgetId,
     required this.userId,
+    this.canEdit = true,
     super.key,
   });
 
   final AppServices services;
   final String budgetId;
   final String userId;
+  final bool canEdit;
 
   @override
   State<TransactionCrudScreen> createState() => _TransactionCrudScreenState();
@@ -188,12 +190,13 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        FilledButton.icon(
-                          key: const ValueKey('add-transaction'),
-                          onPressed: _openEditor,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Добавить операцию'),
-                        ),
+                        if (widget.canEdit)
+                          FilledButton.icon(
+                            key: const ValueKey('add-transaction'),
+                            onPressed: _openEditor,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Добавить операцию'),
+                          ),
                         OutlinedButton.icon(
                           key: const ValueKey('transaction-filters'),
                           onPressed: () => _openFilters(accounts, categories),
@@ -237,8 +240,11 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                                 widget.userId,
                               ),
                             ),
-                            onTap: () => _openEditor(transaction: transaction),
-                            trailing: PopupMenuButton<_TransactionAction>(
+                            onTap: widget.canEdit
+                                ? () => _openEditor(transaction: transaction)
+                                : null,
+                            trailing: widget.canEdit
+                                ? PopupMenuButton<_TransactionAction>(
                               key: ValueKey(
                                 'transaction-menu-${transaction.id}',
                               ),
@@ -262,7 +268,8 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                                   child: Text('Удалить'),
                                 ),
                               ],
-                            ),
+                            )
+                                : null,
                           ),
                         ),
                   ],

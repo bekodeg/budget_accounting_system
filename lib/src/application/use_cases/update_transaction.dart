@@ -3,6 +3,8 @@ import '../../domain/models/domain_types.dart';
 import '../../domain/models/transaction_draft.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/value_objects/money.dart';
+import '../authorization/budget_action.dart';
+import '../authorization/budget_authorization_guard.dart';
 import '../errors/transaction_error.dart';
 import 'require_account_in_budget.dart';
 import 'require_category_in_budget.dart';
@@ -12,13 +14,16 @@ final class UpdateTransaction {
     required TransactionRepository transactionRepository,
     required RequireAccountInBudget requireAccountInBudget,
     required RequireCategoryInBudget requireCategoryInBudget,
+    required BudgetAuthorizationGuard authorization,
   }) : _transactionRepository = transactionRepository,
        _requireAccountInBudget = requireAccountInBudget,
-       _requireCategoryInBudget = requireCategoryInBudget;
+       _requireCategoryInBudget = requireCategoryInBudget,
+       _authorization = authorization;
 
   final TransactionRepository _transactionRepository;
   final RequireAccountInBudget _requireAccountInBudget;
   final RequireCategoryInBudget _requireCategoryInBudget;
+  final BudgetAuthorizationGuard _authorization;
 
   Future<BudgetTransactionEntry> call({
     required String budgetId,
@@ -30,6 +35,11 @@ final class UpdateTransaction {
     required String categoryId,
     String? description,
   }) async {
+    await _authorization.require(
+      budgetId: budgetId,
+      action: BudgetAction.mutate,
+    );
+
     if (type == TransactionType.transfer) {
       throw const TransactionError(
         code: TransactionErrorCode.invalidCategory,

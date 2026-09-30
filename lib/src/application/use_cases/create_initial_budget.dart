@@ -5,6 +5,8 @@ import '../../domain/repositories/category_repository.dart';
 import '../../domain/value_objects/currency.dart';
 import '../errors/onboarding_error.dart';
 import '../ports/id_generator.dart';
+import '../ports/identity_key_pair_generator.dart';
+import '../ports/identity_key_store.dart';
 import '../ports/session_store.dart';
 import 'apply_category_templates.dart';
 
@@ -14,15 +16,21 @@ final class CreateInitialBudget {
     required CategoryRepository categoryRepository,
     required SessionStore sessionStore,
     required IdGenerator idGenerator,
+    required IdentityKeyStore identityKeyStore,
+    required IdentityKeyPairGenerator identityKeyPairGenerator,
   }) : _budgetRepository = budgetRepository,
        _categoryRepository = categoryRepository,
        _sessionStore = sessionStore,
-       _idGenerator = idGenerator;
+       _idGenerator = idGenerator,
+       _identityKeyStore = identityKeyStore,
+       _identityKeyPairGenerator = identityKeyPairGenerator;
 
   final BudgetRepository _budgetRepository;
   final CategoryRepository _categoryRepository;
   final SessionStore _sessionStore;
   final IdGenerator _idGenerator;
+  final IdentityKeyStore _identityKeyStore;
+  final IdentityKeyPairGenerator _identityKeyPairGenerator;
 
   Future<AppSession> call({
     required String userName,
@@ -49,19 +57,37 @@ final class CreateInitialBudget {
 
     final userId = _idGenerator.nextId();
     final budgetId = _idGenerator.nextId();
+    final deviceId = _idGenerator.nextId();
     final initialCategories = applyDefaultCategories
         ? await _buildInitialCategories(budgetId)
         : const <InitialBudgetCategory>[];
 
-    final session = await _budgetRepository.createOwnedBudget(
+    final keyPair = await _identityKeyPairGenerator.generate();
+    await _identityKeyStore.saveIdentity(
       userId: userId,
-      userName: normalizedUserName,
-      publicKey: 'local-unverified:$userId',
-      budgetId: budgetId,
-      budgetName: normalizedBudgetName,
-      baseCurrency: baseCurrency,
-      initialCategories: initialCategories,
+      deviceId: deviceId,
+      privateKey: keyPair.privateKey,
     );
+
+    AppSession session;
+    try {
+      session = await _budgetRepository.createOwnedBudget(
+        userId: userId,
+        userName: normalizedUserName,
+        publicKey: keyPair.publicKey,
+        deviceId: deviceId,
+        budgetId: budgetId,
+        budgetName: normalizedBudgetName,
+        baseCurrency: baseCurrency,
+        initialCategories: initialCategories,
+      );
+    } on Object {
+      await _identityKeyStore.deleteIdentity(
+        userId: userId,
+        deviceId: deviceId,
+      );
+      rethrow;
+    }
 
     try {
       await _sessionStore.saveSession(
