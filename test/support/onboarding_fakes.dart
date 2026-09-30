@@ -6,6 +6,7 @@ import 'package:budget_accounting_system/src/application/app_services.dart';
 import 'package:budget_accounting_system/src/application/authorization/budget_action.dart';
 import 'package:budget_accounting_system/src/application/authorization/budget_authorization_guard.dart';
 import 'package:budget_accounting_system/src/application/errors/authorization_error.dart';
+import 'package:budget_accounting_system/src/application/ports/budget_transport_secret_store.dart';
 import 'package:budget_accounting_system/src/application/ports/id_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_key_pair_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_key_store.dart';
@@ -16,6 +17,7 @@ import 'package:budget_accounting_system/src/application/ports/secure_token_gene
 import 'package:budget_accounting_system/src/application/ports/session_store.dart';
 import 'package:budget_accounting_system/src/application/ports/report_document_encoder.dart';
 import 'package:budget_accounting_system/src/application/ports/report_share_gateway.dart';
+import 'package:budget_accounting_system/src/application/services/budget_transport_secret_manager.dart';
 import 'package:budget_accounting_system/src/application/use_cases/accept_budget_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/apply_category_templates.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_account.dart';
@@ -111,6 +113,7 @@ AppServices fakeAppServices({
   FakeInviteConsumptionStore? inviteConsumptionStore,
   FakeInviteFileGateway? inviteFileGateway,
   FakeSecureTokenGenerator? secureTokenGenerator,
+  FakeBudgetTransportSecretStore? transportSecretStore,
   BudgetAuthorizationGuard? authorization,
   FakeIdGenerator? idGenerator,
 }) {
@@ -134,6 +137,12 @@ AppServices fakeAppServices({
       inviteConsumptionStore ?? FakeInviteConsumptionStore();
   final inviteFiles = inviteFileGateway ?? FakeInviteFileGateway();
   final tokens = secureTokenGenerator ?? FakeSecureTokenGenerator();
+  final transportSecrets =
+      transportSecretStore ?? FakeBudgetTransportSecretStore();
+  final transportSecretManager = BudgetTransportSecretManager(
+    store: transportSecrets,
+    tokenGenerator: tokens,
+  );
   final auth = authorization ?? FakeBudgetAuthorizationGuard();
   final ids =
       idGenerator ??
@@ -164,6 +173,7 @@ AppServices fakeAppServices({
       consumptionStore: inviteConsumption,
       sessionStore: sessionStore,
       getPublicIdentity: getPublicIdentity,
+      transportSecretManager: transportSecretManager,
     ),
     applyCategoryTemplates: ApplyCategoryTemplates(
       repository: categories,
@@ -186,6 +196,7 @@ AppServices fakeAppServices({
       getPublicIdentity: getPublicIdentity,
       signatureService: signatures,
       tokenGenerator: tokens,
+      transportSecretManager: transportSecretManager,
       idGenerator: ids,
     ),
     createCategory: CreateCategory(
@@ -294,6 +305,27 @@ final class FakeIdentitySignatureService implements IdentitySignatureService {
     required String signature,
   }) async {
     return signature == base64Url.encode(message);
+  }
+}
+
+final class FakeBudgetTransportSecretStore
+    implements BudgetTransportSecretStore {
+  final Map<String, String> secretsByBudget = {};
+
+  @override
+  Future<String?> load(String budgetId) async => secretsByBudget[budgetId];
+
+  @override
+  Future<void> save({
+    required String budgetId,
+    required String secret,
+  }) async {
+    secretsByBudget[budgetId] = secret;
+  }
+
+  @override
+  Future<void> delete(String budgetId) async {
+    secretsByBudget.remove(budgetId);
   }
 }
 
