@@ -21,6 +21,7 @@ final class ArchiveCategory {
       action: BudgetAction.mutate,
     );
     return _repository.setCategoryArchived(
+      budgetId: budgetId,
       categoryId: categoryId,
       isArchived: true,
     );
