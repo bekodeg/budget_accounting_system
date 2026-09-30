@@ -5,6 +5,7 @@ import '../../application/authorization/budget_action.dart';
 import '../../application/errors/authorization_error.dart';
 import '../../domain/models/budget_member_profile.dart';
 import '../../domain/models/domain_types.dart';
+import 'budget_invite_panel.dart';
 
 final class BudgetMembersScreen extends StatelessWidget {
   const BudgetMembersScreen({
@@ -77,6 +78,12 @@ final class BudgetMembersScreen extends StatelessWidget {
                 const Text(
                   'OWNER управляет участниками, EDITOR изменяет бюджетные '
                   'данные, VIEWER имеет доступ только на чтение и экспорт.',
+                ),
+                const SizedBox(height: 16),
+                BudgetInvitePanel(
+                  services: services,
+                  budgetId: budgetId,
+                  canCreate: canManage,
                 ),
                 const SizedBox(height: 16),
                 for (final member in members)
