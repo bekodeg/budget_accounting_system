@@ -34,6 +34,7 @@ final class DriftSyncMutationExecutor implements SyncMutationExecutor {
   Future<T> execute<T>({
     required SyncMutationDraft draft,
     required Future<T> Function() mutate,
+    bool Function(T result)? shouldRecord,
   }) {
     return _database.transaction(() async {
       final operationId = draft.spec.operationId ?? _idGenerator.nextId();
@@ -68,6 +69,9 @@ final class DriftSyncMutationExecutor implements SyncMutationExecutor {
       );
 
       final result = await mutate();
+      if (shouldRecord != null && !shouldRecord(result)) {
+        return result;
+      }
 
       await _syncDao.appendStrict(
         SyncOperationsCompanion.insert(
