@@ -15,6 +15,7 @@ void main() {
     final useCase = CreateCategory(
       categoryRepository: repository,
       idGenerator: FakeIdGenerator(['category-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     final category = await useCase(
@@ -32,6 +33,7 @@ void main() {
     final useCase = CreateCategory(
       categoryRepository: FakeCategoryRepository(),
       idGenerator: FakeIdGenerator(['category-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     await expectLater(
@@ -63,7 +65,10 @@ void main() {
         ),
       ],
     );
-    final useCase = ApplyCategoryTemplates(repository);
+    final useCase = ApplyCategoryTemplates(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
 
     await useCase('budget-1');
     await useCase('budget-1');
@@ -90,14 +95,27 @@ void main() {
         ),
       ],
     );
-    final apply = ApplyCategoryTemplates(repository);
-    final rename = RenameCategory(repository);
-    final archive = ArchiveCategory(repository);
+    final apply = ApplyCategoryTemplates(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
+    final rename = RenameCategory(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
+    final archive = ArchiveCategory(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
     const templateId = 'budget-1:template:expense.food';
 
     await apply('budget-1');
-    await rename(categoryId: templateId, name: 'Супермаркет');
-    await archive(templateId);
+    await rename(
+      budgetId: 'budget-1',
+      categoryId: templateId,
+      name: 'Супермаркет',
+    );
+    await archive(budgetId: 'budget-1', categoryId: templateId);
     await apply('budget-1');
 
     final all = repository.snapshot('budget-1', includeArchived: true);
@@ -111,17 +129,28 @@ void main() {
     final create = CreateCategory(
       categoryRepository: repository,
       idGenerator: FakeIdGenerator(['category-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
-    final rename = RenameCategory(repository);
-    final archive = ArchiveCategory(repository);
+    final rename = RenameCategory(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
+    final archive = ArchiveCategory(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
 
     final category = await create(
       budgetId: 'budget-1',
       name: 'Еда',
       kind: CategoryKind.expense,
     );
-    await rename(categoryId: category.id, name: 'Продукты');
-    await archive(category.id);
+    await rename(
+      budgetId: 'budget-1',
+      categoryId: category.id,
+      name: 'Продукты',
+    );
+    await archive(budgetId: 'budget-1', categoryId: category.id);
 
     expect(repository.snapshot('budget-1', includeArchived: false), isEmpty);
     final all = repository.snapshot('budget-1', includeArchived: true);
