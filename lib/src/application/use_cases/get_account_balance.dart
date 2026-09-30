@@ -10,10 +10,12 @@ final class GetAccountBalance {
   Future<AccountBalance> call({
     required String budgetId,
     required String accountId,
+    DateTime? atInclusive,
   }) async {
     final balance = await _repository.getBalance(
       budgetId: budgetId,
       accountId: accountId,
+      atInclusive: atInclusive,
     );
     if (balance == null) {
       throw const AccountError(

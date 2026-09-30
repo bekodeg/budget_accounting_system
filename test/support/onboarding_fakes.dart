@@ -13,11 +13,13 @@ import 'package:budget_accounting_system/src/application/use_cases/create_transa
 import 'package:budget_accounting_system/src/application/use_cases/create_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/delete_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_account_balance.dart';
+import 'package:budget_accounting_system/src/application/use_cases/get_budget_account_balances.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_account_in_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_category_in_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/resolve_app_startup.dart';
 import 'package:budget_accounting_system/src/application/use_cases/select_budget.dart';
+import 'package:budget_accounting_system/src/application/use_cases/set_monthly_plan_amount.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_transfer.dart';
@@ -25,6 +27,8 @@ import 'package:budget_accounting_system/src/application/use_cases/watch_budget_
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_categories.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_dashboard_summary.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_filtered_transactions.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_monthly_plan.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_monthly_report.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_user_budgets.dart';
 import 'package:budget_accounting_system/src/domain/models/account_balance.dart';
@@ -36,11 +40,15 @@ import 'package:budget_accounting_system/src/domain/models/budget_transaction_en
 import 'package:budget_accounting_system/src/domain/models/category_template.dart';
 import 'package:budget_accounting_system/src/domain/models/dashboard_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
+import 'package:budget_accounting_system/src/domain/models/monthly_plan.dart';
+import 'package:budget_accounting_system/src/domain/models/monthly_report.dart';
 import 'package:budget_accounting_system/src/domain/models/transaction_filter.dart';
 import 'package:budget_accounting_system/src/domain/repositories/account_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/budget_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/category_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/dashboard_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/plan_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/monthly_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 
@@ -51,12 +59,16 @@ AppServices fakeAppServices({
   FakeAccountRepository? accountRepository,
   FakeTransactionRepository? transactionRepository,
   FakeDashboardRepository? dashboardRepository,
+  FakePlanRepository? planRepository,
+  FakeMonthlyReportRepository? monthlyReportRepository,
   FakeIdGenerator? idGenerator,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
   final accounts = accountRepository ?? FakeAccountRepository();
   final transactions = transactionRepository ?? FakeTransactionRepository();
   final dashboard = dashboardRepository ?? FakeDashboardRepository();
+  final plans = planRepository ?? FakePlanRepository();
+  final monthlyReports = monthlyReportRepository ?? FakeMonthlyReportRepository();
   final ids =
       idGenerator ??
       FakeIdGenerator(['user-1', 'budget-1', 'entity-1', 'entity-2']);
@@ -89,6 +101,7 @@ AppServices fakeAppServices({
       idGenerator: ids,
     ),
     getAccountBalance: GetAccountBalance(accounts),
+    getBudgetAccountBalances: GetBudgetAccountBalances(accounts),
     renameCategory: RenameCategory(categories),
     requireAccountInBudget: RequireAccountInBudget(accounts),
     requireCategoryInBudget: RequireCategoryInBudget(categories),
@@ -99,6 +112,11 @@ AppServices fakeAppServices({
     selectBudget: SelectBudget(
       budgetRepository: repository,
       sessionStore: sessionStore,
+    ),
+    setMonthlyPlanAmount: SetMonthlyPlanAmount(
+      planRepository: plans,
+      categoryRepository: categories,
+      idGenerator: ids,
     ),
     updateAccount: UpdateAccount(accounts),
     updateTransfer: UpdateTransfer(
@@ -114,6 +132,8 @@ AppServices fakeAppServices({
     watchBudgetCategories: WatchBudgetCategories(categories),
     watchDashboardSummary: WatchDashboardSummary(dashboard),
     watchFilteredTransactions: WatchFilteredTransactions(transactions),
+    watchMonthlyPlan: WatchMonthlyPlan(plans),
+    watchMonthlyReport: WatchMonthlyReport(monthlyReports),
     watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
   );
@@ -404,6 +424,7 @@ final class FakeAccountRepository implements AccountRepository {
   Future<AccountBalance?> getBalance({
     required String budgetId,
     required String accountId,
+    DateTime? atInclusive,
   }) async {
     final account = await findAccount(budgetId: budgetId, accountId: accountId);
     if (account == null) return null;
@@ -414,6 +435,28 @@ final class FakeAccountRepository implements AccountRepository {
           (transactionDeltaByAccount[account.id] ?? BigInt.zero),
       currency: account.currency,
     );
+  }
+
+  @override
+  Future<List<AccountBalance>> getBalances({
+    required String budgetId,
+    required bool includeArchived,
+    DateTime? atInclusive,
+  }) async {
+    final accounts = snapshot(
+      budgetId,
+      includeArchived: includeArchived,
+    );
+    return [
+      for (final account in accounts)
+        AccountBalance(
+          accountId: account.id,
+          minorUnits:
+              account.openingBalanceMinor +
+              (transactionDeltaByAccount[account.id] ?? BigInt.zero),
+          currency: account.currency,
+        ),
+    ];
   }
 }
 
@@ -444,6 +487,108 @@ final class FakeDashboardRepository implements DashboardRepository {
   }) async* {
     yield summary;
     yield* _changes.stream;
+  }
+}
+
+final class FakeMonthlyReportRepository implements MonthlyReportRepository {
+  FakeMonthlyReportRepository({MonthlyReport? report})
+    : report =
+          report ??
+          MonthlyReport(
+            monthStart: DateTime(2026, 9),
+            baseCurrency: 'EUR',
+            incomeMinorByCurrency: const {},
+            expenseMinorByCurrency: const {},
+            categories: const [],
+            accountBalances: const [],
+          );
+
+  MonthlyReport report;
+  final StreamController<MonthlyReport> _changes =
+      StreamController<MonthlyReport>.broadcast();
+
+  void emit(MonthlyReport value) {
+    report = value;
+    _changes.add(value);
+  }
+
+  @override
+  Stream<MonthlyReport> watchMonthlyReport({
+    required String budgetId,
+    required DateTime monthStart,
+  }) async* {
+    yield report;
+    yield* _changes.stream;
+  }
+}
+
+final class FakePlanRepository implements PlanRepository {
+  FakePlanRepository({Map<String, List<MonthlyPlan>>? plansByBudget})
+    : plansByBudget = plansByBudget ?? {};
+
+  final Map<String, List<MonthlyPlan>> plansByBudget;
+  final StreamController<String> _changes = StreamController.broadcast();
+
+  String _key(DateTime month) => '${month.year}-${month.month}';
+
+  List<MonthlyPlan> snapshot(String budgetId, DateTime month) {
+    final normalized = normalizePlanMonth(month);
+    return List.unmodifiable(
+      (plansByBudget[budgetId] ?? const [])
+          .where((plan) => normalizePlanMonth(plan.month) == normalized)
+          .toList(growable: false),
+    );
+  }
+
+  void _emit(String budgetId) => _changes.add(budgetId);
+
+  @override
+  Stream<List<MonthlyPlan>> watchMonth({
+    required String budgetId,
+    required DateTime month,
+  }) async* {
+    yield snapshot(budgetId, month);
+    await for (final changedBudgetId in _changes.stream) {
+      if (changedBudgetId == budgetId) {
+        yield snapshot(budgetId, month);
+      }
+    }
+  }
+
+  @override
+  Future<void> upsert(MonthlyPlan plan) async {
+    final items = plansByBudget.putIfAbsent(plan.budgetId, () => []);
+    final index = items.indexWhere(
+      (item) =>
+          _key(item.month) == _key(plan.month) &&
+          item.categoryId == plan.categoryId,
+    );
+    if (index < 0) {
+      items.add(plan);
+    } else {
+      items[index] = MonthlyPlan(
+        id: items[index].id,
+        budgetId: plan.budgetId,
+        month: normalizePlanMonth(plan.month),
+        categoryId: plan.categoryId,
+        plannedAmountMinor: plan.plannedAmountMinor,
+        updatedAt: plan.updatedAt,
+      );
+    }
+    _emit(plan.budgetId);
+  }
+
+  @override
+  Future<void> clear({
+    required String budgetId,
+    required DateTime month,
+    required String categoryId,
+  }) async {
+    final key = _key(month);
+    plansByBudget[budgetId]?.removeWhere(
+      (plan) => _key(plan.month) == key && plan.categoryId == categoryId,
+    );
+    _emit(budgetId);
   }
 }
 
