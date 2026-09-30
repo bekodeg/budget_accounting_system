@@ -1,4 +1,5 @@
 import '../application/app_services.dart';
+import '../application/services/session_sync_mutation_context_provider.dart';
 import '../application/use_cases/accept_budget_invite.dart';
 import '../application/use_cases/apply_category_templates.dart';
 import '../application/use_cases/archive_account.dart';
@@ -57,8 +58,13 @@ import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
 import '../data/repositories/drift_report_export_repository.dart';
 import '../data/repositories/drift_transaction_repository.dart';
+import '../data/repositories/syncing_account_repository.dart';
+import '../data/repositories/syncing_category_repository.dart';
+import '../data/repositories/syncing_plan_repository.dart';
+import '../data/repositories/syncing_transaction_repository.dart';
 import '../data/services/ed25519_identity_key_pair_generator.dart';
 import '../data/services/ed25519_identity_signature_service.dart';
+import '../data/services/drift_sync_mutation_executor.dart';
 import '../data/services/excel_report_document_encoder.dart';
 import '../data/services/platform_invite_file_gateway.dart';
 import '../data/services/platform_report_share_gateway.dart';
@@ -72,13 +78,17 @@ final class AppCompositionRoot {
   factory AppCompositionRoot.defaults() {
     final dal = BudgetDal.defaults();
     final budgetRepository = DriftBudgetRepository(dal.usersAndBudgets);
-    final categoryRepository = DriftCategoryRepository(
+    final baseCategoryRepository = DriftCategoryRepository(
       dal.categoriesAndAccounts,
     );
-    final accountRepository = DriftAccountRepository(dal.categoriesAndAccounts);
-    final transactionRepository = DriftTransactionRepository(dal.transactions);
+    final baseAccountRepository = DriftAccountRepository(
+      dal.categoriesAndAccounts,
+    );
+    final baseTransactionRepository = DriftTransactionRepository(
+      dal.transactions,
+    );
+    final basePlanRepository = DriftPlanRepository(dal.plansAndReceipts);
     final dashboardRepository = DriftDashboardRepository(dal.reports);
-    final planRepository = DriftPlanRepository(dal.plansAndReceipts);
     final monthlyReportRepository = DriftMonthlyReportRepository(dal.reports);
     final extendedReportRepository = DriftExtendedReportRepository(dal.reports);
     final reportExportRepository = DriftReportExportRepository(
@@ -108,6 +118,36 @@ final class AppCompositionRoot {
       sessionStore: sessionStore,
     );
     final getPublicIdentity = GetPublicIdentity(ensureLocalIdentity);
+    final syncMutationExecutor = DriftSyncMutationExecutor(
+      database: dal.database,
+      syncDao: dal.sync,
+      idGenerator: idGenerator,
+      signatureService: identitySignatureService,
+    );
+    final syncMutationContext = SessionSyncMutationContextProvider(
+      sessionStore: sessionStore,
+      getPublicIdentity: getPublicIdentity,
+    );
+    final categoryRepository = SyncingCategoryRepository(
+      delegate: baseCategoryRepository,
+      executor: syncMutationExecutor,
+      contextProvider: syncMutationContext,
+    );
+    final accountRepository = SyncingAccountRepository(
+      delegate: baseAccountRepository,
+      executor: syncMutationExecutor,
+      contextProvider: syncMutationContext,
+    );
+    final transactionRepository = SyncingTransactionRepository(
+      delegate: baseTransactionRepository,
+      executor: syncMutationExecutor,
+      contextProvider: syncMutationContext,
+    );
+    final planRepository = SyncingPlanRepository(
+      delegate: basePlanRepository,
+      executor: syncMutationExecutor,
+      contextProvider: syncMutationContext,
+    );
     final inspectBudgetInvite = InspectBudgetInvite(
       signatureService: identitySignatureService,
       consumptionStore: inviteConsumptionStore,
