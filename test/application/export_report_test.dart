@@ -6,37 +6,37 @@ import 'package:budget_accounting_system/src/application/use_cases/export_report
 import 'package:budget_accounting_system/src/domain/models/period_report.dart';
 import 'package:budget_accounting_system/src/domain/models/report_export.dart';
 import 'package:budget_accounting_system/src/domain/models/report_filter.dart';
+import 'package:budget_accounting_system/src/domain/models/year_report.dart';
 import 'package:budget_accounting_system/src/domain/repositories/extended_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/report_export_repository.dart';
-import 'package:budget_accounting_system/src/domain/models/year_report.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
     'builds safe deterministic names and sends both documents to share gateway',
     () async {
-    final reportRepository = _ReportRepository();
-    final exportRepository = _ExportRepository();
-    final encoder = _Encoder();
-    final shareGateway = _ShareGateway();
-    final useCase = ExportReport(
-      reportRepository: reportRepository,
-      exportRepository: exportRepository,
-      encoder: encoder,
-      shareGateway: shareGateway,
-    );
-    final filter = ReportFilter(
-      budgetId: 'Дом / 2026',
-      fromInclusive: DateTime(2026, 9, 1),
-      toExclusive: DateTime(2026, 10, 1),
-    );
+      final reportRepository = _ReportRepository();
+      final exportRepository = _ExportRepository();
+      final encoder = _Encoder();
+      final shareGateway = _ShareGateway();
+      final useCase = ExportReport(
+        reportRepository: reportRepository,
+        exportRepository: exportRepository,
+        encoder: encoder,
+        shareGateway: shareGateway,
+      );
+      final filter = ReportFilter(
+        budgetId: 'Дом / 2026',
+        fromInclusive: DateTime(2026, 9, 1),
+        toExclusive: DateTime(2026, 10, 1),
+      );
 
-    final result = await useCase(filter);
+      final result = await useCase(filter);
 
-    expect(shareGateway.baseName, 'budget_2026_20260901_20261001');
-    expect(shareGateway.csvBytes, [1, 2, 3]);
-    expect(shareGateway.xlsxBytes, [4, 5, 6]);
-    expect(result.csvFileName, 'budget_2026_20260901_20261001.csv');
+      expect(shareGateway.baseName, 'budget_2026_20260901_20261001');
+      expect(shareGateway.csvBytes, [1, 2, 3]);
+      expect(shareGateway.xlsxBytes, [4, 5, 6]);
+      expect(result.csvFileName, 'budget_2026_20260901_20261001.csv');
       expect(result.xlsxFileName, 'budget_2026_20260901_20261001.xlsx');
     },
   );
