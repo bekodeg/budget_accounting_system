@@ -136,5 +136,6 @@ String _serviceName(String deviceId) =>
 String _deviceHint(String deviceId) {
   final normalized = deviceId.replaceAll(RegExp('[^A-Za-z0-9]'), '');
   if (normalized.isEmpty) return 'device';
-  return normalized.substring(0, normalized.length.clamp(1, 8));
+  final length = normalized.length > 8 ? 8 : normalized.length;
+  return normalized.substring(0, length);
 }
