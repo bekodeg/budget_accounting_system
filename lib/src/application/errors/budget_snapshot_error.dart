@@ -3,6 +3,7 @@ enum BudgetSnapshotErrorCode {
   unsupportedVersion,
   budgetMismatch,
   digestMismatch,
+  invalidSignature,
 }
 
 final class BudgetSnapshotError implements Exception {
