@@ -3,10 +3,7 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 
 final class MembershipRow {
-  const MembershipRow({
-    required this.member,
-    required this.user,
-  });
+  const MembershipRow({required this.member, required this.user});
 
   final BudgetMember member;
   final User user;
@@ -44,10 +41,11 @@ final class UserBudgetDao {
         throw StateError('Cannot migrate identity for missing user $userId.');
       }
 
-      await (_db.update(_db.users)..where((row) => row.id.equals(userId))).write(
-        UsersCompanion(publicKey: Value(publicKey)),
-      );
-      await _db.into(_db.devices).insert(
+      await (_db.update(_db.users)..where((row) => row.id.equals(userId)))
+          .write(UsersCompanion(publicKey: Value(publicKey)));
+      await _db
+          .into(_db.devices)
+          .insert(
             DevicesCompanion.insert(id: deviceId, userId: userId),
             mode: InsertMode.insertOrIgnore,
           );

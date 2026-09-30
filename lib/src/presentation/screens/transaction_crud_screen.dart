@@ -245,30 +245,30 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                                 : null,
                             trailing: widget.canEdit
                                 ? PopupMenuButton<_TransactionAction>(
-                              key: ValueKey(
-                                'transaction-menu-${transaction.id}',
-                              ),
-                              onSelected: (action) {
-                                switch (action) {
-                                  case _TransactionAction.edit:
-                                    _openEditor(transaction: transaction);
-                                    return;
-                                  case _TransactionAction.delete:
-                                    _delete(transaction);
-                                    return;
-                                }
-                              },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: _TransactionAction.edit,
-                                  child: Text('Изменить'),
-                                ),
-                                PopupMenuItem(
-                                  value: _TransactionAction.delete,
-                                  child: Text('Удалить'),
-                                ),
-                              ],
-                            )
+                                    key: ValueKey(
+                                      'transaction-menu-${transaction.id}',
+                                    ),
+                                    onSelected: (action) {
+                                      switch (action) {
+                                        case _TransactionAction.edit:
+                                          _openEditor(transaction: transaction);
+                                          return;
+                                        case _TransactionAction.delete:
+                                          _delete(transaction);
+                                          return;
+                                      }
+                                    },
+                                    itemBuilder: (context) => const [
+                                      PopupMenuItem(
+                                        value: _TransactionAction.edit,
+                                        child: Text('Изменить'),
+                                      ),
+                                      PopupMenuItem(
+                                        value: _TransactionAction.delete,
+                                        child: Text('Удалить'),
+                                      ),
+                                    ],
+                                  )
                                 : null,
                           ),
                         ),

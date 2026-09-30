@@ -6,30 +6,33 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/onboarding_fakes.dart';
 
 void main() {
-  test('migrates legacy identity once and keeps it stable on restart', () async {
-    final repository = FakeIdentityRepository(
-      publicKeysByUser: {'user-1': 'local-unverified:user-1'},
-    );
-    final keyStore = FakeIdentityKeyStore();
-    final generator = FakeIdentityKeyPairGenerator();
-    final useCase = EnsureLocalIdentity(
-      identityRepository: repository,
-      keyStore: keyStore,
-      keyPairGenerator: generator,
-      idGenerator: FakeIdGenerator(['device-1']),
-    );
+  test(
+    'migrates legacy identity once and keeps it stable on restart',
+    () async {
+      final repository = FakeIdentityRepository(
+        publicKeysByUser: {'user-1': 'local-unverified:user-1'},
+      );
+      final keyStore = FakeIdentityKeyStore();
+      final generator = FakeIdentityKeyPairGenerator();
+      final useCase = EnsureLocalIdentity(
+        identityRepository: repository,
+        keyStore: keyStore,
+        keyPairGenerator: generator,
+        idGenerator: FakeIdGenerator(['device-1']),
+      );
 
-    final first = await useCase('user-1');
-    final second = await useCase('user-1');
+      final first = await useCase('user-1');
+      final second = await useCase('user-1');
 
-    expect(first, second);
-    expect(first.deviceId, 'device-1');
-    expect(first.publicKey, 'ed25519:public-test-key');
-    expect(repository.publicKeysByUser['user-1'], first.publicKey);
-    expect(repository.devicesById.keys, ['device-1']);
-    expect(keyStore.deviceByUser['user-1'], 'device-1');
-    expect(keyStore.privateKeyByDevice['device-1'], 'private-test-key');
-  });
+      expect(first, second);
+      expect(first.deviceId, 'device-1');
+      expect(first.publicKey, 'ed25519:public-test-key');
+      expect(repository.publicKeysByUser['user-1'], first.publicKey);
+      expect(repository.devicesById.keys, ['device-1']);
+      expect(keyStore.deviceByUser['user-1'], 'device-1');
+      expect(keyStore.privateKeyByDevice['device-1'], 'private-test-key');
+    },
+  );
 
   test('returns existing identity without generating a new device', () async {
     final repository = FakeIdentityRepository(

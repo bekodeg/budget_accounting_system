@@ -27,9 +27,7 @@ final class PlatformInviteFileGateway implements InviteFileGateway {
     final safeName = fileName.endsWith('.budgetinvite')
         ? fileName
         : '$fileName.budgetinvite';
-    final file = File(
-      '${directory.path}${Platform.pathSeparator}$safeName',
-    );
+    final file = File('${directory.path}${Platform.pathSeparator}$safeName');
     await file.writeAsString(payload, encoding: utf8, flush: true);
 
     try {

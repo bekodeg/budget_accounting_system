@@ -275,28 +275,28 @@ final class _CategorySection extends StatelessWidget {
             trailing: onRename == null || onArchive == null
                 ? null
                 : PopupMenuButton<_CategoryAction>(
-              key: ValueKey('category-menu-${category.id}'),
-              onSelected: (action) {
-                switch (action) {
-                  case _CategoryAction.rename:
-                    onRename?.call(category);
-                    return;
-                  case _CategoryAction.archive:
-                    onArchive?.call(category);
-                    return;
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: _CategoryAction.rename,
-                  child: Text('Переименовать'),
-                ),
-                PopupMenuItem(
-                  value: _CategoryAction.archive,
-                  child: Text('Архивировать'),
-                ),
-              ],
-            ),
+                    key: ValueKey('category-menu-${category.id}'),
+                    onSelected: (action) {
+                      switch (action) {
+                        case _CategoryAction.rename:
+                          onRename?.call(category);
+                          return;
+                        case _CategoryAction.archive:
+                          onArchive?.call(category);
+                          return;
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: _CategoryAction.rename,
+                        child: Text('Переименовать'),
+                      ),
+                      PopupMenuItem(
+                        value: _CategoryAction.archive,
+                        child: Text('Архивировать'),
+                      ),
+                    ],
+                  ),
           ),
         const SizedBox(height: 16),
       ],

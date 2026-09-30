@@ -30,19 +30,13 @@ void main() {
         userId: 'user-1',
         role: MemberRole.owner,
       ),
-      idGenerator: FakeIdGenerator([
-        'device-owner',
-        'invite-1',
-      ]),
+      idGenerator: FakeIdGenerator(['device-owner', 'invite-1']),
     );
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: BudgetMembersScreen(
-            services: services,
-            budgetId: 'budget-1',
-          ),
+          body: BudgetMembersScreen(services: services, budgetId: 'budget-1'),
         ),
       ),
     );
@@ -84,20 +78,14 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: BudgetMembersScreen(
-            services: services,
-            budgetId: 'budget-1',
-          ),
+          body: BudgetMembersScreen(services: services, budgetId: 'budget-1'),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('create-budget-invite')), findsNothing);
-    expect(
-      find.byKey(const ValueKey('scan-budget-invite')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('scan-budget-invite')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('import-budget-invite-file')),
       findsOneWidget,

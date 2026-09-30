@@ -13,18 +13,15 @@ final class DriftMembershipRepository implements MembershipRepository {
     required String budgetId,
     required String userId,
   }) async {
-    final row = await _dao.findActiveMember(
-      budgetId: budgetId,
-      userId: userId,
-    );
+    final row = await _dao.findActiveMember(budgetId: budgetId, userId: userId);
     return row == null ? null : _toDomain(row);
   }
 
   @override
   Stream<List<BudgetMemberProfile>> watchMembers(String budgetId) {
-    return _dao.watchActiveMembers(budgetId).map(
-      (rows) => rows.map(_toDomain).toList(growable: false),
-    );
+    return _dao
+        .watchActiveMembers(budgetId)
+        .map((rows) => rows.map(_toDomain).toList(growable: false));
   }
 
   @override

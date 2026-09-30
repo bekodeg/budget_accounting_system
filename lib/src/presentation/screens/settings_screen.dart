@@ -50,10 +50,7 @@ final class SettingsScreen extends StatelessWidget {
                       budgetId: budgetId,
                       canEdit: canEdit,
                     ),
-                    BudgetMembersScreen(
-                      services: services,
-                      budgetId: budgetId,
-                    ),
+                    BudgetMembersScreen(services: services, budgetId: budgetId),
                   ],
                 ),
               ),

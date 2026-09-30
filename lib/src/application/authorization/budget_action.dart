@@ -1,6 +1,1 @@
-enum BudgetAction {
-  read,
-  export,
-  mutate,
-  manageMembers,
-}
+enum BudgetAction { read, export, mutate, manageMembers }
