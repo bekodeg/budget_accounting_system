@@ -123,7 +123,7 @@ final class _SectionBody extends StatelessWidget {
         userId: userId,
       );
     }
-    if (section == AppSection.plan) {
+    if (section == AppSection.planning) {
       return MonthlyPlanScreen(services: services, budgetId: budgetId);
     }
     if (section == AppSection.reports) {
