@@ -22,7 +22,8 @@
 - transactions;
 - accounts;
 - categories;
-- monthly plans.
+- monthly plans;
+- membership role changes.
 
 Каждый decorator передает доменную запись в единый `SyncMutationExecutor`.
 `DriftSyncMutationExecutor` открывает одну Drift/SQLite transaction, внутри которой:
