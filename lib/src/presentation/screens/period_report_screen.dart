@@ -77,6 +77,20 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
     setState(() => _toExclusive = value);
   }
 
+  Future<void> _export() async {
+    try {
+      final result = await widget.services.exportReport(_filter);
+      if (!mounted) return;
+      _showMessage(
+        'Экспорт готов: ${result.csvFileName} и ${result.xlsxFileName}',
+      );
+    } on Object {
+      if (mounted) {
+        _showMessage('Не удалось экспортировать отчет.');
+      }
+    }
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -166,6 +180,12 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
                   label: const Text('Только мои'),
                   selected: _onlyMine,
                   onSelected: (value) => setState(() => _onlyMine = value),
+                ),
+                FilledButton.icon(
+                  key: const ValueKey('period-export'),
+                  onPressed: _export,
+                  icon: const Icon(Icons.ios_share_outlined),
+                  label: const Text('Экспорт CSV/XLSX'),
                 ),
               ],
             ),
