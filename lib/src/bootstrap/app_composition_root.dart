@@ -132,6 +132,7 @@ final class AppCompositionRoot {
       transportSecretManager: transportSecretManager,
       signatureService: identitySignatureService,
       tokenGenerator: secureTokenGenerator,
+      identityRepository: identityRepository,
     );
     final lanSecureSessionService = LanSecureSessionService(
       handshakeService: lanHandshakeService,
