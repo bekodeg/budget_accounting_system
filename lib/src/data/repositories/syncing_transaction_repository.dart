@@ -72,6 +72,7 @@ final class SyncingTransactionRepository implements TransactionRepository {
         deviceId: context.identity.deviceId,
       ),
       mutate: () => _delegate.updateTransaction(transaction),
+      shouldRecord: (changed) => changed,
     );
   }
 
@@ -99,6 +100,7 @@ final class SyncingTransactionRepository implements TransactionRepository {
         transactionId: transactionId,
         deletedAt: deletedAt,
       ),
+      shouldRecord: (changed) => changed,
     );
   }
 }
