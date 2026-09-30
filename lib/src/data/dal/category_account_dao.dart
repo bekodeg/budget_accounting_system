@@ -179,8 +179,9 @@ final class CategoryAccountDao {
     final archivedPredicate = includeArchived ? '' : 'AND a.is_archived = 0';
     final accountPredicate = accountId == null ? '' : 'AND a.id = ?';
 
-    final rows = await _db.customSelect(
-      '''
+    final rows = await _db
+        .customSelect(
+          '''
 SELECT
   a.id AS account_id,
   a.currency AS currency,
@@ -213,13 +214,14 @@ WHERE a.budget_id = ?
 GROUP BY a.id, a.currency, a.opening_balance_minor
 ORDER BY a.name ASC, a.id ASC
 ''',
-      variables: [
-        if (atInclusive != null) Variable.withDateTime(atInclusive),
-        Variable.withString(budgetId),
-        if (accountId != null) Variable.withString(accountId),
-      ],
-      readsFrom: {_db.accounts, _db.budgetTransactions},
-    ).get();
+          variables: [
+            if (atInclusive != null) Variable.withDateTime(atInclusive),
+            Variable.withString(budgetId),
+            if (accountId != null) Variable.withString(accountId),
+          ],
+          readsFrom: {_db.accounts, _db.budgetTransactions},
+        )
+        .get();
 
     return rows
         .map(
