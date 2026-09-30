@@ -41,6 +41,7 @@ void main() {
       transactionRepository: transactionRepository,
       requireAccountInBudget: RequireAccountInBudget(accountRepository),
       idGenerator: FakeIdGenerator(['transfer-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     final transfer = await useCase(
@@ -64,6 +65,7 @@ void main() {
       transactionRepository: FakeTransactionRepository(),
       requireAccountInBudget: RequireAccountInBudget(accountRepository),
       idGenerator: FakeIdGenerator(['transfer-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     await expectLater(
@@ -91,6 +93,7 @@ void main() {
       transactionRepository: FakeTransactionRepository(),
       requireAccountInBudget: RequireAccountInBudget(accountRepository),
       idGenerator: FakeIdGenerator(['transfer-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     await expectLater(
