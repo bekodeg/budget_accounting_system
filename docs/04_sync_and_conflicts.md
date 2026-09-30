@@ -59,17 +59,19 @@ sequenceDiagram
 
     A->>C: Hello(budget_id, device_id, state_vector)
     B->>C: Hello(budget_id, device_id, state_vector)
-    C-->>A: Missing operations
-    C-->>B: Missing operations
-    A->>C: Operations batch
-    B->>C: Operations batch
-    C-->>A: Operations from peers
-    C-->>B: Operations from peers
-    A->>A: Merge + rebuild affected views
-    B->>B: Merge + rebuild affected views
+    A->>C: Hello(state_vector)
+    B->>C: Hello(state_vector)
+    C-->>A: Missing operations batch
+    C-->>B: Missing operations batch
+    A->>C: Ack(updated state_vector)
+    B->>C: Ack(updated state_vector)
+    A->>A: Merge affected entities
+    B->>B: Merge affected entities
 ```
 
 Координатор хранит данные только как обычный участник бюджета. После завершения сессии специальный серверный процесс отсутствует.
+
+Базовая peer-to-peer реализация использует симметричный versioned протокол hello/state-vector/batch/ack/error. Peer передает только операции, чей per-device Lamport clock выше значения в remote state vector. Детали: [State vector sync](21_state_vector_sync.md).
 
 ## 4.4. Разрешение конфликтов
 
