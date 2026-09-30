@@ -18,6 +18,7 @@ void main() {
     final useCase = CreateAccount(
       accountRepository: repository,
       idGenerator: FakeIdGenerator(['account-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     final account = await useCase(
@@ -71,7 +72,10 @@ void main() {
         ],
       },
     );
-    final useCase = UpdateAccount(repository);
+    final useCase = UpdateAccount(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
 
     await expectLater(
       useCase(
@@ -107,7 +111,10 @@ void main() {
       },
       accountsWithTransactions: {'account-1'},
     );
-    final useCase = UpdateAccount(repository);
+    final useCase = UpdateAccount(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
 
     await expectLater(
       useCase(
@@ -181,7 +188,10 @@ void main() {
         },
         transactionDeltaByAccount: {'account-1': BigInt.from(2500)},
       );
-      final archive = ArchiveAccount(repository);
+      final archive = ArchiveAccount(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
       final balance = GetAccountBalance(repository);
 
       await archive(budgetId: 'budget-1', accountId: 'account-1');

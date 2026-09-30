@@ -3,6 +3,8 @@ import '../../domain/models/report_export.dart';
 import '../../domain/models/report_filter.dart';
 import '../../domain/repositories/extended_report_repository.dart';
 import '../../domain/repositories/report_export_repository.dart';
+import '../authorization/budget_action.dart';
+import '../authorization/budget_authorization_guard.dart';
 import '../ports/report_document_encoder.dart';
 import '../ports/report_share_gateway.dart';
 
@@ -12,17 +14,25 @@ final class ExportReport {
     required ReportExportRepository exportRepository,
     required ReportDocumentEncoder encoder,
     required ReportShareGateway shareGateway,
+    required BudgetAuthorizationGuard authorization,
   }) : _reportRepository = reportRepository,
        _exportRepository = exportRepository,
        _encoder = encoder,
-       _shareGateway = shareGateway;
+       _shareGateway = shareGateway,
+       _authorization = authorization;
 
   final ExtendedReportRepository _reportRepository;
   final ReportExportRepository _exportRepository;
   final ReportDocumentEncoder _encoder;
   final ReportShareGateway _shareGateway;
+  final BudgetAuthorizationGuard _authorization;
 
   Future<ReportExportResult> call(ReportFilter filter) async {
+    await _authorization.require(
+      budgetId: filter.budgetId,
+      action: BudgetAction.export,
+    );
+
     final summaryFuture = _reportRepository.watchPeriodReport(filter).first;
     final transactionsFuture = _exportRepository.listTransactions(filter);
     final PeriodReport summary = await summaryFuture;

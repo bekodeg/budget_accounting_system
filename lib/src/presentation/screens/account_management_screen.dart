@@ -11,11 +11,13 @@ final class AccountManagementScreen extends StatelessWidget {
   const AccountManagementScreen({
     required this.services,
     required this.budgetId,
+    this.canEdit = true,
     super.key,
   });
 
   final AppServices services;
   final String budgetId;
+  final bool canEdit;
 
   Future<void> _create(BuildContext context) async {
     final draft = await showDialog<_AccountDraft>(
@@ -134,13 +136,15 @@ final class AccountManagementScreen extends StatelessWidget {
           key: const ValueKey('account-management'),
           padding: const EdgeInsets.all(16),
           children: [
-            FilledButton.icon(
-              key: const ValueKey('add-account'),
-              onPressed: () => _create(context),
-              icon: const Icon(Icons.add_card),
-              label: const Text('Добавить счет'),
-            ),
-            const SizedBox(height: 16),
+            if (canEdit) ...[
+              FilledButton.icon(
+                key: const ValueKey('add-account'),
+                onPressed: () => _create(context),
+                icon: const Icon(Icons.add_card),
+                label: const Text('Добавить счет'),
+              ),
+              const SizedBox(height: 16),
+            ],
             if (active.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
@@ -154,8 +158,8 @@ final class AccountManagementScreen extends StatelessWidget {
                     budgetId: budgetId,
                     accountId: account.id,
                   ),
-                  onEdit: () => _edit(context, account),
-                  onArchive: () => _archive(context, account),
+                  onEdit: canEdit ? () => _edit(context, account) : null,
+                  onArchive: canEdit ? () => _archive(context, account) : null,
                 ),
             if (archived.isNotEmpty) ...[
               const SizedBox(height: 20),
@@ -189,8 +193,8 @@ final class _AccountTile extends StatelessWidget {
 
   final BudgetAccount account;
   final Future<AccountBalance> balance;
-  final VoidCallback onEdit;
-  final VoidCallback onArchive;
+  final VoidCallback? onEdit;
+  final VoidCallback? onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -216,15 +220,17 @@ final class _AccountTile extends StatelessWidget {
             );
           },
         ),
-        trailing: PopupMenuButton<_AccountAction>(
+        trailing: onEdit == null || onArchive == null
+            ? null
+            : PopupMenuButton<_AccountAction>(
           key: ValueKey('account-menu-${account.id}'),
           onSelected: (action) {
             switch (action) {
               case _AccountAction.edit:
-                onEdit();
+                onEdit?.call();
                 return;
               case _AccountAction.archive:
-                onArchive();
+                onArchive?.call();
                 return;
             }
           },

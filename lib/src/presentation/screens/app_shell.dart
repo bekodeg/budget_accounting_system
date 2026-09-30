@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../application/app_services.dart';
+import '../../application/authorization/budget_action.dart';
 import '../navigation/app_navigation_controller.dart';
 import '../navigation/app_section.dart';
 import 'budget_dashboard_screen.dart';
@@ -124,7 +125,19 @@ final class _SectionBody extends StatelessWidget {
       );
     }
     if (section == AppSection.planning) {
-      return MonthlyPlanScreen(services: services, budgetId: budgetId);
+      return FutureBuilder<bool>(
+        future: services.canPerformBudgetAction(
+          budgetId: budgetId,
+          action: BudgetAction.mutate,
+        ),
+        builder: (context, snapshot) {
+          return MonthlyPlanScreen(
+            services: services,
+            budgetId: budgetId,
+            canEdit: snapshot.data ?? false,
+          );
+        },
+      );
     }
     if (section == AppSection.reports) {
       return ReportsScreen(

@@ -60,6 +60,7 @@ void main() {
       requireAccountInBudget: RequireAccountInBudget(accountRepository),
       requireCategoryInBudget: RequireCategoryInBudget(categoryRepository),
       idGenerator: FakeIdGenerator(['transaction-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     final transaction = await useCase(
@@ -88,6 +89,7 @@ void main() {
       requireAccountInBudget: RequireAccountInBudget(accountRepository),
       requireCategoryInBudget: RequireCategoryInBudget(categoryRepository),
       idGenerator: FakeIdGenerator(['transaction-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     await expectLater(
@@ -119,11 +121,13 @@ void main() {
       requireAccountInBudget: RequireAccountInBudget(accountRepository),
       requireCategoryInBudget: RequireCategoryInBudget(categoryRepository),
       idGenerator: FakeIdGenerator(['transaction-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
     final update = UpdateTransaction(
       transactionRepository: transactionRepository,
       requireAccountInBudget: RequireAccountInBudget(accountRepository),
       requireCategoryInBudget: RequireCategoryInBudget(categoryRepository),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     final created = await create(
@@ -166,8 +170,12 @@ void main() {
       requireAccountInBudget: RequireAccountInBudget(accountRepository),
       requireCategoryInBudget: RequireCategoryInBudget(categoryRepository),
       idGenerator: FakeIdGenerator(['transaction-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
-    final delete = DeleteTransaction(transactionRepository);
+    final delete = DeleteTransaction(
+      repository: transactionRepository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
 
     final created = await create(
       budgetId: 'budget-1',

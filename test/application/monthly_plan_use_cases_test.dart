@@ -48,6 +48,7 @@ void main() {
       planRepository: plans,
       categoryRepository: categories(),
       idGenerator: FakeIdGenerator(['plan-1', 'plan-2']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     await useCase(
@@ -76,6 +77,7 @@ void main() {
       planRepository: FakePlanRepository(),
       categoryRepository: categories(),
       idGenerator: FakeIdGenerator(['plan-1', 'plan-2', 'plan-3']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     await expectLater(

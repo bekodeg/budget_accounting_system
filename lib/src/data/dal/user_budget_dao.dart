@@ -2,6 +2,16 @@ import 'package:drift/drift.dart';
 
 import '../database/app_database.dart';
 
+final class MembershipRow {
+  const MembershipRow({
+    required this.member,
+    required this.user,
+  });
+
+  final BudgetMember member;
+  final User user;
+}
+
 final class UserBudgetDao {
   UserBudgetDao(this._db);
 
@@ -120,6 +130,91 @@ final class UserBudgetDao {
     return (_db.select(
       _db.budgetMembers,
     )..where((row) => row.budgetId.equals(budgetId))).get();
+  }
+
+  Future<MembershipRow?> findActiveMember({
+    required String budgetId,
+    required String userId,
+  }) async {
+    final query =
+        _db.select(_db.budgetMembers).join([
+            innerJoin(
+              _db.users,
+              _db.users.id.equalsExp(_db.budgetMembers.userId),
+            ),
+          ])
+          ..where(
+            _db.budgetMembers.budgetId.equals(budgetId) &
+                _db.budgetMembers.userId.equals(userId) &
+                _db.budgetMembers.revokedAt.isNull(),
+          )
+          ..limit(1);
+
+    final row = await query.getSingleOrNull();
+    if (row == null) return null;
+    return MembershipRow(
+      member: row.readTable(_db.budgetMembers),
+      user: row.readTable(_db.users),
+    );
+  }
+
+  Stream<List<MembershipRow>> watchActiveMembers(String budgetId) {
+    final query =
+        _db.select(_db.budgetMembers).join([
+            innerJoin(
+              _db.users,
+              _db.users.id.equalsExp(_db.budgetMembers.userId),
+            ),
+          ])
+          ..where(
+            _db.budgetMembers.budgetId.equals(budgetId) &
+                _db.budgetMembers.revokedAt.isNull(),
+          )
+          ..orderBy([
+            OrderingTerm.asc(_db.budgetMembers.joinedAt),
+            OrderingTerm.asc(_db.budgetMembers.userId),
+          ]);
+
+    return query.watch().map(
+      (rows) => rows
+          .map(
+            (row) => MembershipRow(
+              member: row.readTable(_db.budgetMembers),
+              user: row.readTable(_db.users),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  Future<int> countActiveOwners(String budgetId) async {
+    final count = _db.budgetMembers.userId.count();
+    final query = _db.selectOnly(_db.budgetMembers)
+      ..addColumns([count])
+      ..where(
+        _db.budgetMembers.budgetId.equals(budgetId) &
+            _db.budgetMembers.role.equals('OWNER') &
+            _db.budgetMembers.revokedAt.isNull(),
+      );
+
+    final row = await query.getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  Future<bool> updateMemberRole({
+    required String budgetId,
+    required String userId,
+    required String role,
+  }) async {
+    final changed =
+        await (_db.update(_db.budgetMembers)..where(
+              (row) =>
+                  row.budgetId.equals(budgetId) &
+                  row.userId.equals(userId) &
+                  row.revokedAt.isNull(),
+            ))
+            .write(BudgetMembersCompanion(role: Value(role)));
+    return changed == 1;
   }
 
   List<Budget> _readBudgets(List<TypedResult> rows) {
