@@ -39,6 +39,43 @@ final class SyncDao {
         .get();
   }
 
+
+  Future<Map<String, BigInt>> getStateVector(String budgetId) async {
+    final maxClock = _db.syncOperations.logicalClock.max();
+    final query = _db.selectOnly(_db.syncOperations)
+      ..addColumns([_db.syncOperations.deviceId, maxClock])
+      ..where(_db.syncOperations.budgetId.equals(budgetId))
+      ..groupBy([_db.syncOperations.deviceId]);
+
+    final rows = await query.get();
+    return {
+      for (final row in rows)
+        row.read(_db.syncOperations.deviceId)!:
+            row.read(maxClock) ?? BigInt.zero,
+    };
+  }
+
+  Future<List<SyncOperation>> getDeviceOperationsAfter({
+    required String budgetId,
+    required String deviceId,
+    required BigInt logicalClock,
+    required int limit,
+  }) {
+    return (_db.select(_db.syncOperations)
+          ..where(
+            (row) =>
+                row.budgetId.equals(budgetId) &
+                row.deviceId.equals(deviceId) &
+                row.logicalClock.isBiggerThanValue(logicalClock),
+          )
+          ..orderBy([
+            (row) => OrderingTerm.asc(row.logicalClock),
+            (row) => OrderingTerm.asc(row.opId),
+          ])
+          ..limit(limit))
+        .get();
+  }
+
   Future<BigInt> getMaxLogicalClockForDevice(String deviceId) async {
     final maxClock = _db.syncOperations.logicalClock.max();
     final query = _db.selectOnly(_db.syncOperations)
