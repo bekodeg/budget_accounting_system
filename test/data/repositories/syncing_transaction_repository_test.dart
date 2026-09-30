@@ -78,6 +78,38 @@ void main() {
 
   tearDown(() => database.close());
 
+  test('missing update returns false without sync operation', () async {
+    final now = DateTime.utc(2026, 9, 30, 10);
+    final missing = BudgetTransactionEntry(
+      id: 'missing-tx',
+      budgetId: 'budget-1',
+      occurredAt: now,
+      amount: Money.positive(
+        minorUnits: BigInt.from(1250),
+        currency: Currency('EUR'),
+      ),
+      type: TransactionType.expense,
+      authorId: 'user-1',
+      accountId: 'account-1',
+      destinationAccountId: null,
+      categoryId: 'category-1',
+      description: null,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    final changed = await repository.updateTransaction(missing);
+
+    expect(changed, isFalse);
+    expect(
+      await syncDao.getOperationsAfter(
+        budgetId: 'budget-1',
+        logicalClock: BigInt.zero,
+      ),
+      isEmpty,
+    );
+  });
+
   test('transaction create persists domain row and sync operation together', () async {
     final now = DateTime.utc(2026, 9, 30, 10);
     final transaction = BudgetTransactionEntry(

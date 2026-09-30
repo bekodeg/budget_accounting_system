@@ -74,6 +74,7 @@ final class SyncingAccountRepository implements AccountRepository {
         deviceId: context.identity.deviceId,
       ),
       mutate: () => _delegate.updateAccount(account),
+      shouldRecord: (changed) => changed,
     );
   }
 
@@ -101,6 +102,7 @@ final class SyncingAccountRepository implements AccountRepository {
         accountId: accountId,
         isArchived: isArchived,
       ),
+      shouldRecord: (changed) => changed,
     );
   }
 

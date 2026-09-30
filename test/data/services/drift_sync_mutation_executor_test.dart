@@ -143,6 +143,52 @@ void main() {
     ), hasLength(1));
   });
 
+  test('rolls back domain mutation when journal insert fails', () async {
+    final invalidDraft = SyncMutationDraft(
+      spec: const SyncMutationSpec(
+        budgetId: 'budget-1',
+        entityType: 'category',
+        entityId: 'category-1',
+        type: SyncMutationType.create,
+        patch: {'name': 'Food', 'kind': 'EXPENSE'},
+        operationId: 'op-invalid-author',
+      ),
+      authorId: 'missing-user',
+      deviceId: 'device-1',
+    );
+
+    await expectLater(
+      executor.execute<void>(
+        draft: invalidDraft,
+        mutate: insertCategory,
+      ),
+      throwsA(anything),
+    );
+
+    expect(
+      await (database.select(database.categories)
+            ..where((row) => row.id.equals('category-1')))
+          .getSingleOrNull(),
+      isNull,
+    );
+    expect(await syncDao.findById('op-invalid-author'), isNull);
+  });
+
+  test('does not append operation when mutation reports no change', () async {
+    final result = await executor.execute<bool>(
+      draft: draft(operationId: 'op-noop'),
+      mutate: () async => false,
+      shouldRecord: (changed) => changed,
+    );
+
+    expect(result, isFalse);
+    expect(await syncDao.findById('op-noop'), isNull);
+    expect(
+      await syncDao.getMaxLogicalClockForDevice('device-1'),
+      BigInt.zero,
+    );
+  });
+
   test('rolls back domain mutation when mutation callback fails', () async {
     await expectLater(
       executor.execute<void>(
