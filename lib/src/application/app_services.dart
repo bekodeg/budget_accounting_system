@@ -2,12 +2,14 @@ import 'services/lan_peer_session_manager.dart';
 import 'services/sync_coordinator_service.dart';
 import 'services/sync_session_service.dart';
 import 'use_cases/accept_budget_invite.dart';
+import 'use_cases/apply_budget_snapshot.dart';
 import 'use_cases/apply_category_templates.dart';
 import 'use_cases/archive_account.dart';
 import 'use_cases/archive_category.dart';
 import 'use_cases/can_perform_budget_action.dart';
 import 'use_cases/create_account.dart';
 import 'use_cases/create_budget_invite.dart';
+import 'use_cases/create_budget_snapshot.dart';
 import 'use_cases/create_category.dart';
 import 'use_cases/create_initial_budget.dart';
 import 'use_cases/create_transaction.dart';
@@ -45,12 +47,14 @@ import 'use_cases/watch_user_budgets.dart';
 final class AppServices {
   const AppServices({
     required this.acceptBudgetInvite,
+    this.applyBudgetSnapshot,
     required this.applyCategoryTemplates,
     required this.archiveAccount,
     required this.archiveCategory,
     required this.canPerformBudgetAction,
     required this.createAccount,
     required this.createBudgetInvite,
+    this.createBudgetSnapshot,
     required this.createCategory,
     required this.createInitialBudget,
     required this.createTransaction,
@@ -90,12 +94,14 @@ final class AppServices {
   });
 
   final AcceptBudgetInvite acceptBudgetInvite;
+  final ApplyBudgetSnapshot? applyBudgetSnapshot;
   final ApplyCategoryTemplates applyCategoryTemplates;
   final ArchiveAccount archiveAccount;
   final ArchiveCategory archiveCategory;
   final CanPerformBudgetAction canPerformBudgetAction;
   final CreateAccount createAccount;
   final CreateBudgetInvite createBudgetInvite;
+  final CreateBudgetSnapshot? createBudgetSnapshot;
   final CreateCategory createCategory;
   final CreateInitialBudget createInitialBudget;
   final CreateTransaction createTransaction;
