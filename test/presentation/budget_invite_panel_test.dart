@@ -1,3 +1,4 @@
+import 'package:budget_accounting_system/src/domain/models/budget_member_profile.dart';
 import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
 import 'package:budget_accounting_system/src/presentation/screens/budget_members_screen.dart';
 import 'package:flutter/material.dart';
