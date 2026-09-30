@@ -77,8 +77,8 @@ final class CreateInitialBudget {
         publicKey: keyPair.publicKey,
         deviceId: deviceId,
         budgetId: budgetId,
-      budgetName: normalizedBudgetName,
-      baseCurrency: baseCurrency,
+        budgetName: normalizedBudgetName,
+        baseCurrency: baseCurrency,
         initialCategories: initialCategories,
       );
     } on Object {
