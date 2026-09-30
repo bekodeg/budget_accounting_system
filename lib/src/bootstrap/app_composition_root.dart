@@ -1,4 +1,5 @@
 import '../application/app_services.dart';
+import '../application/services/budget_snapshot_session_service.dart';
 import '../application/services/budget_transport_secret_manager.dart';
 import '../application/services/lan_discovery_token_service.dart';
 import '../application/services/lan_handshake_service.dart';
@@ -174,6 +175,7 @@ final class AppCompositionRoot {
       syncDao: dal.sync,
       signatureService: identitySignatureService,
     );
+    final budgetSnapshotSessions = BudgetSnapshotSessionService(snapshotRepository);
     final syncSessions = SyncSessionService(journal: syncJournal);
     const syncCoordinator = SyncCoordinatorService();
     final lanPeerSessions = LanPeerSessionManager(
@@ -308,6 +310,7 @@ final class AppCompositionRoot {
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
         getPublicIdentity: getPublicIdentity,
         inspectBudgetInvite: inspectBudgetInvite,
+        budgetSnapshotSessions: budgetSnapshotSessions,
         lanPeerSessions: lanPeerSessions,
         syncCoordinator: syncCoordinator,
         syncSessions: syncSessions,
