@@ -9,11 +9,13 @@ final class CategoryManagementScreen extends StatelessWidget {
   const CategoryManagementScreen({
     required this.services,
     required this.budgetId,
+    this.canEdit = true,
     super.key,
   });
 
   final AppServices services;
   final String budgetId;
+  final bool canEdit;
 
   Future<void> _createCategory(BuildContext context) async {
     final draft = await showDialog<_CategoryDraft>(
@@ -154,25 +156,27 @@ final class CategoryManagementScreen extends StatelessWidget {
           key: const ValueKey('category-management'),
           padding: const EdgeInsets.all(16),
           children: [
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                FilledButton.icon(
-                  key: const ValueKey('add-category'),
-                  onPressed: () => _createCategory(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Добавить категорию'),
-                ),
-                OutlinedButton.icon(
-                  key: const ValueKey('apply-category-templates'),
-                  onPressed: () => _applyTemplates(context),
-                  icon: const Icon(Icons.auto_awesome_outlined),
-                  label: const Text('Добавить стандартные'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+            if (canEdit) ...[
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    key: const ValueKey('add-category'),
+                    onPressed: () => _createCategory(context),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Добавить категорию'),
+                  ),
+                  OutlinedButton.icon(
+                    key: const ValueKey('apply-category-templates'),
+                    onPressed: () => _applyTemplates(context),
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    label: const Text('Добавить стандартные'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
             if (active.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
@@ -182,20 +186,32 @@ final class CategoryManagementScreen extends StatelessWidget {
               _CategorySection(
                 title: 'Расходы',
                 categories: _byKind(active, CategoryKind.expense),
-                onRename: (category) => _renameCategory(context, category),
-                onArchive: (category) => _archiveCategory(context, category),
+                onRename: canEdit
+                    ? (category) => _renameCategory(context, category)
+                    : null,
+                onArchive: canEdit
+                    ? (category) => _archiveCategory(context, category)
+                    : null,
               ),
               _CategorySection(
                 title: 'Доходы',
                 categories: _byKind(active, CategoryKind.income),
-                onRename: (category) => _renameCategory(context, category),
-                onArchive: (category) => _archiveCategory(context, category),
+                onRename: canEdit
+                    ? (category) => _renameCategory(context, category)
+                    : null,
+                onArchive: canEdit
+                    ? (category) => _archiveCategory(context, category)
+                    : null,
               ),
               _CategorySection(
                 title: 'Доходы и расходы',
                 categories: _byKind(active, CategoryKind.both),
-                onRename: (category) => _renameCategory(context, category),
-                onArchive: (category) => _archiveCategory(context, category),
+                onRename: canEdit
+                    ? (category) => _renameCategory(context, category)
+                    : null,
+                onArchive: canEdit
+                    ? (category) => _archiveCategory(context, category)
+                    : null,
               ),
             ],
             if (archived.isNotEmpty) ...[
@@ -237,8 +253,8 @@ final class _CategorySection extends StatelessWidget {
 
   final String title;
   final List<BudgetCategory> categories;
-  final ValueChanged<BudgetCategory> onRename;
-  final ValueChanged<BudgetCategory> onArchive;
+  final ValueChanged<BudgetCategory>? onRename;
+  final ValueChanged<BudgetCategory>? onArchive;
 
   @override
   Widget build(BuildContext context) {
@@ -256,7 +272,9 @@ final class _CategorySection extends StatelessWidget {
             key: ValueKey('category-${category.id}'),
             contentPadding: EdgeInsets.zero,
             title: Text(category.name),
-            trailing: PopupMenuButton<_CategoryAction>(
+            trailing: onRename == null || onArchive == null
+                ? null
+                : PopupMenuButton<_CategoryAction>(
               key: ValueKey('category-menu-${category.id}'),
               onSelected: (action) {
                 switch (action) {
