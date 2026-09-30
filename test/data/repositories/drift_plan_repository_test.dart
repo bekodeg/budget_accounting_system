@@ -4,7 +4,6 @@ import 'package:budget_accounting_system/src/data/dal/user_budget_dao.dart';
 import 'package:budget_accounting_system/src/data/database/app_database.dart';
 import 'package:budget_accounting_system/src/data/repositories/drift_plan_repository.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_plan.dart';
-import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
