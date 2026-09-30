@@ -69,15 +69,15 @@ final class SyncingCategoryRepository implements CategoryRepository {
 
   @override
   Future<void> renameCategory({
+    required String budgetId,
     required String categoryId,
     required String name,
   }) async {
-    final match = await _findById(categoryId);
     final context = await _contextProvider.current();
     await _executor.execute<void>(
       draft: SyncMutationDraft(
         spec: SyncMutationSpec(
-          budgetId: match.budgetId,
+          budgetId: budgetId,
           entityType: 'category',
           entityId: categoryId,
           type: SyncMutationType.patch,
@@ -86,21 +86,25 @@ final class SyncingCategoryRepository implements CategoryRepository {
         authorId: context.userId,
         deviceId: context.identity.deviceId,
       ),
-      mutate: () => _delegate.renameCategory(categoryId: categoryId, name: name),
+      mutate: () => _delegate.renameCategory(
+        budgetId: budgetId,
+        categoryId: categoryId,
+        name: name,
+      ),
     );
   }
 
   @override
   Future<void> setCategoryArchived({
+    required String budgetId,
     required String categoryId,
     required bool isArchived,
   }) async {
-    final match = await _findById(categoryId);
     final context = await _contextProvider.current();
     await _executor.execute<void>(
       draft: SyncMutationDraft(
         spec: SyncMutationSpec(
-          budgetId: match.budgetId,
+          budgetId: budgetId,
           entityType: 'category',
           entityId: categoryId,
           type: SyncMutationType.patch,
@@ -110,16 +114,10 @@ final class SyncingCategoryRepository implements CategoryRepository {
         deviceId: context.identity.deviceId,
       ),
       mutate: () => _delegate.setCategoryArchived(
+        budgetId: budgetId,
         categoryId: categoryId,
         isArchived: isArchived,
       ),
-    );
-  }
-
-  Future<BudgetCategory> _findById(String categoryId) async {
-    throw StateError(
-      'Budget id is required for category mutation $categoryId. '
-      'Use budget-scoped repository methods.',
     );
   }
 }
