@@ -61,7 +61,9 @@ final class AppCompositionRoot {
     final planRepository = DriftPlanRepository(dal.plansAndReceipts);
     final monthlyReportRepository = DriftMonthlyReportRepository(dal.reports);
     final extendedReportRepository = DriftExtendedReportRepository(dal.reports);
-    final reportExportRepository = DriftReportExportRepository(dal.transactions);
+    final reportExportRepository = DriftReportExportRepository(
+      dal.transactions,
+    );
     final sessionStore = SharedPreferencesSessionStore();
     final idGenerator = SecureIdGenerator();
     final requireAccountInBudget = RequireAccountInBudget(accountRepository);
