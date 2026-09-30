@@ -8,11 +8,13 @@ import 'use_cases/create_transaction.dart';
 import 'use_cases/create_transfer.dart';
 import 'use_cases/delete_transaction.dart';
 import 'use_cases/get_account_balance.dart';
+import 'use_cases/get_budget_account_balances.dart';
 import 'use_cases/rename_category.dart';
 import 'use_cases/require_account_in_budget.dart';
 import 'use_cases/require_category_in_budget.dart';
 import 'use_cases/resolve_app_startup.dart';
 import 'use_cases/select_budget.dart';
+import 'use_cases/set_monthly_plan_amount.dart';
 import 'use_cases/update_account.dart';
 import 'use_cases/update_transaction.dart';
 import 'use_cases/update_transfer.dart';
@@ -20,6 +22,8 @@ import 'use_cases/watch_budget_accounts.dart';
 import 'use_cases/watch_budget_categories.dart';
 import 'use_cases/watch_dashboard_summary.dart';
 import 'use_cases/watch_filtered_transactions.dart';
+import 'use_cases/watch_monthly_plan.dart';
+import 'use_cases/watch_monthly_report.dart';
 import 'use_cases/watch_transactions.dart';
 import 'use_cases/watch_user_budgets.dart';
 
@@ -35,11 +39,13 @@ final class AppServices {
     required this.createTransfer,
     required this.deleteTransaction,
     required this.getAccountBalance,
+    required this.getBudgetAccountBalances,
     required this.renameCategory,
     required this.requireAccountInBudget,
     required this.requireCategoryInBudget,
     required this.resolveAppStartup,
     required this.selectBudget,
+    required this.setMonthlyPlanAmount,
     required this.updateAccount,
     required this.updateTransaction,
     required this.updateTransfer,
@@ -47,6 +53,8 @@ final class AppServices {
     required this.watchBudgetCategories,
     required this.watchDashboardSummary,
     required this.watchFilteredTransactions,
+    required this.watchMonthlyPlan,
+    required this.watchMonthlyReport,
     required this.watchTransactions,
     required this.watchUserBudgets,
   });
@@ -61,11 +69,13 @@ final class AppServices {
   final CreateTransfer createTransfer;
   final DeleteTransaction deleteTransaction;
   final GetAccountBalance getAccountBalance;
+  final GetBudgetAccountBalances getBudgetAccountBalances;
   final RenameCategory renameCategory;
   final RequireAccountInBudget requireAccountInBudget;
   final RequireCategoryInBudget requireCategoryInBudget;
   final ResolveAppStartup resolveAppStartup;
   final SelectBudget selectBudget;
+  final SetMonthlyPlanAmount setMonthlyPlanAmount;
   final UpdateAccount updateAccount;
   final UpdateTransaction updateTransaction;
   final UpdateTransfer updateTransfer;
@@ -73,6 +83,8 @@ final class AppServices {
   final WatchBudgetCategories watchBudgetCategories;
   final WatchDashboardSummary watchDashboardSummary;
   final WatchFilteredTransactions watchFilteredTransactions;
+  final WatchMonthlyPlan watchMonthlyPlan;
+  final WatchMonthlyReport watchMonthlyReport;
   final WatchTransactions watchTransactions;
   final WatchUserBudgets watchUserBudgets;
 }

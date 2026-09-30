@@ -91,6 +91,7 @@ final class DriftAccountRepository implements AccountRepository {
   Future<AccountBalance?> getBalance({
     required String budgetId,
     required String accountId,
+    DateTime? atInclusive,
   }) async {
     final account = await _dao.findAccount(
       budgetId: budgetId,
@@ -104,6 +105,7 @@ final class DriftAccountRepository implements AccountRepository {
       budgetId: budgetId,
       accountId: accountId,
       openingBalanceMinor: account.openingBalanceMinor,
+      atInclusive: atInclusive,
     );
 
     return AccountBalance(
@@ -111,6 +113,29 @@ final class DriftAccountRepository implements AccountRepository {
       minorUnits: balance,
       currency: Currency(account.currency),
     );
+  }
+
+  @override
+  Future<List<AccountBalance>> getBalances({
+    required String budgetId,
+    required bool includeArchived,
+    DateTime? atInclusive,
+  }) async {
+    final balances = await _dao.getAccountBalances(
+      budgetId: budgetId,
+      includeArchived: includeArchived,
+      atInclusive: atInclusive,
+    );
+
+    return balances
+        .map(
+          (balance) => AccountBalance(
+            accountId: balance.accountId,
+            minorUnits: balance.amountMinor,
+            currency: Currency(balance.currency),
+          ),
+        )
+        .toList(growable: false);
   }
 
   BudgetAccount _toDomainAccount(Account account) {
