@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../application/app_services.dart';
+import '../../application/authorization/budget_action.dart';
 import '../../application/formatters/minor_units_text.dart';
 import '../../domain/models/dashboard_summary.dart';
 import 'transaction_crud_screen.dart';
@@ -33,9 +34,16 @@ final class BudgetDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    return Column(
-      key: const ValueKey('budget-dashboard'),
-      children: [
+    return FutureBuilder<bool>(
+      future: services.canPerformBudgetAction(
+        budgetId: budgetId,
+        action: BudgetAction.mutate,
+      ),
+      builder: (context, permissionSnapshot) {
+        final canEdit = permissionSnapshot.data ?? false;
+        return Column(
+          key: const ValueKey('budget-dashboard'),
+          children: [
         StreamBuilder<DashboardSummary>(
           stream: services.watchDashboardSummary(
             budgetId: budgetId,
@@ -57,7 +65,7 @@ final class BudgetDashboardScreen extends StatelessWidget {
 
             return _DashboardHeader(
               summary: snapshot.data!,
-              onQuickAdd: () => _quickAdd(context),
+              onQuickAdd: canEdit ? () => _quickAdd(context) : null,
             );
           },
         ),
@@ -67,9 +75,12 @@ final class BudgetDashboardScreen extends StatelessWidget {
             services: services,
             budgetId: budgetId,
             userId: userId,
+            canEdit: canEdit,
           ),
         ),
       ],
+        );
+      },
     );
   }
 }
@@ -78,7 +89,7 @@ final class _DashboardHeader extends StatelessWidget {
   const _DashboardHeader({required this.summary, required this.onQuickAdd});
 
   final DashboardSummary summary;
-  final VoidCallback onQuickAdd;
+  final VoidCallback? onQuickAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -96,12 +107,13 @@ final class _DashboardHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
-              FilledButton.icon(
-                key: const ValueKey('dashboard-quick-add'),
-                onPressed: onQuickAdd,
-                icon: const Icon(Icons.add),
-                label: const Text('Операция'),
-              ),
+              if (onQuickAdd != null)
+                FilledButton.icon(
+                  key: const ValueKey('dashboard-quick-add'),
+                  onPressed: onQuickAdd,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Операция'),
+                ),
             ],
           ),
           const SizedBox(height: 12),
