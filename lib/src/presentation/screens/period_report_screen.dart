@@ -79,20 +79,6 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
   }
 
   Future<void> _export() async {
-    try {
-      final result = await widget.services.exportReport(_filter);
-      if (!mounted) return;
-      _showMessage(
-        'Экспорт готов: ${result.csvFileName} и ${result.xlsxFileName}',
-      );
-    } on Object {
-      if (mounted) {
-        _showMessage('Не удалось экспортировать отчет.');
-      }
-    }
-  }
-
-  Future<void> _export() async {
     if (_exporting) return;
 
     setState(() => _exporting = true);
@@ -215,12 +201,6 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
                       : const Icon(Icons.ios_share_outlined),
                   label: const Text('CSV/XLSX'),
                 ),
-                FilledButton.icon(
-                  key: const ValueKey('period-export'),
-                  onPressed: _export,
-                  icon: const Icon(Icons.ios_share_outlined),
-                  label: const Text('Экспорт CSV/XLSX'),
-                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -340,5 +320,5 @@ String _valuesLabel(Map<String, BigInt> values) {
 String _dateLabel(DateTime value) {
   final day = value.day.toString().padLeft(2, '0');
   final month = value.month.toString().padLeft(2, '0');
-  return '${day}.${month}.${value.year}';
+  return '$day.$month.${value.year}';
 }
