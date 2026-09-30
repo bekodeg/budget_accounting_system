@@ -8,7 +8,9 @@ import '../../domain/models/report_export.dart';
 import 'report_temp_file_store.dart';
 
 final class PlatformReportShareGateway implements ReportShareGateway {
-  const PlatformReportShareGateway({this.fileStore = const ReportTempFileStore()});
+  const PlatformReportShareGateway({
+    this.fileStore = const ReportTempFileStore(),
+  });
 
   final ReportTempFileStore fileStore;
 
