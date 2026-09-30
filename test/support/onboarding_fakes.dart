@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:budget_accounting_system/src/application/app_services.dart';
 import 'package:budget_accounting_system/src/application/authorization/budget_action.dart';
 import 'package:budget_accounting_system/src/application/authorization/budget_authorization_guard.dart';
+import 'package:budget_accounting_system/src/application/errors/authorization_error.dart';
 import 'package:budget_accounting_system/src/application/ports/id_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_key_pair_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_key_store.dart';
@@ -254,6 +255,18 @@ final class FakeBudgetAuthorizationGuard
     required BudgetAction action,
   }) async {
     calls.add(action);
+    final allowed = switch (role) {
+      MemberRole.owner => true,
+      MemberRole.editor => action != BudgetAction.manageMembers,
+      MemberRole.viewer =>
+        action == BudgetAction.read || action == BudgetAction.export,
+    };
+    if (!allowed) {
+      throw const AuthorizationError(
+        code: AuthorizationErrorCode.forbidden,
+        message: 'Action is forbidden for the fake role.',
+      );
+    }
     return BudgetMemberProfile(
       userId: userId,
       name: 'Test User',
