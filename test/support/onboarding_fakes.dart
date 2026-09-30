@@ -755,37 +755,33 @@ final class FakeCategoryRepository implements CategoryRepository {
 
   @override
   Future<void> renameCategory({
+    required String budgetId,
     required String categoryId,
     required String name,
   }) async {
-    for (final entry in categoriesByBudget.entries) {
-      final index = entry.value.indexWhere(
-        (category) => category.id == categoryId,
-      );
-      if (index >= 0) {
-        entry.value[index] = entry.value[index].copyWith(name: name);
-        _emit(entry.key);
-        return;
-      }
+    final categories = categoriesByBudget[budgetId];
+    if (categories == null) return;
+    final index = categories.indexWhere((category) => category.id == categoryId);
+    if (index >= 0) {
+      categories[index] = categories[index].copyWith(name: name);
+      _emit(budgetId);
     }
   }
 
   @override
   Future<void> setCategoryArchived({
+    required String budgetId,
     required String categoryId,
     required bool isArchived,
   }) async {
-    for (final entry in categoriesByBudget.entries) {
-      final index = entry.value.indexWhere(
-        (category) => category.id == categoryId,
+    final categories = categoriesByBudget[budgetId];
+    if (categories == null) return;
+    final index = categories.indexWhere((category) => category.id == categoryId);
+    if (index >= 0) {
+      categories[index] = categories[index].copyWith(
+        isArchived: isArchived,
       );
-      if (index >= 0) {
-        entry.value[index] = entry.value[index].copyWith(
-          isArchived: isArchived,
-        );
-        _emit(entry.key);
-        return;
-      }
+      _emit(budgetId);
     }
   }
 }

@@ -68,20 +68,30 @@ final class CategoryAccountDao {
   }
 
   Future<void> renameCategory({
+    required String budgetId,
     required String categoryId,
     required String name,
   }) async {
     await (_db.update(_db.categories)
-          ..where((row) => row.id.equals(categoryId)))
+          ..where(
+            (row) =>
+                row.id.equals(categoryId) &
+                row.budgetId.equals(budgetId),
+          ))
         .write(CategoriesCompanion(name: Value(name)));
   }
 
   Future<void> setCategoryArchived({
+    required String budgetId,
     required String categoryId,
     required bool isArchived,
   }) async {
     await (_db.update(_db.categories)
-          ..where((row) => row.id.equals(categoryId)))
+          ..where(
+            (row) =>
+                row.id.equals(categoryId) &
+                row.budgetId.equals(budgetId),
+          ))
         .write(CategoriesCompanion(isArchived: Value(isArchived)));
   }
 

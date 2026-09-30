@@ -32,6 +32,7 @@ final class RenameCategory {
     );
 
     return _repository.renameCategory(
+      budgetId: budgetId,
       categoryId: categoryId,
       name: normalizedName,
     );

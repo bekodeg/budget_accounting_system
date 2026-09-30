@@ -15,6 +15,32 @@
 
 Так пользователь никогда не ждет сеть для сохранения данных.
 
+### Реализация mutation pipeline
+
+В production composition root изменяющие repositories оборачиваются sync-decorators:
+
+- transactions;
+- accounts;
+- categories;
+- monthly plans;
+- membership role changes.
+
+Каждый decorator передает доменную запись в единый `SyncMutationExecutor`.
+`DriftSyncMutationExecutor` открывает одну Drift/SQLite transaction, внутри которой:
+
+1. проверяется уникальность `op_id`;
+2. вычисляется следующий Lamport clock текущего устройства;
+3. строится canonical JSON patch;
+4. операция подписывается Ed25519 private key текущего устройства;
+5. выполняется доменная mutation;
+6. строго вставляется `sync_operations`;
+7. transaction коммитится только если все шаги успешны.
+
+Если domain mutation или запись журнала завершается ошибкой, SQLite откатывает обе части.
+Повторный `op_id` отклоняется до выполнения domain callback.
+
+Lamport clock монотонен на уровне устройства, а не только отдельного бюджета.
+
 ## 4.3. Протокол обмена
 
 ```mermaid
