@@ -1,0 +1,36 @@
+name: Temporary S3 report formatter
+
+on:
+  push:
+    branches:
+      - feature/17-period-and-year-reports
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/17-period-and-year-reports
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+      - name: Format report sources
+        shell: bash
+        run: |
+          dart format lib test
+          if git diff --quiet; then
+            echo "No formatting changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib test
+          git commit -m "fix: format extended report sources"
+          git push origin HEAD:feature/17-period-and-year-reports
