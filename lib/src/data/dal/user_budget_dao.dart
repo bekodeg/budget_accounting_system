@@ -74,6 +74,7 @@ final class UserBudgetDao {
     required BudgetsCompanion budget,
     required BudgetMembersCompanion ownerMembership,
     required BudgetMembersCompanion joiningMembership,
+    required String joiningPublicKey,
   }) {
     return _db.transaction(() async {
       final ownerId = owner.id.value;
@@ -87,10 +88,18 @@ final class UserBudgetDao {
         }
       }
 
-      await _db.into(_db.devices).insert(
-            ownerDevice,
-            mode: InsertMode.insertOrIgnore,
-          );
+      final existingOwnerDevice = await findDeviceById(ownerDevice.id.value);
+      if (existingOwnerDevice == null) {
+        await _db.into(_db.devices).insert(ownerDevice);
+      } else if (existingOwnerDevice.userId != ownerId) {
+        throw StateError('Owner device conflicts with local identity.');
+      }
+
+      final joiningUserId = joiningMembership.userId.value;
+      final joiningUser = await findUserById(joiningUserId);
+      if (joiningUser == null || joiningUser.publicKey != joiningPublicKey) {
+        throw StateError('Joining identity conflicts with local user.');
+      }
 
       final budgetId = budget.id.value;
       final existingBudget = await findBudgetById(budgetId);
