@@ -116,7 +116,7 @@ void main() {
     );
 
     expect((await syncDao.findById('op-1'))!.logicalClock, BigInt.one);
-    expect((await syncDao.findById('op-2'))!.logicalClock, BigInt.two);
+    expect((await syncDao.findById('op-2'))!.logicalClock, BigInt.from(2));
   });
 
   test('duplicate operation id does not run domain mutation', () async {
