@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../domain/models/lan_peer_endpoint.dart';
+import '../../domain/models/public_identity.dart';
 import '../authorization/budget_action.dart';
 import '../authorization/budget_authorization_guard.dart';
 import '../ports/lan_discovery_gateway.dart';
@@ -166,7 +167,7 @@ final class LanPeerSessionManager {
     return _endpointCodec.decode(value);
   }
 
-  Future<dynamic> _identityFor(String budgetId) async {
+  Future<PublicIdentity> _identityFor(String budgetId) async {
     final member = await _authorization.require(
       budgetId: budgetId,
       action: BudgetAction.read,
