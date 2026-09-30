@@ -5,7 +5,7 @@ import '../navigation/app_navigation_controller.dart';
 import '../navigation/app_section.dart';
 import 'budget_dashboard_screen.dart';
 import 'monthly_plan_screen.dart';
-import 'monthly_report_screen.dart';
+import 'reports_screen.dart';
 import 'settings_screen.dart';
 
 final class AppShell extends StatefulWidget {
@@ -127,7 +127,11 @@ final class _SectionBody extends StatelessWidget {
       return MonthlyPlanScreen(services: services, budgetId: budgetId);
     }
     if (section == AppSection.reports) {
-      return MonthlyReportScreen(services: services, budgetId: budgetId);
+      return ReportsScreen(
+        services: services,
+        budgetId: budgetId,
+        userId: userId,
+      );
     }
     if (section == AppSection.settings) {
       return SettingsScreen(services: services, budgetId: budgetId);
