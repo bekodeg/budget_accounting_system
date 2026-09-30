@@ -78,6 +78,7 @@ import '../data/repositories/syncing_membership_repository.dart';
 import '../data/repositories/syncing_transaction_repository.dart';
 import '../data/services/ed25519_identity_key_pair_generator.dart';
 import '../data/services/ed25519_identity_signature_service.dart';
+import '../data/services/drift_sync_materializer.dart';
 import '../data/services/drift_sync_mutation_executor.dart';
 import '../data/services/excel_report_document_encoder.dart';
 import '../data/services/platform_invite_file_gateway.dart';
@@ -154,11 +155,16 @@ final class AppCompositionRoot {
       sessionStore: sessionStore,
     );
     final getPublicIdentity = GetPublicIdentity(ensureLocalIdentity);
+    final syncMaterializer = DriftSyncMaterializer(
+      database: dal.database,
+      syncDao: dal.sync,
+    );
     final syncJournal = DriftSyncJournal(
       database: dal.database,
       syncDao: dal.sync,
       identityRepository: identityRepository,
       signatureService: identitySignatureService,
+      materializer: syncMaterializer,
     );
     final syncSessions = SyncSessionService(journal: syncJournal);
     const syncCoordinator = SyncCoordinatorService();

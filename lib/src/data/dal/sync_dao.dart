@@ -23,6 +23,26 @@ final class SyncDao {
     )..where((row) => row.opId.equals(operationId))).getSingleOrNull();
   }
 
+  Future<List<SyncOperation>> getEntityOperations({
+    required String budgetId,
+    required String entityType,
+    required String entityId,
+  }) {
+    return (_db.select(_db.syncOperations)
+          ..where(
+            (row) =>
+                row.budgetId.equals(budgetId) &
+                row.entityType.equals(entityType) &
+                row.entityId.equals(entityId),
+          )
+          ..orderBy([
+            (row) => OrderingTerm.asc(row.logicalClock),
+            (row) => OrderingTerm.asc(row.deviceId),
+            (row) => OrderingTerm.asc(row.opId),
+          ]))
+        .get();
+  }
+
   Future<List<SyncOperation>> getOperationsAfter({
     required String budgetId,
     required BigInt logicalClock,
