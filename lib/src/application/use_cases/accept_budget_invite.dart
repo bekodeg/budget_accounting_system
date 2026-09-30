@@ -47,25 +47,26 @@ final class AcceptBudgetInvite {
     final joiningIdentity = await _getPublicIdentity(userId);
 
     await _consumptionStore.markConsumed(invite.inviteId);
+    var importedTransportSecret = false;
     try {
+      importedTransportSecret = await _transportSecretManager.import(
+        budgetId: invite.budgetId,
+        secret: invite.crypto.bootstrapSecret,
+      );
       await _invitationRepository.acceptInvite(
         invite: invite,
         joiningIdentity: joiningIdentity,
       );
     } on StateError catch (error) {
+      if (importedTransportSecret) {
+        await _transportSecretManager.remove(invite.budgetId);
+      }
       await _consumptionStore.unmarkConsumed(invite.inviteId);
       throw InviteError(InviteErrorCode.budgetConflict, error.message);
     } on Object {
-      await _consumptionStore.unmarkConsumed(invite.inviteId);
-      rethrow;
-    }
-
-    try {
-      await _transportSecretManager.import(
-        budgetId: invite.budgetId,
-        secret: invite.crypto.bootstrapSecret,
-      );
-    } on Object {
+      if (importedTransportSecret) {
+        await _transportSecretManager.remove(invite.budgetId);
+      }
       await _consumptionStore.unmarkConsumed(invite.inviteId);
       rethrow;
     }
