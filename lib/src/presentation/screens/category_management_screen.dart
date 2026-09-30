@@ -279,10 +279,10 @@ final class _CategorySection extends StatelessWidget {
               onSelected: (action) {
                 switch (action) {
                   case _CategoryAction.rename:
-                    onRename(category);
+                    onRename?.call(category);
                     return;
                   case _CategoryAction.archive:
-                    onArchive(category);
+                    onArchive?.call(category);
                     return;
                 }
               },
