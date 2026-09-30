@@ -193,11 +193,8 @@ final class LanPeerSessionManager {
         return;
       }
       controller.add(secured);
-    } on Object catch (error, stackTrace) {
+    } on Object {
       await rawChannel.close();
-      if (!controller.isClosed) {
-        controller.addError(error, stackTrace);
-      }
     }
   }
 }
