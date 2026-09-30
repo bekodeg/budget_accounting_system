@@ -12,6 +12,7 @@ import '../../domain/models/sync_protocol.dart';
 import '../../domain/repositories/identity_repository.dart';
 import '../dal/sync_dao.dart';
 import '../database/app_database.dart';
+import '../services/drift_sync_materializer.dart';
 
 final class DriftSyncJournal implements SyncJournal {
   const DriftSyncJournal({
@@ -19,17 +20,20 @@ final class DriftSyncJournal implements SyncJournal {
     required SyncDao syncDao,
     required IdentityRepository identityRepository,
     required IdentitySignatureService signatureService,
+    required DriftSyncMaterializer materializer,
     SyncOperationCodec operationCodec = const SyncOperationCodec(),
   }) : _database = database,
        _syncDao = syncDao,
        _identityRepository = identityRepository,
        _signatureService = signatureService,
+       _materializer = materializer,
        _operationCodec = operationCodec;
 
   final AppDatabase _database;
   final SyncDao _syncDao;
   final IdentityRepository _identityRepository;
   final IdentitySignatureService _signatureService;
+  final DriftSyncMaterializer _materializer;
   final SyncOperationCodec _operationCodec;
 
   @override
@@ -91,6 +95,7 @@ final class DriftSyncJournal implements SyncJournal {
     return _database.transaction(() async {
       var inserted = 0;
       var duplicates = 0;
+      final touchedEntities = <SyncEntityRef>{};
 
       for (final wire in operations) {
         final operation = wire.operation;
@@ -175,6 +180,16 @@ final class DriftSyncJournal implements SyncJournal {
           ),
         );
         inserted += 1;
+        touchedEntities.add(
+          SyncEntityRef(operation.entityType, operation.entityId),
+        );
+      }
+
+      if (touchedEntities.isNotEmpty) {
+        await _materializer.materialize(
+          budgetId: budgetId,
+          entities: touchedEntities,
+        );
       }
 
       return SyncIngestResult(
