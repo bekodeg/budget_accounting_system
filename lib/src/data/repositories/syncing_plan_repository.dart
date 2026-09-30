@@ -27,15 +27,18 @@ final class SyncingPlanRepository implements PlanRepository {
   @override
   Future<void> upsert(MonthlyPlan plan) async {
     final context = await _contextProvider.current();
+    final month = normalizePlanMonth(plan.month);
+    final entityId =
+        '${plan.budgetId}:${month.year}-${month.month}:${plan.categoryId}';
     await _executor.execute<void>(
       draft: SyncMutationDraft(
         spec: SyncMutationSpec(
           budgetId: plan.budgetId,
           entityType: 'plan',
-          entityId: plan.id,
+          entityId: entityId,
           type: SyncMutationType.patch,
           patch: {
-            'month': plan.month,
+            'month': month,
             'category_id': plan.categoryId,
             'planned_amount_minor': plan.plannedAmountMinor,
             'updated_at': plan.updatedAt,
