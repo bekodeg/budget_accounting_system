@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:budget_accounting_system/src/application/app_services.dart';
 import 'package:budget_accounting_system/src/application/ports/id_generator.dart';
+import 'package:budget_accounting_system/src/application/ports/identity_key_pair_generator.dart';
+import 'package:budget_accounting_system/src/application/ports/identity_key_store.dart';
 import 'package:budget_accounting_system/src/application/ports/session_store.dart';
 import 'package:budget_accounting_system/src/application/ports/report_document_encoder.dart';
 import 'package:budget_accounting_system/src/application/ports/report_share_gateway.dart';
@@ -16,8 +18,10 @@ import 'package:budget_accounting_system/src/application/use_cases/create_transa
 import 'package:budget_accounting_system/src/application/use_cases/create_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/delete_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/export_report.dart';
+import 'package:budget_accounting_system/src/application/use_cases/ensure_local_identity.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_account_balance.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_budget_account_balances.dart';
+import 'package:budget_accounting_system/src/application/use_cases/get_public_identity.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_account_in_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_category_in_budget.dart';
@@ -46,6 +50,7 @@ import 'package:budget_accounting_system/src/domain/models/budget_transaction_en
 import 'package:budget_accounting_system/src/domain/models/category_template.dart';
 import 'package:budget_accounting_system/src/domain/models/dashboard_summary.dart';
 import 'package:budget_accounting_system/src/domain/models/initial_budget_category.dart';
+import 'package:budget_accounting_system/src/domain/models/local_device.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_plan.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_report.dart';
 import 'package:budget_accounting_system/src/domain/models/period_report.dart';
@@ -61,6 +66,7 @@ import 'package:budget_accounting_system/src/domain/repositories/plan_repository
 import 'package:budget_accounting_system/src/domain/repositories/report_export_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/monthly_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/extended_report_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/identity_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 
@@ -74,6 +80,9 @@ AppServices fakeAppServices({
   FakePlanRepository? planRepository,
   FakeMonthlyReportRepository? monthlyReportRepository,
   FakeExtendedReportRepository? extendedReportRepository,
+  FakeIdentityRepository? identityRepository,
+  FakeIdentityKeyStore? identityKeyStore,
+  FakeIdentityKeyPairGenerator? identityKeyPairGenerator,
   FakeIdGenerator? idGenerator,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
@@ -85,9 +94,25 @@ AppServices fakeAppServices({
       monthlyReportRepository ?? FakeMonthlyReportRepository();
   final extendedReports =
       extendedReportRepository ?? FakeExtendedReportRepository();
+  final identities = identityRepository ?? FakeIdentityRepository();
+  final identityKeys = identityKeyStore ?? FakeIdentityKeyStore();
+  final identityGenerator =
+      identityKeyPairGenerator ?? FakeIdentityKeyPairGenerator();
   final ids =
       idGenerator ??
-      FakeIdGenerator(['user-1', 'budget-1', 'entity-1', 'entity-2']);
+      FakeIdGenerator([
+        'user-1',
+        'budget-1',
+        'device-1',
+        'entity-1',
+        'entity-2',
+      ]);
+  final ensureLocalIdentity = EnsureLocalIdentity(
+    identityRepository: identities,
+    keyStore: identityKeys,
+    keyPairGenerator: identityGenerator,
+    idGenerator: ids,
+  );
 
   return AppServices(
     applyCategoryTemplates: ApplyCategoryTemplates(categories),
@@ -121,9 +146,12 @@ AppServices fakeAppServices({
       categoryRepository: categories,
       sessionStore: sessionStore,
       idGenerator: ids,
+      identityKeyStore: identityKeys,
+      identityKeyPairGenerator: identityGenerator,
     ),
     getAccountBalance: GetAccountBalance(accounts),
     getBudgetAccountBalances: GetBudgetAccountBalances(accounts),
+    getPublicIdentity: GetPublicIdentity(ensureLocalIdentity),
     renameCategory: RenameCategory(categories),
     requireAccountInBudget: RequireAccountInBudget(accounts),
     requireCategoryInBudget: RequireCategoryInBudget(categories),
@@ -161,6 +189,104 @@ AppServices fakeAppServices({
     watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
   );
+}
+
+final class FakeIdentityKeyStore implements IdentityKeyStore {
+  final Map<String, String> deviceByUser = {};
+  final Map<String, String> privateKeyByDevice = {};
+
+  @override
+  Future<String?> loadCurrentDeviceId(String userId) async {
+    return deviceByUser[userId];
+  }
+
+  @override
+  Future<String?> loadPrivateKey(String deviceId) async {
+    return privateKeyByDevice[deviceId];
+  }
+
+  @override
+  Future<void> saveIdentity({
+    required String userId,
+    required String deviceId,
+    required String privateKey,
+  }) async {
+    deviceByUser[userId] = deviceId;
+    privateKeyByDevice[deviceId] = privateKey;
+  }
+
+  @override
+  Future<void> deleteIdentity({
+    required String userId,
+    required String deviceId,
+  }) async {
+    privateKeyByDevice.remove(deviceId);
+    if (deviceByUser[userId] == deviceId) {
+      deviceByUser.remove(userId);
+    }
+  }
+}
+
+final class FakeIdentityKeyPairGenerator
+    implements IdentityKeyPairGenerator {
+  FakeIdentityKeyPairGenerator({
+    this.publicKey = 'ed25519:public-test-key',
+    this.privateKey = 'private-test-key',
+  });
+
+  final String publicKey;
+  final String privateKey;
+
+  @override
+  Future<GeneratedIdentityKeyPair> generate() async {
+    return GeneratedIdentityKeyPair(
+      publicKey: publicKey,
+      privateKey: privateKey,
+    );
+  }
+
+  @override
+  Future<String> publicKeyFromPrivate(String privateKey) async {
+    if (privateKey != this.privateKey) {
+      return 'ed25519:mismatch';
+    }
+    return publicKey;
+  }
+}
+
+final class FakeIdentityRepository implements IdentityRepository {
+  FakeIdentityRepository({
+    Map<String, String>? publicKeysByUser,
+    Map<String, LocalDevice>? devicesById,
+  }) : publicKeysByUser = publicKeysByUser ?? {},
+       devicesById = devicesById ?? {};
+
+  final Map<String, String> publicKeysByUser;
+  final Map<String, LocalDevice> devicesById;
+
+  @override
+  Future<String?> getUserPublicKey(String userId) async {
+    return publicKeysByUser[userId] ?? 'local-unverified:$userId';
+  }
+
+  @override
+  Future<LocalDevice?> findDevice(String deviceId) async {
+    return devicesById[deviceId];
+  }
+
+  @override
+  Future<void> migrateLegacyIdentity({
+    required String userId,
+    required String publicKey,
+    required String deviceId,
+  }) async {
+    publicKeysByUser[userId] = publicKey;
+    devicesById[deviceId] = LocalDevice(
+      id: deviceId,
+      userId: userId,
+      revokedAt: null,
+    );
+  }
 }
 
 final class FakeReportExportRepository implements ReportExportRepository {
@@ -208,6 +334,7 @@ final class FakeBudgetRepository implements BudgetRepository {
   String? createdUserId;
   String? createdUserName;
   String? createdPublicKey;
+  String? createdDeviceId;
   String? createdBudgetId;
   String? createdBudgetName;
   Currency? createdCurrency;
@@ -218,6 +345,7 @@ final class FakeBudgetRepository implements BudgetRepository {
     required String userId,
     required String userName,
     required String publicKey,
+    required String deviceId,
     required String budgetId,
     required String budgetName,
     required Currency baseCurrency,
@@ -231,6 +359,7 @@ final class FakeBudgetRepository implements BudgetRepository {
     createdUserId = userId;
     createdUserName = userName;
     createdPublicKey = publicKey;
+    createdDeviceId = deviceId;
     createdBudgetId = budgetId;
     createdBudgetName = budgetName;
     createdCurrency = baseCurrency;
