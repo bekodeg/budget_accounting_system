@@ -65,7 +65,7 @@ final class _YearReportScreenState extends State<YearReportScreen> {
                 ),
                 Expanded(
                   child: Text(
-                    '${_year}',
+                    '$_year',
                     key: const ValueKey('year-report-year'),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleLarge,
@@ -209,13 +209,13 @@ final class _YearMonthTile extends StatelessWidget {
       subtitle: hasData
           ? Text(
               'План: ${formatMinorUnits(month.plannedAmountMinor)} '
-              '${baseCurrency} · '
+              '$baseCurrency · '
               'Факт: ${formatMinorUnits(month.actualBaseCurrencyMinor)} '
-              '${baseCurrency}',
+              '$baseCurrency',
             )
           : const Text('Нет данных'),
       trailing: hasData
-          ? Text('${formatMinorUnits(month.varianceMinor)} ${baseCurrency}')
+          ? Text('${formatMinorUnits(month.varianceMinor)} $baseCurrency')
           : null,
     );
   }
@@ -241,7 +241,7 @@ final class _YearCategoryTile extends StatelessWidget {
       title: Text(category.categoryName),
       subtitle: Text(
         'План: ${formatMinorUnits(category.plannedAmountMinor)} '
-        '${category.planCurrency} · Факт: ${actualLabel}',
+        '${category.planCurrency} · Факт: $actualLabel',
       ),
       trailing: Text(
         '${formatMinorUnits(category.varianceMinor)} ${category.planCurrency}',
