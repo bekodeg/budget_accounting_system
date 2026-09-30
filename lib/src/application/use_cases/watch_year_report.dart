@@ -6,10 +6,7 @@ final class WatchYearReport {
 
   final ExtendedReportRepository _repository;
 
-  Stream<YearReport> call({
-    required String budgetId,
-    required int year,
-  }) {
+  Stream<YearReport> call({required String budgetId, required int year}) {
     return _repository.watchYearReport(budgetId: budgetId, year: year);
   }
 }

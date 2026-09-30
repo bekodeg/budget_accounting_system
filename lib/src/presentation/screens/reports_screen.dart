@@ -34,14 +34,8 @@ final class ReportsScreen extends StatelessWidget {
           Expanded(
             child: TabBarView(
               children: [
-                MonthlyReportScreen(
-                  services: services,
-                  budgetId: budgetId,
-                ),
-                YearReportScreen(
-                  services: services,
-                  budgetId: budgetId,
-                ),
+                MonthlyReportScreen(services: services, budgetId: budgetId),
+                YearReportScreen(services: services, budgetId: budgetId),
                 PeriodReportScreen(
                   services: services,
                   budgetId: budgetId,

@@ -276,8 +276,7 @@ void main() {
 
     final monthlyIncome = report.months.fold<BigInt>(
       BigInt.zero,
-      (sum, month) =>
-          sum + (month.incomeMinorByCurrency['EUR'] ?? BigInt.zero),
+      (sum, month) => sum + (month.incomeMinorByCurrency['EUR'] ?? BigInt.zero),
     );
     final monthlyExpense = report.months.fold<BigInt>(
       BigInt.zero,

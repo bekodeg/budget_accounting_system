@@ -72,20 +72,21 @@ final class DriftExtendedReportRepository implements ExtendedReportRepository {
       }
     }
 
-    final categoryTotals = categories.values
-        .map(
-          (builder) => PeriodCategoryTotal(
-            categoryId: builder.categoryId,
-            categoryName: builder.categoryName,
-            actualMinorByCurrency: builder.actual,
-          ),
-        )
-        .toList(growable: false)
-      ..sort((a, b) {
-        final byName = a.categoryName.compareTo(b.categoryName);
-        if (byName != 0) return byName;
-        return (a.categoryId ?? '').compareTo(b.categoryId ?? '');
-      });
+    final categoryTotals =
+        categories.values
+            .map(
+              (builder) => PeriodCategoryTotal(
+                categoryId: builder.categoryId,
+                categoryName: builder.categoryName,
+                actualMinorByCurrency: builder.actual,
+              ),
+            )
+            .toList(growable: false)
+          ..sort((a, b) {
+            final byName = a.categoryName.compareTo(b.categoryName);
+            if (byName != 0) return byName;
+            return (a.categoryId ?? '').compareTo(b.categoryId ?? '');
+          });
 
     return PeriodReport(
       fromInclusive: fromInclusive,
@@ -172,22 +173,23 @@ final class DriftExtendedReportRepository implements ExtendedReportRepository {
         )
         .toList(growable: false);
 
-    final categories = categoryBuilders.values
-        .map(
-          (builder) => YearCategoryReport(
-            categoryId: builder.categoryId,
-            categoryName: builder.categoryName,
-            planCurrency: baseCurrency,
-            plannedAmountMinor: builder.plannedAmountMinor,
-            actualMinorByCurrency: builder.actual,
-          ),
-        )
-        .toList(growable: false)
-      ..sort((a, b) {
-        final byName = a.categoryName.compareTo(b.categoryName);
-        if (byName != 0) return byName;
-        return (a.categoryId ?? '').compareTo(b.categoryId ?? '');
-      });
+    final categories =
+        categoryBuilders.values
+            .map(
+              (builder) => YearCategoryReport(
+                categoryId: builder.categoryId,
+                categoryName: builder.categoryName,
+                planCurrency: baseCurrency,
+                plannedAmountMinor: builder.plannedAmountMinor,
+                actualMinorByCurrency: builder.actual,
+              ),
+            )
+            .toList(growable: false)
+          ..sort((a, b) {
+            final byName = a.categoryName.compareTo(b.categoryName);
+            if (byName != 0) return byName;
+            return (a.categoryId ?? '').compareTo(b.categoryId ?? '');
+          });
 
     return YearReport(
       year: year,
@@ -220,10 +222,7 @@ final class _YearMonthBuilder {
 }
 
 final class _YearCategoryBuilder {
-  _YearCategoryBuilder({
-    required this.categoryId,
-    required this.categoryName,
-  });
+  _YearCategoryBuilder({required this.categoryId, required this.categoryName});
 
   final String? categoryId;
   final String categoryName;

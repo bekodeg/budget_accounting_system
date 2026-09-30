@@ -38,7 +38,9 @@ final class _YearReportScreenState extends State<YearReportScreen> {
       ),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const Center(child: Text('Не удалось построить годовой отчет.'));
+          return const Center(
+            child: Text('Не удалось построить годовой отчет.'),
+          );
         }
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -105,7 +107,10 @@ final class _YearReportScreenState extends State<YearReportScreen> {
               )
             else ...[
               const SizedBox(height: 20),
-              Text('По месяцам', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'По месяцам',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               for (final month in report.months)
                 _YearMonthTile(month: month, baseCurrency: report.baseCurrency),
@@ -186,10 +191,7 @@ final class _ValuesCard extends StatelessWidget {
 }
 
 final class _YearMonthTile extends StatelessWidget {
-  const _YearMonthTile({
-    required this.month,
-    required this.baseCurrency,
-  });
+  const _YearMonthTile({required this.month, required this.baseCurrency});
 
   final YearMonthReport month;
   final String baseCurrency;
@@ -231,15 +233,10 @@ final class _YearCategoryTile extends StatelessWidget {
     final actualLabel = actual.isEmpty
         ? '0.00'
         : actual
-              .map(
-                (entry) =>
-                    '${formatMinorUnits(entry.value)} ${entry.key}',
-              )
+              .map((entry) => '${formatMinorUnits(entry.value)} ${entry.key}')
               .join(', ');
     return ListTile(
-      key: ValueKey(
-        'year-category-${category.categoryId ?? 'uncategorized'}',
-      ),
+      key: ValueKey('year-category-${category.categoryId ?? 'uncategorized'}'),
       contentPadding: EdgeInsets.zero,
       title: Text(category.categoryName),
       subtitle: Text(

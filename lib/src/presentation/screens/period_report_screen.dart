@@ -159,9 +159,7 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
                 OutlinedButton(
                   key: const ValueKey('period-to'),
                   onPressed: _pickTo,
-                  child: Text(
-                    'До: ${_dateLabel(_toExclusive)} (не включая)',
-                  ),
+                  child: Text('До: ${_dateLabel(_toExclusive)} (не включая)'),
                 ),
                 FilterChip(
                   key: const ValueKey('period-only-mine'),
@@ -220,10 +218,7 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            _PeriodMetric(
-              label: 'Доход',
-              values: report.incomeMinorByCurrency,
-            ),
+            _PeriodMetric(label: 'Доход', values: report.incomeMinorByCurrency),
             _PeriodMetric(
               label: 'Расход',
               values: report.expenseMinorByCurrency,
@@ -253,9 +248,7 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
                   ),
                   contentPadding: EdgeInsets.zero,
                   title: Text(category.categoryName),
-                  trailing: Text(
-                    _valuesLabel(category.actualMinorByCurrency),
-                  ),
+                  trailing: Text(_valuesLabel(category.actualMinorByCurrency)),
                 ),
             ],
           ],

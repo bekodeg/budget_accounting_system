@@ -399,7 +399,8 @@ FROM account_balances
       authorIds: authorIds,
     );
 
-    final sql = '''
+    final sql =
+        '''
 WITH flow AS (
   SELECT
     t.type AS key_id,
@@ -746,10 +747,7 @@ FROM category_actual
 }
 
 final class _ReportFilterSql {
-  const _ReportFilterSql({
-    required this.clause,
-    required this.variables,
-  });
+  const _ReportFilterSql({required this.clause, required this.variables});
 
   final String clause;
   final List<Variable<Object>> variables;

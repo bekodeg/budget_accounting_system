@@ -83,10 +83,8 @@ final class YearReport {
     });
   }
 
-  BigInt get plannedAmountMinor => months.fold(
-    BigInt.zero,
-    (sum, month) => sum + month.plannedAmountMinor,
-  );
+  BigInt get plannedAmountMinor =>
+      months.fold(BigInt.zero, (sum, month) => sum + month.plannedAmountMinor);
 
   BigInt get actualBaseCurrencyMinor => months.fold(
     BigInt.zero,
@@ -96,9 +94,7 @@ final class YearReport {
   BigInt get varianceMinor => plannedAmountMinor - actualBaseCurrencyMinor;
 }
 
-Map<String, BigInt> _sumCurrencyMaps(
-  Iterable<Map<String, BigInt>> values,
-) {
+Map<String, BigInt> _sumCurrencyMaps(Iterable<Map<String, BigInt>> values) {
   final result = <String, BigInt>{};
   for (final value in values) {
     for (final entry in value.entries) {
