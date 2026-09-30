@@ -68,11 +68,10 @@ void main() {
     final bytes = encoder.encodeXlsx(bundle);
     final workbook = Excel.decodeBytes(bytes);
 
-    expect(workbook.tables.keys, containsAll([
-      'Summary',
-      'By Category',
-      'Transactions',
-    ]));
+    expect(
+      workbook.tables.keys,
+      containsAll(['Summary', 'By Category', 'Transactions']),
+    );
     expect(workbook.tables['Transactions']!.maxRows, 2);
     expect(workbook.tables['By Category']!.maxRows, 2);
     expect(workbook.tables['Summary']!.maxRows, greaterThanOrEqualTo(4));

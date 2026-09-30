@@ -26,8 +26,7 @@ final class ExportReport {
     final summaryFuture = _reportRepository.watchPeriodReport(filter).first;
     final transactionsFuture = _exportRepository.listTransactions(filter);
     final PeriodReport summary = await summaryFuture;
-    final List<ReportExportTransaction> transactions =
-        await transactionsFuture;
+    final List<ReportExportTransaction> transactions = await transactionsFuture;
 
     final bundle = ReportExportBundle(
       filter: filter,
