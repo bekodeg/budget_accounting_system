@@ -1,3 +1,4 @@
+import 'services/lan_peer_session_manager.dart';
 import 'use_cases/accept_budget_invite.dart';
 import 'use_cases/apply_category_templates.dart';
 import 'use_cases/archive_account.dart';
@@ -58,6 +59,7 @@ final class AppServices {
     required this.getBudgetAccountBalances,
     required this.getPublicIdentity,
     required this.inspectBudgetInvite,
+    this.lanPeerSessions,
     required this.pickBudgetInviteFile,
     required this.renameCategory,
     required this.requireAccountInBudget,
@@ -100,6 +102,7 @@ final class AppServices {
   final GetBudgetAccountBalances getBudgetAccountBalances;
   final GetPublicIdentity getPublicIdentity;
   final InspectBudgetInvite inspectBudgetInvite;
+  final LanPeerSessionManager? lanPeerSessions;
   final PickBudgetInviteFile pickBudgetInviteFile;
   final RenameCategory renameCategory;
   final RequireAccountInBudget requireAccountInBudget;

@@ -140,9 +140,13 @@ entity-level tombstone register. Сущность считается удале�
 
 Для устройств в одной локальной сети:
 
-- mDNS/Bonjour или аналог локального service discovery;
-- ручное подключение по QR как fallback;
-- соединение защищается ключом бюджета/сессии.
+- mDNS/Bonjour service `_budgetsync._tcp`;
+- discovery-token является HMAC от budget transport secret и не раскрывает budget id;
+- ручное подключение по versioned endpoint QR используется как fallback;
+- peer подтверждает владение budget secret и подписывает hello своей identity;
+- payload TCP-сессии защищается HKDF-derived ChaCha20-Poly1305 session key.
+
+Детали реализации и platform permissions: [P2P LAN](20_lan_p2p.md).
 
 ## 4.8. Новое устройство
 

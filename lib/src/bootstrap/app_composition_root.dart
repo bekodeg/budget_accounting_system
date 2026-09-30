@@ -1,4 +1,10 @@
 import '../application/app_services.dart';
+import '../application/services/budget_transport_secret_manager.dart';
+import '../application/services/lan_discovery_token_service.dart';
+import '../application/services/lan_handshake_service.dart';
+import '../application/services/lan_peer_session_manager.dart';
+import '../application/services/lan_secure_session_service.dart';
+import '../application/services/lan_session_crypto.dart';
 import '../application/services/session_sync_mutation_context_provider.dart';
 import '../application/use_cases/accept_budget_invite.dart';
 import '../application/use_cases/apply_category_templates.dart';
@@ -43,7 +49,11 @@ import '../application/use_cases/watch_year_report.dart';
 import '../application/use_cases/watch_transactions.dart';
 import '../application/use_cases/watch_user_budgets.dart';
 import '../data/dal/dal.dart';
+import '../data/network/io_lan_local_address_resolver.dart';
+import '../data/network/nsd_lan_discovery_gateway.dart';
+import '../data/network/tcp_lan_transport_gateway.dart';
 import '../data/preferences/shared_preferences_session_store.dart';
+import '../data/security/flutter_secure_budget_transport_secret_store.dart';
 import '../data/security/flutter_secure_identity_key_store.dart';
 import '../data/security/secure_invite_consumption_store.dart';
 import '../data/repositories/drift_account_repository.dart';
@@ -105,8 +115,30 @@ final class AppCompositionRoot {
       keyStore: identityKeyStore,
     );
     final inviteConsumptionStore = SecureInviteConsumptionStore();
+    final transportSecretStore = FlutterSecureBudgetTransportSecretStore();
     const inviteFileGateway = PlatformInviteFileGateway();
     final secureTokenGenerator = RandomSecureTokenGenerator();
+    final transportSecretManager = BudgetTransportSecretManager(
+      store: transportSecretStore,
+      tokenGenerator: secureTokenGenerator,
+    );
+    const lanDiscoveryGateway = NsdLanDiscoveryGateway();
+    const lanTransportGateway = TcpLanTransportGateway();
+    const lanLocalAddressResolver = IoLanLocalAddressResolver();
+    final lanDiscoveryTokenService = LanDiscoveryTokenService(
+      transportSecretManager: transportSecretManager,
+    );
+    final lanHandshakeService = LanHandshakeService(
+      transportSecretManager: transportSecretManager,
+      signatureService: identitySignatureService,
+      tokenGenerator: secureTokenGenerator,
+      identityRepository: identityRepository,
+    );
+    final lanSecureSessionService = LanSecureSessionService(
+      handshakeService: lanHandshakeService,
+      sessionCrypto: LanSessionCrypto(),
+      transportSecretManager: transportSecretManager,
+    );
     final idGenerator = SecureIdGenerator();
     final ensureLocalIdentity = EnsureLocalIdentity(
       identityRepository: identityRepository,
@@ -119,6 +151,15 @@ final class AppCompositionRoot {
       sessionStore: sessionStore,
     );
     final getPublicIdentity = GetPublicIdentity(ensureLocalIdentity);
+    final lanPeerSessions = LanPeerSessionManager(
+      authorization: authorization,
+      getPublicIdentity: getPublicIdentity,
+      discovery: lanDiscoveryGateway,
+      transport: lanTransportGateway,
+      secureSession: lanSecureSessionService,
+      discoveryTokenService: lanDiscoveryTokenService,
+      localAddressResolver: lanLocalAddressResolver,
+    );
     final syncMutationExecutor = DriftSyncMutationExecutor(
       database: dal.database,
       syncDao: dal.sync,
@@ -170,6 +211,7 @@ final class AppCompositionRoot {
           consumptionStore: inviteConsumptionStore,
           sessionStore: sessionStore,
           getPublicIdentity: getPublicIdentity,
+          transportSecretManager: transportSecretManager,
         ),
         applyCategoryTemplates: ApplyCategoryTemplates(
           repository: categoryRepository,
@@ -195,6 +237,7 @@ final class AppCompositionRoot {
           getPublicIdentity: getPublicIdentity,
           signatureService: identitySignatureService,
           tokenGenerator: secureTokenGenerator,
+          transportSecretManager: transportSecretManager,
           idGenerator: idGenerator,
         ),
         createCategory: CreateCategory(
@@ -238,6 +281,7 @@ final class AppCompositionRoot {
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
         getPublicIdentity: getPublicIdentity,
         inspectBudgetInvite: inspectBudgetInvite,
+        lanPeerSessions: lanPeerSessions,
         pickBudgetInviteFile: PickBudgetInviteFile(inviteFileGateway),
         renameCategory: RenameCategory(
           repository: categoryRepository,
