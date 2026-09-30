@@ -8,39 +8,39 @@ import '../support/onboarding_fakes.dart';
 
 void main() {
   FakeCategoryRepository categories() => FakeCategoryRepository(
-        categoriesByBudget: {
-          'budget-1': const [
-            BudgetCategory(
-              id: 'expense',
-              budgetId: 'budget-1',
-              name: 'Еда',
-              kind: CategoryKind.expense,
-              isArchived: false,
-            ),
-            BudgetCategory(
-              id: 'both',
-              budgetId: 'budget-1',
-              name: 'Универсальная',
-              kind: CategoryKind.both,
-              isArchived: false,
-            ),
-            BudgetCategory(
-              id: 'income',
-              budgetId: 'budget-1',
-              name: 'Зарплата',
-              kind: CategoryKind.income,
-              isArchived: false,
-            ),
-            BudgetCategory(
-              id: 'archived',
-              budgetId: 'budget-1',
-              name: 'Старая',
-              kind: CategoryKind.expense,
-              isArchived: true,
-            ),
-          ],
-        },
-      );
+    categoriesByBudget: {
+      'budget-1': const [
+        BudgetCategory(
+          id: 'expense',
+          budgetId: 'budget-1',
+          name: 'Еда',
+          kind: CategoryKind.expense,
+          isArchived: false,
+        ),
+        BudgetCategory(
+          id: 'both',
+          budgetId: 'budget-1',
+          name: 'Универсальная',
+          kind: CategoryKind.both,
+          isArchived: false,
+        ),
+        BudgetCategory(
+          id: 'income',
+          budgetId: 'budget-1',
+          name: 'Зарплата',
+          kind: CategoryKind.income,
+          isArchived: false,
+        ),
+        BudgetCategory(
+          id: 'archived',
+          budgetId: 'budget-1',
+          name: 'Старая',
+          kind: CategoryKind.expense,
+          isArchived: true,
+        ),
+      ],
+    },
+  );
 
   test('normalizes month and clears plan when amount becomes zero', () async {
     final plans = FakePlanRepository();

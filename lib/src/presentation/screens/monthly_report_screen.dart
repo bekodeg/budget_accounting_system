@@ -111,7 +111,9 @@ final class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
             if (report.categories.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
-                child: Text('За этот месяц нет планов и расходов по категориям.'),
+                child: Text(
+                  'За этот месяц нет планов и расходов по категориям.',
+                ),
               )
             else
               for (final category in report.categories)
@@ -149,11 +151,7 @@ final class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
 }
 
 final class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.label,
-    required this.values,
-    super.key,
-  });
+  const _MetricCard({required this.label, required this.values, super.key});
 
   final String label;
   final Map<String, BigInt> values;
@@ -201,10 +199,7 @@ final class _CategoryReportTile extends StatelessWidget {
     final actualText = actualEntries.isEmpty
         ? '0.00 ${category.planCurrency}'
         : actualEntries
-              .map(
-                (entry) =>
-                    '${formatMinorUnits(entry.value)} ${entry.key}',
-              )
+              .map((entry) => '${formatMinorUnits(entry.value)} ${entry.key}')
               .join(', ');
 
     return Card(

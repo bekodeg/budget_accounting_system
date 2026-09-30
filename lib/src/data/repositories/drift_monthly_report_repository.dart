@@ -15,17 +15,11 @@ final class DriftMonthlyReportRepository implements MonthlyReportRepository {
     required DateTime monthStart,
   }) {
     return _reports
-        .watchMonthlyReportRows(
-          budgetId: budgetId,
-          monthStart: monthStart,
-        )
+        .watchMonthlyReportRows(budgetId: budgetId, monthStart: monthStart)
         .map((rows) => _mapRows(rows, monthStart));
   }
 
-  MonthlyReport _mapRows(
-    List<MonthlyReportRow> rows,
-    DateTime monthStart,
-  ) {
+  MonthlyReport _mapRows(List<MonthlyReportRow> rows, DateTime monthStart) {
     MonthlyReportRow? baseRow;
     for (final row in rows) {
       if (row.kind == 'BASE') {
@@ -92,22 +86,23 @@ final class DriftMonthlyReportRepository implements MonthlyReportRepository {
       }
     }
 
-    final categories = categoryBuilders.values
-        .map(
-          (builder) => MonthlyCategoryReport(
-            categoryId: builder.categoryId,
-            categoryName: builder.categoryName,
-            planCurrency: baseCurrency,
-            plannedAmountMinor: builder.plannedAmountMinor,
-            actualMinorByCurrency: builder.actual,
-          ),
-        )
-        .toList(growable: false)
-      ..sort((a, b) {
-        final byName = a.categoryName.compareTo(b.categoryName);
-        if (byName != 0) return byName;
-        return (a.categoryId ?? '').compareTo(b.categoryId ?? '');
-      });
+    final categories =
+        categoryBuilders.values
+            .map(
+              (builder) => MonthlyCategoryReport(
+                categoryId: builder.categoryId,
+                categoryName: builder.categoryName,
+                planCurrency: baseCurrency,
+                plannedAmountMinor: builder.plannedAmountMinor,
+                actualMinorByCurrency: builder.actual,
+              ),
+            )
+            .toList(growable: false)
+          ..sort((a, b) {
+            final byName = a.categoryName.compareTo(b.categoryName);
+            if (byName != 0) return byName;
+            return (a.categoryId ?? '').compareTo(b.categoryId ?? '');
+          });
 
     accounts.sort((a, b) {
       final byName = a.accountName.compareTo(b.accountName);
@@ -127,10 +122,7 @@ final class DriftMonthlyReportRepository implements MonthlyReportRepository {
 }
 
 final class _CategoryBuilder {
-  _CategoryBuilder({
-    required this.categoryId,
-    required this.categoryName,
-  });
+  _CategoryBuilder({required this.categoryId, required this.categoryName});
 
   final String? categoryId;
   final String categoryName;

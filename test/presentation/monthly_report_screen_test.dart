@@ -38,8 +38,12 @@ void main() {
     );
   }
 
-  testWidgets('shows plan fact balances and updates reactively', (tester) async {
-    final reports = FakeMonthlyReportRepository(report: report(actualMinor: 7000));
+  testWidgets('shows plan fact balances and updates reactively', (
+    tester,
+  ) async {
+    final reports = FakeMonthlyReportRepository(
+      report: report(actualMinor: 7000),
+    );
     final services = fakeAppServices(
       repository: FakeBudgetRepository(),
       sessionStore: FakeSessionStore(),
