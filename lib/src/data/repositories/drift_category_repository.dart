@@ -66,18 +66,25 @@ final class DriftCategoryRepository implements CategoryRepository {
 
   @override
   Future<void> renameCategory({
+    required String budgetId,
     required String categoryId,
     required String name,
   }) {
-    return _dao.renameCategory(categoryId: categoryId, name: name);
+    return _dao.renameCategory(
+      budgetId: budgetId,
+      categoryId: categoryId,
+      name: name,
+    );
   }
 
   @override
   Future<void> setCategoryArchived({
+    required String budgetId,
     required String categoryId,
     required bool isArchived,
   }) {
     return _dao.setCategoryArchived(
+      budgetId: budgetId,
       categoryId: categoryId,
       isArchived: isArchived,
     );
