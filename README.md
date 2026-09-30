@@ -126,4 +126,5 @@ dart run drift_dev make-migrations
 - [Экспорт отчетов CSV/XLSX](docs/16_report_export.md)
 - [Локальная identity пользователя и устройства](docs/17_local_identity.md)
 - [Роли участников и авторизация бюджета](docs/18_budget_roles.md)
+- [Offline invitation через QR и файл](docs/19_offline_invites.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
