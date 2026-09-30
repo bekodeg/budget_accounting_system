@@ -25,6 +25,8 @@ import '../application/use_cases/watch_dashboard_summary.dart';
 import '../application/use_cases/watch_filtered_transactions.dart';
 import '../application/use_cases/watch_monthly_plan.dart';
 import '../application/use_cases/watch_monthly_report.dart';
+import '../application/use_cases/watch_period_report.dart';
+import '../application/use_cases/watch_year_report.dart';
 import '../application/use_cases/watch_transactions.dart';
 import '../application/use_cases/watch_user_budgets.dart';
 import '../data/dal/dal.dart';
@@ -33,6 +35,7 @@ import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
+import '../data/repositories/drift_extended_report_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
 import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_transaction_repository.dart';
@@ -53,6 +56,7 @@ final class AppCompositionRoot {
     final dashboardRepository = DriftDashboardRepository(dal.reports);
     final planRepository = DriftPlanRepository(dal.plansAndReceipts);
     final monthlyReportRepository = DriftMonthlyReportRepository(dal.reports);
+    final extendedReportRepository = DriftExtendedReportRepository(dal.reports);
     final sessionStore = SharedPreferencesSessionStore();
     final idGenerator = SecureIdGenerator();
     final requireAccountInBudget = RequireAccountInBudget(accountRepository);
@@ -126,6 +130,8 @@ final class AppCompositionRoot {
         ),
         watchMonthlyPlan: WatchMonthlyPlan(planRepository),
         watchMonthlyReport: WatchMonthlyReport(monthlyReportRepository),
+        watchPeriodReport: WatchPeriodReport(extendedReportRepository),
+        watchYearReport: WatchYearReport(extendedReportRepository),
         watchTransactions: WatchTransactions(transactionRepository),
         watchUserBudgets: WatchUserBudgets(budgetRepository),
       ),
