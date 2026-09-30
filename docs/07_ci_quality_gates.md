@@ -49,19 +49,27 @@ feature/*, fix/*, chore/*
 
 После merge/push в `stage` workflow `.github/workflows/stage-ci.yml` выполняет полный quality gate:
 
-1. устанавливает Flutter и зависимости;
-2. запускает `build_runner`;
-3. повторно запускает codegen и сравнивает SHA-256 generated files;
-4. генерирует Drift migrations и migration-test helper;
-5. проверяет, что versioned migration artifacts закоммичены;
-6. проверяет форматирование;
-7. запускает `flutter analyze`;
-8. запускает полный `flutter test --coverage`;
-9. публикует coverage summary и LCOV artifact;
-10. восстанавливает постоянный Android release keystore из GitHub Actions Secrets;
-11. проверяет SHA-256 отпечаток сертификата подписи;
-12. собирает подписанный Android release APK;
-13. публикует APK для ручного тестирования.
+1. после checkout запускает Trivy filesystem scan для `vuln`, `secret` и `misconfig`;
+2. блокирует stage при исправляемых находках уровня `HIGH` или `CRITICAL`;
+3. устанавливает Flutter и зависимости;
+4. запускает `build_runner`;
+5. повторно запускает codegen и сравнивает SHA-256 generated files;
+6. генерирует Drift migrations и migration-test helper;
+7. проверяет, что versioned migration artifacts закоммичены;
+8. проверяет форматирование;
+9. запускает `flutter analyze`;
+10. запускает полный `flutter test --coverage`;
+11. публикует coverage summary и LCOV artifact;
+12. восстанавливает постоянный Android release keystore из GitHub Actions Secrets;
+13. проверяет SHA-256 отпечаток сертификата подписи;
+14. собирает подписанный Android release APK;
+15. публикует APK для ручного тестирования.
+
+Trivy запускается до Flutter setup и остальных дорогих шагов, чтобы security blocker
+останавливал Stage CI как можно раньше. Используется `aquasecurity/trivy-action`
+версии `v0.36.0`, закрепленный по commit SHA; база Trivy кешируется штатным
+механизмом action. На текущем этапе `ignore-unfixed: true`, поэтому gate не
+блокирует выпуск на уязвимости без доступного исправления.
 
 Coverage хранится 7 дней. Stage APK хранится 3 дня, чтобы не расходовать artifact storage дольше необходимого.
 
