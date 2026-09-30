@@ -4,6 +4,7 @@ import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
 import 'package:budget_accounting_system/src/domain/models/period_report.dart';
 import 'package:budget_accounting_system/src/domain/models/year_report.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
+import 'package:budget_accounting_system/src/presentation/screens/period_report_screen.dart';
 import 'package:budget_accounting_system/src/presentation/screens/reports_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
