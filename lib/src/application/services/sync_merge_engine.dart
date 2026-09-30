@@ -14,7 +14,11 @@ final class SyncMergeEngine {
   MergedSyncEntityState merge(Iterable<SignedSyncOperation> operations) {
     final fields = <String, SyncFieldState>{};
     final fingerprintsByOperationId = <String, String>{};
+    final operationIdByVersion = <SyncVersion, String>{};
     final appliedOperationIds = <String>{};
+    String? budgetId;
+    String? entityType;
+    String? entityId;
     SyncVersion? tombstoneVersion;
     SyncVersion? latestWriteVersion;
 
@@ -36,10 +40,33 @@ final class SyncMergeEngine {
       fingerprintsByOperationId[operation.operationId] = fingerprint;
       appliedOperationIds.add(operation.operationId);
 
+      budgetId ??= operation.budgetId;
+      entityType ??= operation.entityType;
+      entityId ??= operation.entityId;
+      if (operation.budgetId != budgetId ||
+          operation.entityType != entityType ||
+          operation.entityId != entityId) {
+        throw const SyncMergeError(
+          SyncMergeErrorCode.mixedEntity,
+          'Один merge может содержать операции только одной сущности бюджета.',
+        );
+      }
+
       final version = SyncVersion(
         logicalClock: operation.logicalClock,
         deviceId: operation.deviceId,
       );
+
+      final previousOperationId = operationIdByVersion[version];
+      if (previousOperationId != null &&
+          previousOperationId != operation.operationId) {
+        throw SyncMergeError(
+          SyncMergeErrorCode.versionCollision,
+          'Устройство ${operation.deviceId} выпустило разные операции '
+          'с Lamport clock ${operation.logicalClock}.',
+        );
+      }
+      operationIdByVersion[version] = operation.operationId;
 
       if (operation.type == SyncMutationType.delete) {
         if (version.isNewerThan(tombstoneVersion)) {
