@@ -61,6 +61,7 @@ import '../data/repositories/drift_transaction_repository.dart';
 import '../data/repositories/syncing_account_repository.dart';
 import '../data/repositories/syncing_category_repository.dart';
 import '../data/repositories/syncing_plan_repository.dart';
+import '../data/repositories/syncing_membership_repository.dart';
 import '../data/repositories/syncing_transaction_repository.dart';
 import '../data/services/ed25519_identity_key_pair_generator.dart';
 import '../data/services/ed25519_identity_signature_service.dart';
@@ -96,7 +97,7 @@ final class AppCompositionRoot {
     );
     final identityRepository = DriftIdentityRepository(dal.usersAndBudgets);
     final invitationRepository = DriftInvitationRepository(dal.usersAndBudgets);
-    final membershipRepository = DriftMembershipRepository(dal.usersAndBudgets);
+    final baseMembershipRepository = DriftMembershipRepository(dal.usersAndBudgets);
     final sessionStore = SharedPreferencesSessionStore();
     final identityKeyStore = FlutterSecureIdentityKeyStore();
     final identityKeyPairGenerator = Ed25519IdentityKeyPairGenerator();
@@ -114,7 +115,7 @@ final class AppCompositionRoot {
       idGenerator: idGenerator,
     );
     final authorization = AuthorizeBudgetAction(
-      membershipRepository: membershipRepository,
+      membershipRepository: baseMembershipRepository,
       sessionStore: sessionStore,
     );
     final getPublicIdentity = GetPublicIdentity(ensureLocalIdentity);
@@ -145,6 +146,11 @@ final class AppCompositionRoot {
     );
     final planRepository = SyncingPlanRepository(
       delegate: basePlanRepository,
+      executor: syncMutationExecutor,
+      contextProvider: syncMutationContext,
+    );
+    final membershipRepository = SyncingMembershipRepository(
+      delegate: baseMembershipRepository,
       executor: syncMutationExecutor,
       contextProvider: syncMutationContext,
     );
