@@ -20,7 +20,7 @@ final class BudgetTransportSecretManager {
     return generated;
   }
 
-  Future<void> import({
+  Future<bool> import({
     required String budgetId,
     required String secret,
   }) async {
@@ -28,10 +28,13 @@ final class BudgetTransportSecretManager {
     if (existing != null && existing.isNotEmpty && existing != secret) {
       throw StateError('Transport secret conflicts with local budget secret.');
     }
-    if (existing == null || existing.isEmpty) {
-      await _store.save(budgetId: budgetId, secret: secret);
-    }
+    if (existing != null && existing.isNotEmpty) return false;
+
+    await _store.save(budgetId: budgetId, secret: secret);
+    return true;
   }
+
+  Future<void> remove(String budgetId) => _store.delete(budgetId);
 
   Future<String> require(String budgetId) async {
     final secret = await _store.load(budgetId);
