@@ -6,9 +6,12 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../application/ports/report_share_gateway.dart';
 import '../../domain/models/report_export.dart';
+import 'report_temp_file_store.dart';
 
 final class PlatformReportShareGateway implements ReportShareGateway {
-  const PlatformReportShareGateway();
+  const PlatformReportShareGateway({this.fileStore = const ReportTempFileStore()});
+
+  final ReportTempFileStore fileStore;
 
   @override
   Future<ReportExportResult> share({
@@ -17,32 +20,20 @@ final class PlatformReportShareGateway implements ReportShareGateway {
     required Uint8List xlsxBytes,
   }) async {
     final tempDirectory = await getTemporaryDirectory();
-    final exportDirectory = Directory(
-      '${tempDirectory.path}${Platform.pathSeparator}budget_report_export',
+    final files = await fileStore.create(
+      rootDirectory: tempDirectory,
+      baseName: baseName,
+      csvBytes: csvBytes,
+      xlsxBytes: xlsxBytes,
     );
-
-    if (await exportDirectory.exists()) {
-      await exportDirectory.delete(recursive: true);
-    }
-    await exportDirectory.create(recursive: true);
-
-    final csvFile = File(
-      '${exportDirectory.path}${Platform.pathSeparator}$baseName.csv',
-    );
-    final xlsxFile = File(
-      '${exportDirectory.path}${Platform.pathSeparator}$baseName.xlsx',
-    );
-
-    await csvFile.writeAsBytes(csvBytes, flush: true);
-    await xlsxFile.writeAsBytes(xlsxBytes, flush: true);
 
     try {
       await SharePlus.instance.share(
         ShareParams(
           files: [
-            XFile(csvFile.path, mimeType: 'text/csv'),
+            XFile(files.csvFile.path, mimeType: 'text/csv'),
             XFile(
-              xlsxFile.path,
+              files.xlsxFile.path,
               mimeType:
                   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ),
@@ -51,9 +42,7 @@ final class PlatformReportShareGateway implements ReportShareGateway {
         ),
       );
     } finally {
-      if (await exportDirectory.exists()) {
-        await exportDirectory.delete(recursive: true);
-      }
+      await fileStore.cleanup(files);
     }
 
     return ReportExportResult(
