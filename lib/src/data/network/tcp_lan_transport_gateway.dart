@@ -66,8 +66,8 @@ final class _SocketLanChannel implements LanByteChannel {
   _SocketLanChannel(this._socket) {
     _subscription = _socket.listen(
       _onData,
-      onError: _frames.addError,
-      onDone: _frames.close,
+      onError: _fail,
+      onDone: () => _fail(StateError('LAN channel closed.')),
       cancelOnError: false,
     );
   }
@@ -76,14 +76,12 @@ final class _SocketLanChannel implements LanByteChannel {
   static const _maxFrameLength = 16 * 1024 * 1024;
 
   final Socket _socket;
-  final StreamController<List<int>> _frames =
-      StreamController<List<int>>.broadcast();
   late final StreamSubscription<Uint8List> _subscription;
   final List<int> _buffer = [];
+  final List<List<int>> _pendingFrames = [];
+  final List<Completer<List<int>>> _waiters = [];
+  Object? _terminalError;
   var _closed = false;
-
-  @override
-  Stream<List<int>> get frames => _frames.stream;
 
   void _onData(Uint8List data) {
     _buffer.addAll(data);
@@ -94,9 +92,7 @@ final class _SocketLanChannel implements LanByteChannel {
           (_buffer[2] << 8) |
           _buffer[3];
       if (length < 0 || length > _maxFrameLength) {
-        _frames.addError(
-          StateError('Invalid LAN frame length: $length'),
-        );
+        _fail(StateError('Invalid LAN frame length: $length'));
         unawaited(close());
         return;
       }
@@ -106,8 +102,35 @@ final class _SocketLanChannel implements LanByteChannel {
         _buffer.sublist(_headerLength, _headerLength + length),
       );
       _buffer.removeRange(0, _headerLength + length);
-      _frames.add(frame);
+      _deliver(frame);
     }
+  }
+
+  void _deliver(List<int> frame) {
+    if (_waiters.isNotEmpty) {
+      _waiters.removeAt(0).complete(frame);
+    } else {
+      _pendingFrames.add(frame);
+    }
+  }
+
+  void _fail(Object error) {
+    _terminalError ??= error;
+    while (_waiters.isNotEmpty) {
+      _waiters.removeAt(0).completeError(error);
+    }
+  }
+
+  @override
+  Future<List<int>> receive() {
+    if (_pendingFrames.isNotEmpty) {
+      return Future.value(_pendingFrames.removeAt(0));
+    }
+    final error = _terminalError;
+    if (error != null) return Future.error(error);
+    final completer = Completer<List<int>>();
+    _waiters.add(completer);
+    return completer.future;
   }
 
   @override
@@ -127,8 +150,8 @@ final class _SocketLanChannel implements LanByteChannel {
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
+    _fail(StateError('LAN channel closed.'));
     await _subscription.cancel();
     await _socket.close();
-    if (!_frames.isClosed) await _frames.close();
   }
 }
