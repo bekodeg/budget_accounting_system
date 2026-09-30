@@ -4,7 +4,8 @@ import 'dart:math';
 import '../../application/ports/secure_token_generator.dart';
 
 final class RandomSecureTokenGenerator implements SecureTokenGenerator {
-  RandomSecureTokenGenerator({Random? random}) : _random = random ?? Random.secure();
+  RandomSecureTokenGenerator({Random? random})
+    : _random = random ?? Random.secure();
 
   final Random _random;
 

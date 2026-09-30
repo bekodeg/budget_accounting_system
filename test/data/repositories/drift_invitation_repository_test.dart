@@ -24,12 +24,9 @@ void main() {
         publicKey: 'ed25519:user-2-public',
       ),
     );
-    await database.into(database.devices).insert(
-      DevicesCompanion.insert(
-        id: 'device-2',
-        userId: 'user-2',
-      ),
-    );
+    await database
+        .into(database.devices)
+        .insert(DevicesCompanion.insert(id: 'device-2', userId: 'user-2'));
   });
 
   tearDown(() => database.close());
@@ -58,34 +55,37 @@ void main() {
     signature: 'signature',
   );
 
-  test('accepts invite offline and creates budget memberships atomically', () async {
-    await repository.acceptInvite(
-      invite: invite(),
-      joiningIdentity: const PublicIdentity(
-        userId: 'user-2',
-        deviceId: 'device-2',
-        publicKey: 'ed25519:user-2-public',
-      ),
-    );
+  test(
+    'accepts invite offline and creates budget memberships atomically',
+    () async {
+      await repository.acceptInvite(
+        invite: invite(),
+        joiningIdentity: const PublicIdentity(
+          userId: 'user-2',
+          deviceId: 'device-2',
+          publicKey: 'ed25519:user-2-public',
+        ),
+      );
 
-    final budget = await dao.findBudgetById('budget-shared');
-    final owner = await dao.findUserById('owner-1');
-    final ownerDevice = await dao.findDeviceById('owner-device');
-    final members = await dao.getMembers('budget-shared');
+      final budget = await dao.findBudgetById('budget-shared');
+      final owner = await dao.findUserById('owner-1');
+      final ownerDevice = await dao.findDeviceById('owner-device');
+      final members = await dao.getMembers('budget-shared');
 
-    expect(budget?.name, 'Shared home');
-    expect(budget?.createdBy, 'owner-1');
-    expect(owner?.publicKey, 'ed25519:owner-public');
-    expect(ownerDevice?.userId, 'owner-1');
-    expect(
-      members.singleWhere((member) => member.userId == 'owner-1').role,
-      'OWNER',
-    );
-    expect(
-      members.singleWhere((member) => member.userId == 'user-2').role,
-      'EDITOR',
-    );
-  });
+      expect(budget?.name, 'Shared home');
+      expect(budget?.createdBy, 'owner-1');
+      expect(owner?.publicKey, 'ed25519:owner-public');
+      expect(ownerDevice?.userId, 'owner-1');
+      expect(
+        members.singleWhere((member) => member.userId == 'owner-1').role,
+        'OWNER',
+      );
+      expect(
+        members.singleWhere((member) => member.userId == 'user-2').role,
+        'EDITOR',
+      );
+    },
+  );
 
   test('rejects conflicting owner public identity', () async {
     await dao.upsertUser(

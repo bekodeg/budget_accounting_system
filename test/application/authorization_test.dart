@@ -51,10 +51,7 @@ void main() {
       BudgetAction.mutate,
     ]) {
       expect(
-        await authorization.require(
-          budgetId: 'budget-1',
-          action: action,
-        ),
+        await authorization.require(budgetId: 'budget-1', action: action),
         isA<BudgetMemberProfile>(),
       );
     }
@@ -86,10 +83,7 @@ void main() {
       action: BudgetAction.export,
     );
 
-    for (final action in [
-      BudgetAction.mutate,
-      BudgetAction.manageMembers,
-    ]) {
+    for (final action in [BudgetAction.mutate, BudgetAction.manageMembers]) {
       await expectLater(
         authorization.require(budgetId: 'budget-1', action: action),
         throwsA(
@@ -110,10 +104,7 @@ void main() {
     );
 
     await expectLater(
-      authorization.require(
-        budgetId: 'budget-1',
-        action: BudgetAction.read,
-      ),
+      authorization.require(budgetId: 'budget-1', action: BudgetAction.read),
       throwsA(
         isA<AuthorizationError>().having(
           (error) => error.code,
@@ -139,11 +130,7 @@ void main() {
     );
 
     await expectLater(
-      useCase(
-        budgetId: 'budget-1',
-        userId: 'owner-1',
-        role: MemberRole.editor,
-      ),
+      useCase(budgetId: 'budget-1', userId: 'owner-1', role: MemberRole.editor),
       throwsA(
         isA<AuthorizationError>().having(
           (error) => error.code,
@@ -154,31 +141,35 @@ void main() {
     );
   });
 
-  test('OWNER can demote one owner when another active owner remains', () async {
-    final repository = FakeMembershipRepository(
-      membersByBudget: {
-        'budget-1': [
-          member('owner-1', MemberRole.owner),
-          member('owner-2', MemberRole.owner),
-        ],
-      },
-    );
-    final useCase = UpdateMemberRole(
-      membershipRepository: repository,
-      authorization: FakeBudgetAuthorizationGuard(userId: 'owner-1'),
-    );
+  test(
+    'OWNER can demote one owner when another active owner remains',
+    () async {
+      final repository = FakeMembershipRepository(
+        membersByBudget: {
+          'budget-1': [
+            member('owner-1', MemberRole.owner),
+            member('owner-2', MemberRole.owner),
+          ],
+        },
+      );
+      final useCase = UpdateMemberRole(
+        membershipRepository: repository,
+        authorization: FakeBudgetAuthorizationGuard(userId: 'owner-1'),
+      );
 
-    await useCase(
-      budgetId: 'budget-1',
-      userId: 'owner-2',
-      role: MemberRole.editor,
-    );
+      await useCase(
+        budgetId: 'budget-1',
+        userId: 'owner-2',
+        role: MemberRole.editor,
+      );
 
-    expect(
-      repository.snapshot('budget-1')
-          .singleWhere((member) => member.userId == 'owner-2')
-          .role,
-      MemberRole.editor,
-    );
-  });
+      expect(
+        repository
+            .snapshot('budget-1')
+            .singleWhere((member) => member.userId == 'owner-2')
+            .role,
+        MemberRole.editor,
+      );
+    },
+  );
 }

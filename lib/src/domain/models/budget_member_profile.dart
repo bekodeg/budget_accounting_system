@@ -17,10 +17,7 @@ final class BudgetMemberProfile {
 
   bool get isActive => revokedAt == null;
 
-  BudgetMemberProfile copyWith({
-    MemberRole? role,
-    DateTime? revokedAt,
-  }) {
+  BudgetMemberProfile copyWith({MemberRole? role, DateTime? revokedAt}) {
     return BudgetMemberProfile(
       userId: userId,
       name: name,

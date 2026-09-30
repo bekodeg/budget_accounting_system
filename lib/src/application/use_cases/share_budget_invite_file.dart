@@ -12,9 +12,6 @@ final class ShareBudgetInviteFile {
         .replaceAll(RegExp(r'_+'), '_');
     final fileName =
         'budget-invite-${safeBudget.isEmpty ? preview.invite.budgetId : safeBudget}';
-    return _gateway.share(
-      fileName: fileName,
-      payload: preview.rawPayload,
-    );
+    return _gateway.share(fileName: fileName, payload: preview.rawPayload);
   }
 }

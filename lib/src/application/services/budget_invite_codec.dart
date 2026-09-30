@@ -165,9 +165,9 @@ MemberRole _role(String value) {
     'EDITOR' => MemberRole.editor,
     'VIEWER' => MemberRole.viewer,
     _ => throw const InviteError(
-        InviteErrorCode.invalidRole,
-        'Приглашение может выдавать только роль EDITOR или VIEWER.',
-      ),
+      InviteErrorCode.invalidRole,
+      'Приглашение может выдавать только роль EDITOR или VIEWER.',
+    ),
   };
 }
 
@@ -176,8 +176,8 @@ String _roleName(MemberRole role) {
     MemberRole.editor => 'EDITOR',
     MemberRole.viewer => 'VIEWER',
     MemberRole.owner => throw const InviteError(
-        InviteErrorCode.invalidRole,
-        'Нельзя создать приглашение с ролью OWNER.',
-      ),
+      InviteErrorCode.invalidRole,
+      'Нельзя создать приглашение с ролью OWNER.',
+    ),
   };
 }

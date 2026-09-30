@@ -189,9 +189,9 @@ void main() {
         transactionDeltaByAccount: {'account-1': BigInt.from(2500)},
       );
       final archive = ArchiveAccount(
-      repository: repository,
-      authorization: FakeBudgetAuthorizationGuard(),
-    );
+        repository: repository,
+        authorization: FakeBudgetAuthorizationGuard(),
+      );
       final balance = GetAccountBalance(repository);
 
       await archive(budgetId: 'budget-1', accountId: 'account-1');

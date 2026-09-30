@@ -168,10 +168,7 @@ AppServices fakeAppServices({
       repository: categories,
       authorization: auth,
     ),
-    archiveAccount: ArchiveAccount(
-      repository: accounts,
-      authorization: auth,
-    ),
+    archiveAccount: ArchiveAccount(repository: accounts, authorization: auth),
     archiveCategory: ArchiveCategory(
       repository: categories,
       authorization: auth,
@@ -232,10 +229,7 @@ AppServices fakeAppServices({
     getPublicIdentity: getPublicIdentity,
     inspectBudgetInvite: inspectInvite,
     pickBudgetInviteFile: PickBudgetInviteFile(inviteFiles),
-    renameCategory: RenameCategory(
-      repository: categories,
-      authorization: auth,
-    ),
+    renameCategory: RenameCategory(repository: categories, authorization: auth),
     requireAccountInBudget: RequireAccountInBudget(accounts),
     requireCategoryInBudget: RequireCategoryInBudget(categories),
     resolveAppStartup: ResolveAppStartup(
@@ -253,10 +247,7 @@ AppServices fakeAppServices({
       idGenerator: ids,
       authorization: auth,
     ),
-    updateAccount: UpdateAccount(
-      repository: accounts,
-      authorization: auth,
-    ),
+    updateAccount: UpdateAccount(repository: accounts, authorization: auth),
     updateMemberRole: UpdateMemberRole(
       membershipRepository: memberships,
       authorization: auth,
@@ -286,8 +277,7 @@ AppServices fakeAppServices({
   );
 }
 
-final class FakeIdentitySignatureService
-    implements IdentitySignatureService {
+final class FakeIdentitySignatureService implements IdentitySignatureService {
   @override
   Future<String> sign({
     required String deviceId,
@@ -352,15 +342,16 @@ final class FakeSecureTokenGenerator implements SecureTokenGenerator {
 }
 
 final class FakeInvitationRepository implements InvitationRepository {
-  FakeInvitationRepository({
-    Map<String, BudgetSummary>? budgets,
-  }) : budgets = budgets ?? {
-          'budget-1': const BudgetSummary(
-            id: 'budget-1',
-            name: 'Test budget',
-            baseCurrency: 'EUR',
-          ),
-        };
+  FakeInvitationRepository({Map<String, BudgetSummary>? budgets})
+    : budgets =
+          budgets ??
+          {
+            'budget-1': const BudgetSummary(
+              id: 'budget-1',
+              name: 'Test budget',
+              baseCurrency: 'EUR',
+            ),
+          };
 
   final Map<String, BudgetSummary> budgets;
   final List<({BudgetInvite invite, PublicIdentity joiningIdentity})> accepted =
@@ -386,8 +377,7 @@ final class FakeInvitationRepository implements InvitationRepository {
   }
 }
 
-final class FakeBudgetAuthorizationGuard
-    implements BudgetAuthorizationGuard {
+final class FakeBudgetAuthorizationGuard implements BudgetAuthorizationGuard {
   FakeBudgetAuthorizationGuard({
     this.userId = 'user-1',
     this.role = MemberRole.owner,
@@ -518,8 +508,7 @@ final class FakeIdentityKeyStore implements IdentityKeyStore {
   }
 }
 
-final class FakeIdentityKeyPairGenerator
-    implements IdentityKeyPairGenerator {
+final class FakeIdentityKeyPairGenerator implements IdentityKeyPairGenerator {
   FakeIdentityKeyPairGenerator({
     this.publicKey = 'ed25519:public-test-key',
     this.privateKey = 'private-test-key',

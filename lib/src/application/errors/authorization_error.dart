@@ -1,15 +1,7 @@
-enum AuthorizationErrorCode {
-  unauthenticated,
-  notMember,
-  forbidden,
-  lastOwner,
-}
+enum AuthorizationErrorCode { unauthenticated, notMember, forbidden, lastOwner }
 
 final class AuthorizationError implements Exception {
-  const AuthorizationError({
-    required this.code,
-    required this.message,
-  });
+  const AuthorizationError({required this.code, required this.message});
 
   final AuthorizationErrorCode code;
   final String message;

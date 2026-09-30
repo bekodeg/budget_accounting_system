@@ -44,41 +44,41 @@ final class BudgetDashboardScreen extends StatelessWidget {
         return Column(
           key: const ValueKey('budget-dashboard'),
           children: [
-        StreamBuilder<DashboardSummary>(
-          stream: services.watchDashboardSummary(
-            budgetId: budgetId,
-            month: now,
-          ),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Не удалось рассчитать показатели бюджета.'),
-              );
-            }
-            if (!snapshot.hasData) {
-              return const Padding(
-                padding: EdgeInsets.all(16),
-                child: LinearProgressIndicator(),
-              );
-            }
+            StreamBuilder<DashboardSummary>(
+              stream: services.watchDashboardSummary(
+                budgetId: budgetId,
+                month: now,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('Не удалось рассчитать показатели бюджета.'),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: LinearProgressIndicator(),
+                  );
+                }
 
-            return _DashboardHeader(
-              summary: snapshot.data!,
-              onQuickAdd: canEdit ? () => _quickAdd(context) : null,
-            );
-          },
-        ),
-        const Divider(height: 1),
-        Expanded(
-          child: TransactionCrudScreen(
-            services: services,
-            budgetId: budgetId,
-            userId: userId,
-            canEdit: canEdit,
-          ),
-        ),
-      ],
+                return _DashboardHeader(
+                  summary: snapshot.data!,
+                  onQuickAdd: canEdit ? () => _quickAdd(context) : null,
+                );
+              },
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: TransactionCrudScreen(
+                services: services,
+                budgetId: budgetId,
+                userId: userId,
+                canEdit: canEdit,
+              ),
+            ),
+          ],
         );
       },
     );
