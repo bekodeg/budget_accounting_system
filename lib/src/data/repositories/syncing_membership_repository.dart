@@ -57,6 +57,7 @@ final class SyncingMembershipRepository implements MembershipRepository {
         userId: userId,
         role: role,
       ),
+      shouldRecord: (changed) => changed,
     );
   }
 }
