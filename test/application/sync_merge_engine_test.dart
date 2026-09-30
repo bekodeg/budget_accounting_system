@@ -172,6 +172,109 @@ void main() {
     }
   });
 
+  test('rejects operations from different entities in one merge', () {
+    expect(
+      () => engine.merge([
+        _op(
+          id: 'op-1',
+          clock: 1,
+          device: 'device-a',
+          patch: '{"name":"Food"}',
+          entityId: 'category-1',
+        ),
+        _op(
+          id: 'op-2',
+          clock: 2,
+          device: 'device-a',
+          patch: '{"name":"Transport"}',
+          entityId: 'category-2',
+        ),
+      ]),
+      throwsA(
+        isA<SyncMergeError>().having(
+          (error) => error.code,
+          'code',
+          SyncMergeErrorCode.mixedEntity,
+        ),
+      ),
+    );
+  });
+
+  test('same device and Lamport clock cannot identify different operations', () {
+    expect(
+      () => engine.merge([
+        _op(
+          id: 'op-name',
+          clock: 7,
+          device: 'device-a',
+          patch: '{"name":"Food"}',
+        ),
+        _op(
+          id: 'op-kind',
+          clock: 7,
+          device: 'device-a',
+          patch: '{"kind":"EXPENSE"}',
+        ),
+      ]),
+      throwsA(
+        isA<SyncMergeError>().having(
+          (error) => error.code,
+          'code',
+          SyncMergeErrorCode.versionCollision,
+        ),
+      ),
+    );
+  });
+
+  test('delete and update with the same device version are rejected', () {
+    expect(
+      () => engine.merge([
+        _op(
+          id: 'op-delete',
+          clock: 8,
+          device: 'device-a',
+          type: SyncMutationType.delete,
+          patch: '{}',
+        ),
+        _op(
+          id: 'op-update',
+          clock: 8,
+          device: 'device-a',
+          patch: '{"name":"Impossible"}',
+        ),
+      ]),
+      throwsA(
+        isA<SyncMergeError>().having(
+          (error) => error.code,
+          'code',
+          SyncMergeErrorCode.versionCollision,
+        ),
+      ),
+    );
+  });
+
+  test('delete/update tie is resolved by device id in every delivery order', () {
+    final update = _op(
+      id: 'op-update',
+      clock: 5,
+      device: 'device-a',
+      patch: '{"name":"Candidate"}',
+    );
+    final deletion = _op(
+      id: 'op-delete',
+      clock: 5,
+      device: 'device-b',
+      type: SyncMutationType.delete,
+      patch: '{}',
+    );
+
+    for (final order in _permutations([update, deletion])) {
+      final state = engine.merge(order);
+      expect(state.isDeleted, isTrue);
+      expect(state.tombstoneVersion?.deviceId, 'device-b');
+    }
+  });
+
   test('equal field version with different values is rejected', () {
     expect(
       () => engine.merge([
@@ -205,12 +308,15 @@ SignedSyncOperation _op({
   required String device,
   required String patch,
   SyncMutationType type = SyncMutationType.patch,
+  String budgetId = 'budget-1',
+  String entityType = 'category',
+  String entityId = 'category-1',
 }) {
   return SignedSyncOperation(
     operationId: id,
-    budgetId: 'budget-1',
-    entityType: 'category',
-    entityId: 'category-1',
+    budgetId: budgetId,
+    entityType: entityType,
+    entityId: entityId,
     type: type,
     patchJson: patch,
     authorId: 'user-1',

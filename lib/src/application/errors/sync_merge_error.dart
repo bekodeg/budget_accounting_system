@@ -1,5 +1,6 @@
 enum SyncMergeErrorCode {
   invalidPatch,
+  mixedEntity,
   operationIdCollision,
   versionCollision,
 }
