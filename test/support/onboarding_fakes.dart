@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:budget_accounting_system/src/application/app_services.dart';
+import 'package:budget_accounting_system/src/application/authorization/budget_action.dart';
+import 'package:budget_accounting_system/src/application/authorization/budget_authorization_guard.dart';
 import 'package:budget_accounting_system/src/application/ports/id_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_key_pair_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_key_store.dart';
@@ -11,6 +13,7 @@ import 'package:budget_accounting_system/src/application/ports/report_share_gate
 import 'package:budget_accounting_system/src/application/use_cases/apply_category_templates.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_category.dart';
+import 'package:budget_accounting_system/src/application/use_cases/can_perform_budget_action.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_initial_budget.dart';
@@ -29,6 +32,7 @@ import 'package:budget_accounting_system/src/application/use_cases/resolve_app_s
 import 'package:budget_accounting_system/src/application/use_cases/select_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/set_monthly_plan_amount.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_account.dart';
+import 'package:budget_accounting_system/src/application/use_cases/update_member_role.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_transfer.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_budget_accounts.dart';
@@ -37,6 +41,7 @@ import 'package:budget_accounting_system/src/application/use_cases/watch_dashboa
 import 'package:budget_accounting_system/src/application/use_cases/watch_filtered_transactions.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_monthly_plan.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_monthly_report.dart';
+import 'package:budget_accounting_system/src/application/use_cases/watch_budget_members.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_period_report.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_year_report.dart';
 import 'package:budget_accounting_system/src/application/use_cases/watch_transactions.dart';
@@ -46,6 +51,7 @@ import 'package:budget_accounting_system/src/domain/models/app_session.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_account.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_summary.dart';
+import 'package:budget_accounting_system/src/domain/models/budget_member_profile.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_transaction_entry.dart';
 import 'package:budget_accounting_system/src/domain/models/category_template.dart';
 import 'package:budget_accounting_system/src/domain/models/dashboard_summary.dart';
@@ -67,6 +73,7 @@ import 'package:budget_accounting_system/src/domain/repositories/report_export_r
 import 'package:budget_accounting_system/src/domain/repositories/monthly_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/extended_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/identity_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/membership_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 
@@ -83,6 +90,8 @@ AppServices fakeAppServices({
   FakeIdentityRepository? identityRepository,
   FakeIdentityKeyStore? identityKeyStore,
   FakeIdentityKeyPairGenerator? identityKeyPairGenerator,
+  FakeMembershipRepository? membershipRepository,
+  BudgetAuthorizationGuard? authorization,
   FakeIdGenerator? idGenerator,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
@@ -98,6 +107,8 @@ AppServices fakeAppServices({
   final identityKeys = identityKeyStore ?? FakeIdentityKeyStore();
   final identityGenerator =
       identityKeyPairGenerator ?? FakeIdentityKeyPairGenerator();
+  final memberships = membershipRepository ?? FakeMembershipRepository();
+  final auth = authorization ?? FakeBudgetAuthorizationGuard();
   final ids =
       idGenerator ??
       FakeIdGenerator([
@@ -115,31 +126,52 @@ AppServices fakeAppServices({
   );
 
   return AppServices(
-    applyCategoryTemplates: ApplyCategoryTemplates(categories),
-    archiveAccount: ArchiveAccount(accounts),
-    archiveCategory: ArchiveCategory(categories),
-    createAccount: CreateAccount(accountRepository: accounts, idGenerator: ids),
+    applyCategoryTemplates: ApplyCategoryTemplates(
+      repository: categories,
+      authorization: auth,
+    ),
+    archiveAccount: ArchiveAccount(
+      repository: accounts,
+      authorization: auth,
+    ),
+    archiveCategory: ArchiveCategory(
+      repository: categories,
+      authorization: auth,
+    ),
+    canPerformBudgetAction: CanPerformBudgetAction(auth),
+    createAccount: CreateAccount(
+      accountRepository: accounts,
+      idGenerator: ids,
+      authorization: auth,
+    ),
     createCategory: CreateCategory(
       categoryRepository: categories,
       idGenerator: ids,
+      authorization: auth,
     ),
     createTransfer: CreateTransfer(
       transactionRepository: transactions,
       requireAccountInBudget: RequireAccountInBudget(accounts),
       idGenerator: ids,
+      authorization: auth,
     ),
     createTransaction: CreateTransaction(
       transactionRepository: transactions,
       requireAccountInBudget: RequireAccountInBudget(accounts),
       requireCategoryInBudget: RequireCategoryInBudget(categories),
       idGenerator: ids,
+      authorization: auth,
     ),
-    deleteTransaction: DeleteTransaction(transactions),
+    deleteTransaction: DeleteTransaction(
+      repository: transactions,
+      authorization: auth,
+    ),
     exportReport: ExportReport(
       reportRepository: extendedReports,
       exportRepository: FakeReportExportRepository(),
       encoder: FakeReportDocumentEncoder(),
       shareGateway: FakeReportShareGateway(),
+      authorization: auth,
     ),
     createInitialBudget: CreateInitialBudget(
       budgetRepository: repository,
@@ -152,7 +184,10 @@ AppServices fakeAppServices({
     getAccountBalance: GetAccountBalance(accounts),
     getBudgetAccountBalances: GetBudgetAccountBalances(accounts),
     getPublicIdentity: GetPublicIdentity(ensureLocalIdentity),
-    renameCategory: RenameCategory(categories),
+    renameCategory: RenameCategory(
+      repository: categories,
+      authorization: auth,
+    ),
     requireAccountInBudget: RequireAccountInBudget(accounts),
     requireCategoryInBudget: RequireCategoryInBudget(categories),
     resolveAppStartup: ResolveAppStartup(
@@ -167,16 +202,26 @@ AppServices fakeAppServices({
       planRepository: plans,
       categoryRepository: categories,
       idGenerator: ids,
+      authorization: auth,
     ),
-    updateAccount: UpdateAccount(accounts),
+    updateAccount: UpdateAccount(
+      repository: accounts,
+      authorization: auth,
+    ),
+    updateMemberRole: UpdateMemberRole(
+      membershipRepository: memberships,
+      authorization: auth,
+    ),
     updateTransfer: UpdateTransfer(
       transactionRepository: transactions,
       requireAccountInBudget: RequireAccountInBudget(accounts),
+      authorization: auth,
     ),
     updateTransaction: UpdateTransaction(
       transactionRepository: transactions,
       requireAccountInBudget: RequireAccountInBudget(accounts),
       requireCategoryInBudget: RequireCategoryInBudget(categories),
+      authorization: auth,
     ),
     watchBudgetAccounts: WatchBudgetAccounts(accounts),
     watchBudgetCategories: WatchBudgetCategories(categories),
@@ -184,11 +229,96 @@ AppServices fakeAppServices({
     watchFilteredTransactions: WatchFilteredTransactions(transactions),
     watchMonthlyPlan: WatchMonthlyPlan(plans),
     watchMonthlyReport: WatchMonthlyReport(monthlyReports),
+    watchBudgetMembers: WatchBudgetMembers(memberships),
     watchPeriodReport: WatchPeriodReport(extendedReports),
     watchYearReport: WatchYearReport(extendedReports),
     watchTransactions: WatchTransactions(transactions),
     watchUserBudgets: WatchUserBudgets(repository),
   );
+}
+
+final class FakeBudgetAuthorizationGuard
+    implements BudgetAuthorizationGuard {
+  FakeBudgetAuthorizationGuard({
+    this.userId = 'user-1',
+    this.role = MemberRole.owner,
+  });
+
+  final String userId;
+  final MemberRole role;
+  final List<BudgetAction> calls = [];
+
+  @override
+  Future<BudgetMemberProfile> require({
+    required String budgetId,
+    required BudgetAction action,
+  }) async {
+    calls.add(action);
+    return BudgetMemberProfile(
+      userId: userId,
+      name: 'Test User',
+      role: role,
+      joinedAt: DateTime(2026, 1, 1),
+      revokedAt: null,
+    );
+  }
+}
+
+final class FakeMembershipRepository implements MembershipRepository {
+  FakeMembershipRepository({
+    Map<String, List<BudgetMemberProfile>>? membersByBudget,
+  }) : membersByBudget = membersByBudget ?? {};
+
+  final Map<String, List<BudgetMemberProfile>> membersByBudget;
+  final StreamController<String> _changes = StreamController.broadcast();
+
+  List<BudgetMemberProfile> snapshot(String budgetId) =>
+      List.unmodifiable(membersByBudget[budgetId] ?? const []);
+
+  void _emit(String budgetId) => _changes.add(budgetId);
+
+  @override
+  Future<BudgetMemberProfile?> findActiveMember({
+    required String budgetId,
+    required String userId,
+  }) async {
+    for (final member in membersByBudget[budgetId] ?? const []) {
+      if (member.userId == userId && member.isActive) return member;
+    }
+    return null;
+  }
+
+  @override
+  Stream<List<BudgetMemberProfile>> watchMembers(String budgetId) async* {
+    yield snapshot(budgetId);
+    await for (final changedBudgetId in _changes.stream) {
+      if (changedBudgetId == budgetId) yield snapshot(budgetId);
+    }
+  }
+
+  @override
+  Future<int> countActiveOwners(String budgetId) async {
+    return (membersByBudget[budgetId] ?? const [])
+        .where((member) => member.isActive && member.role == MemberRole.owner)
+        .length;
+  }
+
+  @override
+  Future<bool> updateMemberRole({
+    required String budgetId,
+    required String userId,
+    required MemberRole role,
+  }) async {
+    final members = membersByBudget[budgetId];
+    if (members == null) return false;
+    final index = members.indexWhere(
+      (member) => member.userId == userId && member.isActive,
+    );
+    if (index < 0) return false;
+    members[index] = members[index].copyWith(role: role);
+    _emit(budgetId);
+    return true;
+  }
 }
 
 final class FakeIdentityKeyStore implements IdentityKeyStore {
