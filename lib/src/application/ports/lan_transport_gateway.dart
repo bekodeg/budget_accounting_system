@@ -1,5 +1,5 @@
 abstract interface class LanByteChannel {
-  Stream<List<int>> get frames;
+  Future<List<int>> receive();
 
   Future<void> send(List<int> frame);
 
