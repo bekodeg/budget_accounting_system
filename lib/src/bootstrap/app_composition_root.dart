@@ -11,6 +11,8 @@ import '../application/use_cases/delete_transaction.dart';
 import '../application/use_cases/export_report.dart';
 import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/get_budget_account_balances.dart';
+import '../application/use_cases/get_public_identity.dart';
+import '../application/use_cases/ensure_local_identity.dart';
 import '../application/use_cases/rename_category.dart';
 import '../application/use_cases/require_account_in_budget.dart';
 import '../application/use_cases/require_category_in_budget.dart';
@@ -32,15 +34,18 @@ import '../application/use_cases/watch_transactions.dart';
 import '../application/use_cases/watch_user_budgets.dart';
 import '../data/dal/dal.dart';
 import '../data/preferences/shared_preferences_session_store.dart';
+import '../data/security/flutter_secure_identity_key_store.dart';
 import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
 import '../data/repositories/drift_extended_report_repository.dart';
+import '../data/repositories/drift_identity_repository.dart';
 import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
 import '../data/repositories/drift_report_export_repository.dart';
 import '../data/repositories/drift_transaction_repository.dart';
+import '../data/services/ed25519_identity_key_pair_generator.dart';
 import '../data/services/excel_report_document_encoder.dart';
 import '../data/services/platform_report_share_gateway.dart';
 import '../data/services/secure_id_generator.dart';
@@ -64,8 +69,17 @@ final class AppCompositionRoot {
     final reportExportRepository = DriftReportExportRepository(
       dal.transactions,
     );
+    final identityRepository = DriftIdentityRepository(dal.usersAndBudgets);
     final sessionStore = SharedPreferencesSessionStore();
+    final identityKeyStore = FlutterSecureIdentityKeyStore();
+    final identityKeyPairGenerator = Ed25519IdentityKeyPairGenerator();
     final idGenerator = SecureIdGenerator();
+    final ensureLocalIdentity = EnsureLocalIdentity(
+      identityRepository: identityRepository,
+      keyStore: identityKeyStore,
+      keyPairGenerator: identityKeyPairGenerator,
+      idGenerator: idGenerator,
+    );
     final requireAccountInBudget = RequireAccountInBudget(accountRepository);
     final requireCategoryInBudget = RequireCategoryInBudget(categoryRepository);
 
@@ -88,6 +102,8 @@ final class AppCompositionRoot {
           categoryRepository: categoryRepository,
           sessionStore: sessionStore,
           idGenerator: idGenerator,
+          identityKeyStore: identityKeyStore,
+          identityKeyPairGenerator: identityKeyPairGenerator,
         ),
         createTransaction: CreateTransaction(
           transactionRepository: transactionRepository,
@@ -109,12 +125,14 @@ final class AppCompositionRoot {
         ),
         getAccountBalance: GetAccountBalance(accountRepository),
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
+        getPublicIdentity: GetPublicIdentity(ensureLocalIdentity),
         renameCategory: RenameCategory(categoryRepository),
         requireAccountInBudget: requireAccountInBudget,
         requireCategoryInBudget: requireCategoryInBudget,
         resolveAppStartup: ResolveAppStartup(
           budgetRepository: budgetRepository,
           sessionStore: sessionStore,
+          ensureLocalIdentity: ensureLocalIdentity,
         ),
         selectBudget: SelectBudget(
           budgetRepository: budgetRepository,
