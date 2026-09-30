@@ -23,6 +23,7 @@ import 'use_cases/watch_budget_categories.dart';
 import 'use_cases/watch_dashboard_summary.dart';
 import 'use_cases/watch_filtered_transactions.dart';
 import 'use_cases/watch_monthly_plan.dart';
+import 'use_cases/watch_monthly_report.dart';
 import 'use_cases/watch_transactions.dart';
 import 'use_cases/watch_user_budgets.dart';
 
@@ -53,6 +54,7 @@ final class AppServices {
     required this.watchDashboardSummary,
     required this.watchFilteredTransactions,
     required this.watchMonthlyPlan,
+    required this.watchMonthlyReport,
     required this.watchTransactions,
     required this.watchUserBudgets,
   });
@@ -82,6 +84,7 @@ final class AppServices {
   final WatchDashboardSummary watchDashboardSummary;
   final WatchFilteredTransactions watchFilteredTransactions;
   final WatchMonthlyPlan watchMonthlyPlan;
+  final WatchMonthlyReport watchMonthlyReport;
   final WatchTransactions watchTransactions;
   final WatchUserBudgets watchUserBudgets;
 }
