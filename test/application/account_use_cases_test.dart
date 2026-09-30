@@ -38,6 +38,7 @@ void main() {
     final useCase = CreateAccount(
       accountRepository: FakeAccountRepository(),
       idGenerator: FakeIdGenerator(['account-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
     );
 
     await expectLater(

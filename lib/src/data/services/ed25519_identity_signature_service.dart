@@ -55,7 +55,7 @@ final class Ed25519IdentitySignatureService
         publicKey.substring('ed25519:'.length),
       );
       final public = SimplePublicKey(publicBytes, type: KeyPairType.ed25519);
-      return _algorithm.verify(
+      return await _algorithm.verify(
         message,
         signature: Signature(base64Url.decode(signature), publicKey: public),
       );
