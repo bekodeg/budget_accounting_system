@@ -29,6 +29,7 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
   final Set<String> _categoryIds = {};
   final Set<String> _accountIds = {};
   bool _onlyMine = false;
+  bool _exporting = false;
 
   @override
   void initState() {
@@ -75,6 +76,42 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
       return;
     }
     setState(() => _toExclusive = value);
+  }
+
+  Future<void> _export() async {
+    try {
+      final result = await widget.services.exportReport(_filter);
+      if (!mounted) return;
+      _showMessage(
+        'Экспорт готов: ${result.csvFileName} и ${result.xlsxFileName}',
+      );
+    } on Object {
+      if (mounted) {
+        _showMessage('Не удалось экспортировать отчет.');
+      }
+    }
+  }
+
+  Future<void> _export() async {
+    if (_exporting) return;
+
+    setState(() => _exporting = true);
+    try {
+      final result = await widget.services.exportReport(_filter);
+      if (mounted) {
+        _showMessage(
+          'Подготовлены ${result.csvFileName} и ${result.xlsxFileName}.',
+        );
+      }
+    } on Object {
+      if (mounted) {
+        _showMessage('Не удалось экспортировать отчет.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _exporting = false);
+      }
+    }
   }
 
   void _showMessage(String message) {
@@ -166,6 +203,23 @@ final class _PeriodReportScreenState extends State<PeriodReportScreen> {
                   label: const Text('Только мои'),
                   selected: _onlyMine,
                   onSelected: (value) => setState(() => _onlyMine = value),
+                ),
+                FilledButton.icon(
+                  key: const ValueKey('period-export'),
+                  onPressed: _exporting ? null : _export,
+                  icon: _exporting
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.ios_share_outlined),
+                  label: const Text('CSV/XLSX'),
+                ),
+                FilledButton.icon(
+                  key: const ValueKey('period-export'),
+                  onPressed: _export,
+                  icon: const Icon(Icons.ios_share_outlined),
+                  label: const Text('Экспорт CSV/XLSX'),
                 ),
               ],
             ),

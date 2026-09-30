@@ -7,6 +7,8 @@ import 'use_cases/create_initial_budget.dart';
 import 'use_cases/create_transaction.dart';
 import 'use_cases/create_transfer.dart';
 import 'use_cases/delete_transaction.dart';
+import 'use_cases/export_report.dart';
+import 'use_cases/export_report.dart';
 import 'use_cases/get_account_balance.dart';
 import 'use_cases/get_budget_account_balances.dart';
 import 'use_cases/rename_category.dart';
@@ -40,6 +42,8 @@ final class AppServices {
     required this.createTransaction,
     required this.createTransfer,
     required this.deleteTransaction,
+    required this.exportReport,
+    required this.exportReport,
     required this.getAccountBalance,
     required this.getBudgetAccountBalances,
     required this.renameCategory,
@@ -72,6 +76,8 @@ final class AppServices {
   final CreateTransaction createTransaction;
   final CreateTransfer createTransfer;
   final DeleteTransaction deleteTransaction;
+  final ExportReport exportReport;
+  final ExportReport exportReport;
   final GetAccountBalance getAccountBalance;
   final GetBudgetAccountBalances getBudgetAccountBalances;
   final RenameCategory renameCategory;
