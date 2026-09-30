@@ -54,7 +54,11 @@ final class CategoryManagementScreen extends StatelessWidget {
     }
 
     try {
-      await services.renameCategory(categoryId: category.id, name: name);
+      await services.renameCategory(
+        budgetId: budgetId,
+        categoryId: category.id,
+        name: name,
+      );
     } on CategoryError catch (error) {
       if (context.mounted) {
         _showMessage(context, error.message);
@@ -95,7 +99,10 @@ final class CategoryManagementScreen extends StatelessWidget {
     }
 
     try {
-      await services.archiveCategory(category.id);
+      await services.archiveCategory(
+        budgetId: budgetId,
+        categoryId: category.id,
+      );
     } on Object {
       if (context.mounted) {
         _showMessage(context, 'Не удалось архивировать категорию.');
