@@ -26,7 +26,13 @@ final class DriftMonthlyReportRepository implements MonthlyReportRepository {
     List<MonthlyReportRow> rows,
     DateTime monthStart,
   ) {
-    final baseRow = rows.where((row) => row.kind == 'BASE').firstOrNull;
+    MonthlyReportRow? baseRow;
+    for (final row in rows) {
+      if (row.kind == 'BASE') {
+        baseRow = row;
+        break;
+      }
+    }
     if (baseRow == null || baseRow.currency == null) {
       throw StateError('Budget base currency is missing for monthly report.');
     }
