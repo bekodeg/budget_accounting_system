@@ -2,6 +2,8 @@ enum LanSessionErrorCode {
   budgetMismatch,
   invalidSecretProof,
   invalidIdentitySignature,
+  identityMismatch,
+  revokedDevice,
   invalidHandshake,
 }
 
