@@ -12,7 +12,9 @@ import 'package:budget_accounting_system/src/domain/models/year_report.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('builds safe deterministic names and sends both documents to share gateway', () async {
+  test(
+    'builds safe deterministic names and sends both documents to share gateway',
+    () async {
     final reportRepository = _ReportRepository();
     final exportRepository = _ExportRepository();
     final encoder = _Encoder();
@@ -35,8 +37,9 @@ void main() {
     expect(shareGateway.csvBytes, [1, 2, 3]);
     expect(shareGateway.xlsxBytes, [4, 5, 6]);
     expect(result.csvFileName, 'budget_2026_20260901_20261001.csv');
-    expect(result.xlsxFileName, 'budget_2026_20260901_20261001.xlsx');
-  });
+      expect(result.xlsxFileName, 'budget_2026_20260901_20261001.xlsx');
+    },
+  );
 }
 
 final class _ReportRepository implements ExtendedReportRepository {
@@ -73,10 +76,12 @@ final class _ExportRepository implements ReportExportRepository {
 
 final class _Encoder implements ReportDocumentEncoder {
   @override
-  Uint8List encodeCsv(ReportExportBundle bundle) => Uint8List.fromList([1, 2, 3]);
+  Uint8List encodeCsv(ReportExportBundle bundle) =>
+      Uint8List.fromList([1, 2, 3]);
 
   @override
-  Uint8List encodeXlsx(ReportExportBundle bundle) => Uint8List.fromList([4, 5, 6]);
+  Uint8List encodeXlsx(ReportExportBundle bundle) =>
+      Uint8List.fromList([4, 5, 6]);
 }
 
 final class _ShareGateway implements ReportShareGateway {
