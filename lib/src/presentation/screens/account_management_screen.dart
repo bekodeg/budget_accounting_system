@@ -227,10 +227,10 @@ final class _AccountTile extends StatelessWidget {
           onSelected: (action) {
             switch (action) {
               case _AccountAction.edit:
-                onEdit();
+                onEdit?.call();
                 return;
               case _AccountAction.archive:
-                onArchive();
+                onArchive?.call();
                 return;
             }
           },
