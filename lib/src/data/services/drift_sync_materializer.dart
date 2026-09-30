@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 
 import '../../application/services/sync_merge_engine.dart';
@@ -54,119 +52,323 @@ final class DriftSyncMaterializer {
 
       switch (entity.entityType) {
         case 'category':
-          if (!state.isDeleted) {
-            await _database.into(_database.categories).insertOnConflictUpdate(
-              CategoriesCompanion.insert(
-                id: entity.entityId,
-                budgetId: budgetId,
-                name: _string(values, 'name'),
-                kind: _string(values, 'kind'),
-                isArchived: Value(_bool(values, 'is_archived', fallback: false)),
-              ),
-            );
-          }
+          await _materializeCategory(
+            budgetId: budgetId,
+            entityId: entity.entityId,
+            values: values,
+            deleted: state.isDeleted,
+          );
         case 'account':
-          if (!state.isDeleted) {
-            await _database.into(_database.accounts).insertOnConflictUpdate(
-              AccountsCompanion.insert(
-                id: entity.entityId,
-                budgetId: budgetId,
-                name: _string(values, 'name'),
-                currency: _string(values, 'currency'),
-                openingBalanceMinor: Value(
-                  BigInt.parse(_string(values, 'opening_balance_minor')),
-                ),
-                isArchived: Value(_bool(values, 'is_archived', fallback: false)),
-              ),
-            );
-          }
+          await _materializeAccount(
+            budgetId: budgetId,
+            entityId: entity.entityId,
+            values: values,
+            deleted: state.isDeleted,
+          );
         case 'transaction':
-          if (state.isDeleted) {
-            final deletedAt = _winningDeleteTime(rows);
-            await (_database.update(_database.budgetTransactions)
-                  ..where(
-                    (row) =>
-                        row.id.equals(entity.entityId) &
-                        row.budgetId.equals(budgetId),
-                  ))
-                .write(
-                  BudgetTransactionsCompanion(
-                    deletedAt: Value(deletedAt),
-                    updatedAt: Value(deletedAt),
-                  ),
-                );
-          } else {
-            await _database
-                .into(_database.budgetTransactions)
-                .insertOnConflictUpdate(
-                  BudgetTransactionsCompanion.insert(
-                    id: entity.entityId,
-                    budgetId: budgetId,
-                    occurredAt: DateTime.parse(_string(values, 'occurred_at')),
-                    amountMinor: BigInt.parse(_string(values, 'amount_minor')),
-                    currency: _string(values, 'currency'),
-                    type: _string(values, 'type'),
-                    authorId: _string(values, 'author_id'),
-                    accountId: _string(values, 'account_id'),
-                    destinationAccountId: Value(
-                      values['destination_account_id'] as String?,
-                    ),
-                    categoryId: Value(values['category_id'] as String?),
-                    description: Value(values['description'] as String?),
-                    createdAt: Value(
-                      DateTime.parse(_string(values, 'created_at')),
-                    ),
-                    updatedAt: Value(
-                      DateTime.parse(_string(values, 'updated_at')),
-                    ),
-                  ),
-                );
-          }
+          await _materializeTransaction(
+            budgetId: budgetId,
+            entityId: entity.entityId,
+            values: values,
+            rows: rows,
+            deleted: state.isDeleted,
+          );
         case 'plan':
-          final month = DateTime.parse(_string(values, 'month'));
-          final categoryId = _string(values, 'category_id');
-          if (state.isDeleted) {
-            await (_database.delete(_database.plans)
-                  ..where(
-                    (row) =>
-                        row.budgetId.equals(budgetId) &
-                        row.month.equals(month) &
-                        row.categoryId.equals(categoryId),
-                  ))
-                .go();
-          } else {
-            await _database.into(_database.plans).insertOnConflictUpdate(
-              PlansCompanion.insert(
-                id: entity.entityId,
-                budgetId: budgetId,
-                month: month,
-                categoryId: categoryId,
-                plannedAmountMinor: BigInt.parse(
-                  _string(values, 'planned_amount_minor'),
-                ),
-                updatedAt: Value(
-                  DateTime.parse(_string(values, 'updated_at')),
-                ),
-              ),
-            );
-          }
+          await _materializePlan(
+            budgetId: budgetId,
+            entityId: entity.entityId,
+            values: values,
+            deleted: state.isDeleted,
+          );
         case 'budget_member':
-          final separator = entity.entityId.indexOf(':');
-          final userId = separator < 0
-              ? entity.entityId
-              : entity.entityId.substring(separator + 1);
-          final role = values['role'];
-          if (role is String) {
-            await (_database.update(_database.budgetMembers)
-                  ..where(
-                    (row) =>
-                        row.budgetId.equals(budgetId) &
-                        row.userId.equals(userId),
-                  ))
-                .write(BudgetMembersCompanion(role: Value(role)));
-          }
+          await _materializeMember(
+            budgetId: budgetId,
+            entityId: entity.entityId,
+            values: values,
+          );
       }
     }
+  }
+
+  Future<void> _materializeCategory({
+    required String budgetId,
+    required String entityId,
+    required Map<String, Object?> values,
+    required bool deleted,
+  }) async {
+    if (deleted) return;
+
+    final existing = await (_database.select(_database.categories)
+          ..where(
+            (row) =>
+                row.id.equals(entityId) & row.budgetId.equals(budgetId),
+          ))
+        .getSingleOrNull();
+
+    if (existing == null) {
+      final name = values['name'];
+      final kind = values['kind'];
+      if (name is! String || kind is! String) return;
+
+      await _database.into(_database.categories).insert(
+        CategoriesCompanion.insert(
+          id: entityId,
+          budgetId: budgetId,
+          name: name,
+          kind: kind,
+          isArchived: Value(
+            values['is_archived'] is bool
+                ? values['is_archived']! as bool
+                : false,
+          ),
+        ),
+      );
+      return;
+    }
+
+    await (_database.update(_database.categories)
+          ..where(
+            (row) =>
+                row.id.equals(entityId) & row.budgetId.equals(budgetId),
+          ))
+        .write(
+          CategoriesCompanion(
+            name: _stringValue(values['name']),
+            kind: _stringValue(values['kind']),
+            isArchived: _boolValue(values['is_archived']),
+          ),
+        );
+  }
+
+  Future<void> _materializeAccount({
+    required String budgetId,
+    required String entityId,
+    required Map<String, Object?> values,
+    required bool deleted,
+  }) async {
+    if (deleted) return;
+
+    final existing = await (_database.select(_database.accounts)
+          ..where(
+            (row) =>
+                row.id.equals(entityId) & row.budgetId.equals(budgetId),
+          ))
+        .getSingleOrNull();
+
+    if (existing == null) {
+      final name = values['name'];
+      final currency = values['currency'];
+      final opening = _bigInt(values['opening_balance_minor']);
+      if (name is! String || currency is! String || opening == null) return;
+
+      await _database.into(_database.accounts).insert(
+        AccountsCompanion.insert(
+          id: entityId,
+          budgetId: budgetId,
+          name: name,
+          currency: currency,
+          openingBalanceMinor: Value(opening),
+          isArchived: Value(
+            values['is_archived'] is bool
+                ? values['is_archived']! as bool
+                : false,
+          ),
+        ),
+      );
+      return;
+    }
+
+    await (_database.update(_database.accounts)
+          ..where(
+            (row) =>
+                row.id.equals(entityId) & row.budgetId.equals(budgetId),
+          ))
+        .write(
+          AccountsCompanion(
+            name: _stringValue(values['name']),
+            currency: _stringValue(values['currency']),
+            openingBalanceMinor: _bigIntValue(values['opening_balance_minor']),
+            isArchived: _boolValue(values['is_archived']),
+          ),
+        );
+  }
+
+  Future<void> _materializeTransaction({
+    required String budgetId,
+    required String entityId,
+    required Map<String, Object?> values,
+    required List<SyncOperation> rows,
+    required bool deleted,
+  }) async {
+    final existing = await (_database.select(_database.budgetTransactions)
+          ..where(
+            (row) =>
+                row.id.equals(entityId) & row.budgetId.equals(budgetId),
+          ))
+        .getSingleOrNull();
+
+    if (deleted) {
+      if (existing == null) return;
+      final deletedAt = _winningDeleteTime(rows);
+      await (_database.update(_database.budgetTransactions)
+            ..where(
+              (row) =>
+                  row.id.equals(entityId) & row.budgetId.equals(budgetId),
+            ))
+          .write(
+            BudgetTransactionsCompanion(
+              deletedAt: Value(deletedAt),
+              updatedAt: Value(deletedAt),
+            ),
+          );
+      return;
+    }
+
+    if (existing == null) {
+      final occurredAt = _dateTime(values['occurred_at']);
+      final amountMinor = _bigInt(values['amount_minor']);
+      final currency = values['currency'];
+      final type = values['type'];
+      final authorId = values['author_id'];
+      final accountId = values['account_id'];
+      final createdAt = _dateTime(values['created_at']);
+      final updatedAt = _dateTime(values['updated_at']);
+      if (occurredAt == null ||
+          amountMinor == null ||
+          currency is! String ||
+          type is! String ||
+          authorId is! String ||
+          accountId is! String ||
+          createdAt == null ||
+          updatedAt == null) {
+        return;
+      }
+
+      await _database.into(_database.budgetTransactions).insert(
+        BudgetTransactionsCompanion.insert(
+          id: entityId,
+          budgetId: budgetId,
+          occurredAt: occurredAt,
+          amountMinor: amountMinor,
+          currency: currency,
+          type: type,
+          authorId: authorId,
+          accountId: accountId,
+          destinationAccountId: Value(
+            values['destination_account_id'] as String?,
+          ),
+          categoryId: Value(values['category_id'] as String?),
+          description: Value(values['description'] as String?),
+          createdAt: Value(createdAt),
+          updatedAt: Value(updatedAt),
+        ),
+      );
+      return;
+    }
+
+    await (_database.update(_database.budgetTransactions)
+          ..where(
+            (row) =>
+                row.id.equals(entityId) & row.budgetId.equals(budgetId),
+          ))
+        .write(
+          BudgetTransactionsCompanion(
+            occurredAt: _dateTimeValue(values['occurred_at']),
+            amountMinor: _bigIntValue(values['amount_minor']),
+            currency: _stringValue(values['currency']),
+            type: _stringValue(values['type']),
+            authorId: _stringValue(values['author_id']),
+            accountId: _stringValue(values['account_id']),
+            destinationAccountId: values.containsKey('destination_account_id')
+                ? Value(values['destination_account_id'] as String?)
+                : const Value.absent(),
+            categoryId: values.containsKey('category_id')
+                ? Value(values['category_id'] as String?)
+                : const Value.absent(),
+            description: values.containsKey('description')
+                ? Value(values['description'] as String?)
+                : const Value.absent(),
+            createdAt: _dateTimeValue(values['created_at']),
+            updatedAt: _dateTimeValue(values['updated_at']),
+          ),
+        );
+  }
+
+  Future<void> _materializePlan({
+    required String budgetId,
+    required String entityId,
+    required Map<String, Object?> values,
+    required bool deleted,
+  }) async {
+    final month = _dateTime(values['month']);
+    final categoryId = values['category_id'];
+    if (month == null || categoryId is! String) return;
+
+    if (deleted) {
+      await (_database.delete(_database.plans)
+            ..where(
+              (row) =>
+                  row.budgetId.equals(budgetId) &
+                  row.month.equals(month) &
+                  row.categoryId.equals(categoryId),
+            ))
+          .go();
+      return;
+    }
+
+    final amount = _bigInt(values['planned_amount_minor']);
+    final updatedAt = _dateTime(values['updated_at']);
+    if (amount == null || updatedAt == null) return;
+
+    final existing = await (_database.select(_database.plans)
+          ..where(
+            (row) =>
+                row.budgetId.equals(budgetId) &
+                row.month.equals(month) &
+                row.categoryId.equals(categoryId),
+          ))
+        .getSingleOrNull();
+
+    if (existing == null) {
+      await _database.into(_database.plans).insert(
+        PlansCompanion.insert(
+          id: entityId,
+          budgetId: budgetId,
+          month: month,
+          categoryId: categoryId,
+          plannedAmountMinor: amount,
+          updatedAt: Value(updatedAt),
+        ),
+      );
+      return;
+    }
+
+    await (_database.update(_database.plans)
+          ..where((row) => row.id.equals(existing.id)))
+        .write(
+          PlansCompanion(
+            plannedAmountMinor: Value(amount),
+            updatedAt: Value(updatedAt),
+          ),
+        );
+  }
+
+  Future<void> _materializeMember({
+    required String budgetId,
+    required String entityId,
+    required Map<String, Object?> values,
+  }) async {
+    final separator = entityId.indexOf(':');
+    final userId = separator < 0 ? entityId : entityId.substring(separator + 1);
+    final role = values['role'];
+    if (role is! String) return;
+
+    await (_database.update(_database.budgetMembers)
+          ..where(
+            (row) =>
+                row.budgetId.equals(budgetId) & row.userId.equals(userId),
+          ))
+        .write(BudgetMembersCompanion(role: Value(role)));
   }
 
   SignedSyncOperation _toDomain(SyncOperation row) {
@@ -190,21 +392,26 @@ final class DriftSyncMaterializer {
   }
 }
 
-String _string(Map<String, Object?> values, String key) {
-  final value = values[key];
-  if (value is! String || value.isEmpty) {
-    throw StateError('Missing materialized field: $key');
-  }
-  return value;
+Value<String> _stringValue(Object? value) =>
+    value is String ? Value(value) : const Value.absent();
+
+Value<bool> _boolValue(Object? value) =>
+    value is bool ? Value(value) : const Value.absent();
+
+BigInt? _bigInt(Object? value) =>
+    value is String ? BigInt.tryParse(value) : null;
+
+Value<BigInt> _bigIntValue(Object? value) {
+  final parsed = _bigInt(value);
+  return parsed == null ? const Value.absent() : Value(parsed);
 }
 
-bool _bool(
-  Map<String, Object?> values,
-  String key, {
-  required bool fallback,
-}) {
-  final value = values[key];
-  return value is bool ? value : fallback;
+DateTime? _dateTime(Object? value) =>
+    value is String ? DateTime.tryParse(value) : null;
+
+Value<DateTime> _dateTimeValue(Object? value) {
+  final parsed = _dateTime(value);
+  return parsed == null ? const Value.absent() : Value(parsed);
 }
 
 DateTime _winningDeleteTime(List<SyncOperation> rows) {
