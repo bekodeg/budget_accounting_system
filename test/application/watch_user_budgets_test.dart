@@ -52,6 +52,7 @@ final class _FakeBudgetRepository implements BudgetRepository {
     required String userId,
     required String userName,
     required String publicKey,
+    required String deviceId,
     required String budgetId,
     required String budgetName,
     required Currency baseCurrency,

@@ -71,6 +71,7 @@ import 'package:budget_accounting_system/src/domain/models/initial_budget_catego
 import 'package:budget_accounting_system/src/domain/models/local_device.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_plan.dart';
 import 'package:budget_accounting_system/src/domain/models/monthly_report.dart';
+import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
 import 'package:budget_accounting_system/src/domain/models/period_report.dart';
 import 'package:budget_accounting_system/src/domain/models/public_identity.dart';
 import 'package:budget_accounting_system/src/domain/models/report_export.dart';

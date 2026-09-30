@@ -10,6 +10,8 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/onboarding_fakes.dart';
+
 void main() {
   late AppDatabase database;
   late UserBudgetDao userBudgetDao;
@@ -69,7 +71,10 @@ void main() {
   });
 
   test('reapplying templates does not duplicate categories', () async {
-    final applyTemplates = ApplyCategoryTemplates(repository);
+    final applyTemplates = ApplyCategoryTemplates(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
     final templateCount = (await repository.getTemplates()).length;
 
     await applyTemplates('budget-1');
