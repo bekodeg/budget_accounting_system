@@ -19,11 +19,13 @@ abstract interface class CategoryRepository {
   Future<void> createCategory(BudgetCategory category);
 
   Future<void> renameCategory({
+    required String budgetId,
     required String categoryId,
     required String name,
   });
 
   Future<void> setCategoryArchived({
+    required String budgetId,
     required String categoryId,
     required bool isArchived,
   });
