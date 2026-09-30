@@ -1,3 +1,4 @@
+import '../../domain/models/period_report.dart';
 import '../../domain/models/report_export.dart';
 import '../../domain/models/report_filter.dart';
 import '../../domain/repositories/extended_report_repository.dart';
@@ -22,15 +23,16 @@ final class ExportReport {
   final ReportShareGateway _shareGateway;
 
   Future<ReportExportResult> call(ReportFilter filter) async {
-    final values = await Future.wait<Object>([
-      _reportRepository.watchPeriodReport(filter).first,
-      _exportRepository.listTransactions(filter),
-    ]);
+    final summaryFuture = _reportRepository.watchPeriodReport(filter).first;
+    final transactionsFuture = _exportRepository.listTransactions(filter);
+    final PeriodReport summary = await summaryFuture;
+    final List<ReportExportTransaction> transactions =
+        await transactionsFuture;
 
     final bundle = ReportExportBundle(
       filter: filter,
-      summary: values[0] as dynamic,
-      transactions: values[1] as List<ReportExportTransaction>,
+      summary: summary,
+      transactions: transactions,
     );
     final baseName = buildReportExportBaseName(filter);
     return _shareGateway.share(
