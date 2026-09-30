@@ -37,6 +37,7 @@
 - `UpdateAccount`;
 - `ArchiveAccount`;
 - `GetAccountBalance`;
+- `GetBudgetAccountBalances`;
 - `RequireAccountInBudget`.
 
 UI и будущие transaction use cases не должны обращаться к Account DAO напрямую.
@@ -88,6 +89,16 @@ balance =
 Soft-deleted transactions в расчет не входят.
 
 Все участвующие операции дополнительно фильтруются по `budget_id`.
+
+Расчет выполняется SQL-агрегацией в SQLite, а не загрузкой всей истории в Dart.
+Один и тот же query поддерживает:
+
+- текущий баланс одного счета;
+- текущие балансы всех счетов бюджета;
+- исторический баланс на момент `atInclusive`;
+- включение архивных счетов для исторических отчетов.
+
+Граница `atInclusive` включает операции с `occurred_at <= atInclusive`.
 
 ## 10.6. Изменение валюты
 
@@ -174,6 +185,8 @@ Presentation/application helper переводит строку в minor units.
 - active/all queries;
 - стабильная сортировка;
 - расчет income/expense/transfer balance;
+- расчет всех счетов одним агрегирующим query;
+- point-in-time balance на заданный момент;
 - исключение soft-deleted операций;
 - сохранение transaction → account после архивирования;
 - widget CRUD и архивирование.
