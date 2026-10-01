@@ -11,6 +11,13 @@ final class DriftReceiptRepository implements ReceiptRepository {
   final PlanReceiptDao _dao;
 
   @override
+  Future<ReceiptQrDraft?> findById(String receiptId) async {
+    final row = await _dao.findReceiptById(receiptId);
+    if (row == null) return null;
+    return _toDraft(row, isDuplicate: false);
+  }
+
+  @override
   Future<ReceiptQrDraft?> findByRawQr({
     required String budgetId,
     required String rawQr,
