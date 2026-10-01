@@ -42,10 +42,7 @@ final class _BudgetBackupScreenState extends State<BudgetBackupScreen> {
       _message = null;
     });
     try {
-      await export(
-        budgetId: widget.budgetId,
-        password: _exportPassword.text,
-      );
+      await export(budgetId: widget.budgetId, password: _exportPassword.text);
       _showMessage('Зашифрованный backup подготовлен для сохранения.', false);
     } on BudgetBackupError catch (error) {
       _showMessage(error.message, true);
@@ -180,7 +177,9 @@ final class _BudgetBackupScreenState extends State<BudgetBackupScreen> {
         widget.services.restoreBudgetBackup != null;
 
     if (!enabled) {
-      return const Center(child: Text('Backup недоступен в этой конфигурации.'));
+      return const Center(
+        child: Text('Backup недоступен в этой конфигурации.'),
+      );
     }
 
     return ListView(

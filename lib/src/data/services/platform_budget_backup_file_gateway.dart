@@ -7,8 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../application/ports/budget_backup_file_gateway.dart';
 
-final class PlatformBudgetBackupFileGateway
-    implements BudgetBackupFileGateway {
+final class PlatformBudgetBackupFileGateway implements BudgetBackupFileGateway {
   const PlatformBudgetBackupFileGateway();
 
   @override

@@ -102,9 +102,7 @@ final class PlanReceiptDao {
   }) {
     return (_db.select(_db.receipts)
           ..where(
-            (row) =>
-                row.budgetId.equals(budgetId) &
-                row.rawQr.equals(rawQr),
+            (row) => row.budgetId.equals(budgetId) & row.rawQr.equals(rawQr),
           )
           ..limit(1))
         .getSingleOrNull();

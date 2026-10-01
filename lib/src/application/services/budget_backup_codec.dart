@@ -19,17 +19,11 @@ final class DecodedBudgetBackup {
 }
 
 final class BudgetBackupCodec {
-  BudgetBackupCodec({
-    Cipher? cipher,
-    KdfAlgorithm? kdf,
-  }) : _cipher = cipher ?? AesGcm.with256bits(),
-       _kdf =
-           kdf ??
-           Pbkdf2(
-             macAlgorithm: Hmac.sha256(),
-             iterations: 210000,
-             bits: 256,
-           );
+  BudgetBackupCodec({Cipher? cipher, KdfAlgorithm? kdf})
+    : _cipher = cipher ?? AesGcm.with256bits(),
+      _kdf =
+          kdf ??
+          Pbkdf2(macAlgorithm: Hmac.sha256(), iterations: 210000, bits: 256);
 
   static const currentVersion = 1;
   static const kdfName = 'pbkdf2-hmac-sha256';
@@ -151,8 +145,9 @@ final class BudgetBackupCodec {
 
       final sourceBudgetId = _string(content, 'source_budget_id');
       final createdAtRaw = envelope['created_at'];
-      final createdAt =
-          createdAtRaw is String ? DateTime.tryParse(createdAtRaw) : null;
+      final createdAt = createdAtRaw is String
+          ? DateTime.tryParse(createdAtRaw)
+          : null;
       if (createdAt == null) {
         throw const FormatException();
       }

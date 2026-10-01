@@ -15,10 +15,7 @@ final class DriftReceiptRepository implements ReceiptRepository {
     required String budgetId,
     required String rawQr,
   }) async {
-    final row = await _dao.findReceiptByRawQr(
-      budgetId: budgetId,
-      rawQr: rawQr,
-    );
+    final row = await _dao.findReceiptByRawQr(budgetId: budgetId, rawQr: rawQr);
     if (row == null) return null;
     return _toDraft(row, isDuplicate: true);
   }
