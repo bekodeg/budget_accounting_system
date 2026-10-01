@@ -27,10 +27,9 @@ final class LanHostedSession {
   LanHostedSession({
     required this.port,
     required this.manualEndpointCode,
-    required Stream<SecureLanChannel> channels,
+    required this.channels,
     required Future<void> Function() close,
-  }) : channels = channels,
-       _close = close;
+  }) : _close = close;
 
   final int port;
   final String? manualEndpointCode;
