@@ -16,26 +16,26 @@ final class SyncProtocolCodec {
     };
 
     final value = switch (message) {
-      SyncHelloMessage hello => {
+      final SyncHelloMessage hello => {
         ...base,
         'type': 'hello',
         'device_id': hello.deviceId,
         'state_vector': _encodeVector(hello.stateVector),
       },
-      SyncOperationsBatchMessage batch => {
+      final SyncOperationsBatchMessage batch => {
         ...base,
         'type': 'batch',
         'batch_id': batch.batchId,
         'has_more': batch.hasMore,
         'operations': batch.operations.map(_encodeOperation).toList(),
       },
-      SyncAckMessage ack => {
+      final SyncAckMessage ack => {
         ...base,
         'type': 'ack',
         'batch_id': ack.batchId,
         'state_vector': _encodeVector(ack.stateVector),
       },
-      SyncErrorMessage error => {
+      final SyncErrorMessage error => {
         ...base,
         'type': 'error',
         'code': error.code,
