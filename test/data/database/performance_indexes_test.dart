@@ -14,10 +14,7 @@ void main() {
     await database.close();
   });
 
-  Future<String> queryPlan(
-    String sql,
-    List<Variable<Object>> variables,
-  ) async {
+  Future<String> queryPlan(String sql, List<Variable<Object>> variables) async {
     final rows = await database
         .customSelect('EXPLAIN QUERY PLAN $sql', variables: variables)
         .get();
