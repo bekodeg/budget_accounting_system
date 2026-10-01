@@ -19,13 +19,13 @@ void main() {
     await export();
 
     final archive = ZipDecoder().decodeBytes(share.bytes!);
-    final names = archive.map((file) => file.name).toList()..sort();
+    final names = archive.files.map((file) => file.name).toList()..sort();
     expect(names, ['diagnostics.json', 'errors.jsonl']);
 
-    final diagnostics = archive.firstWhere(
+    final diagnostics = archive.files.firstWhere(
       (file) => file.name == 'diagnostics.json',
     );
-    final content = utf8.decode(diagnostics.readBytes());
+    final content = utf8.decode(diagnostics.content as List<int>);
     expect(content, '{"safe":true}');
     expect(content, isNot(contains('secret')));
   });
