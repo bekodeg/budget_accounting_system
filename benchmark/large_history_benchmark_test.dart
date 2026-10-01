@@ -1,5 +1,6 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:budget_accounting_system/src/data/dal/report_dao.dart';
 import 'package:budget_accounting_system/src/data/dal/sync_dao.dart';
