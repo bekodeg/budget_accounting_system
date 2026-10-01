@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import '../../domain/models/receipt_qr_draft.dart';
 import '../../domain/repositories/receipt_repository.dart';
 import '../authorization/budget_action.dart';
 import '../authorization/budget_authorization_guard.dart';
 import '../ports/id_generator.dart';
 import '../services/fiscal_receipt_qr_parser.dart';
+import '../services/receipt_enrichment_coordinator.dart';
 
 final class ScanReceiptQr {
   const ScanReceiptQr({
@@ -11,15 +14,18 @@ final class ScanReceiptQr {
     required FiscalReceiptQrParser parser,
     required IdGenerator idGenerator,
     required BudgetAuthorizationGuard authorization,
+    ReceiptEnrichmentCoordinator? enrichmentCoordinator,
   }) : _receiptRepository = receiptRepository,
        _parser = parser,
        _idGenerator = idGenerator,
-       _authorization = authorization;
+       _authorization = authorization,
+       _enrichmentCoordinator = enrichmentCoordinator;
 
   final ReceiptRepository _receiptRepository;
   final FiscalReceiptQrParser _parser;
   final IdGenerator _idGenerator;
   final BudgetAuthorizationGuard _authorization;
+  final ReceiptEnrichmentCoordinator? _enrichmentCoordinator;
 
   Future<ReceiptQrDraft> call({
     required String budgetId,
@@ -54,6 +60,10 @@ final class ScanReceiptQr {
       isDuplicate: false,
     );
     await _receiptRepository.saveReceipt(draft);
+    final enrichment = _enrichmentCoordinator;
+    if (enrichment != null) {
+      unawaited(enrichment.enrichInBackground(draft));
+    }
     return draft;
   }
 }
