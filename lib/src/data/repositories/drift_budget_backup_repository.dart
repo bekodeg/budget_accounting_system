@@ -7,7 +7,6 @@ import '../../application/ports/id_generator.dart';
 import '../../application/services/budget_backup_codec.dart';
 import '../../application/services/budget_snapshot_codec.dart';
 import '../../domain/models/budget_backup.dart';
-import '../../domain/models/budget_snapshot.dart';
 import '../database/app_database.dart';
 
 final class DriftBudgetBackupRepository implements BudgetBackupRepository {

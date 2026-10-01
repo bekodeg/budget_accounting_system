@@ -103,7 +103,7 @@ final class DatabaseEncryptionBootstrap {
       database.execute("PRAGMA rekey = '$key';");
       database.select('SELECT count(*) FROM sqlite_master;');
     } finally {
-      database.dispose();
+      database.close();
     }
   }
 
