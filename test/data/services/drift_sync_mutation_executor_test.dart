@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:budget_accounting_system/src/application/ports/id_generator.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_signature_service.dart';
@@ -7,7 +6,7 @@ import 'package:budget_accounting_system/src/data/dal/sync_dao.dart';
 import 'package:budget_accounting_system/src/data/database/app_database.dart';
 import 'package:budget_accounting_system/src/data/services/drift_sync_mutation_executor.dart';
 import 'package:budget_accounting_system/src/domain/models/sync_mutation.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 

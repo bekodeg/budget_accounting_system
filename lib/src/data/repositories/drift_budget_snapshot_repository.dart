@@ -123,9 +123,7 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
     if (dbSchema != _database.schemaVersion) {
       throw BudgetSnapshotError(
         BudgetSnapshotErrorCode.unsupportedVersion,
-        'Snapshot DB schema $dbSchema is incompatible with local schema ' +
-            _database.schemaVersion.toString() +
-            '.',
+        'Snapshot DB schema $dbSchema is incompatible with local schema ${_database.schemaVersion}.',
       );
     }
 
@@ -368,7 +366,7 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
     final grouped = <String, List<SyncOperation>>{};
     for (final row in allOperations) {
       grouped
-          .putIfAbsent(row.entityType + '\u0000' + row.entityId, () => [])
+          .putIfAbsent('${row.entityType}\u0000${row.entityId}', () => [])
           .add(row);
     }
 
@@ -416,7 +414,7 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
         'CREATE' => SyncMutationType.create,
         'PATCH' => SyncMutationType.patch,
         'DELETE' => SyncMutationType.delete,
-        _ => throw StateError('Unsupported sync op type: ' + row.opType),
+        _ => throw StateError('Unsupported sync op type: ${row.opType}'),
       },
       patchJson: row.patch,
       authorId: row.authorId,
