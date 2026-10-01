@@ -28,7 +28,9 @@ final class FiscalReceiptQrParser {
     for (final part in normalized.split('&')) {
       final index = part.indexOf('=');
       if (index <= 0) continue;
-      final key = Uri.decodeQueryComponent(part.substring(0, index)).toLowerCase();
+      final key = Uri.decodeQueryComponent(
+        part.substring(0, index),
+      ).toLowerCase();
       final value = Uri.decodeQueryComponent(part.substring(index + 1));
       if (value.isNotEmpty) fields[key] = value;
     }
@@ -42,7 +44,8 @@ final class FiscalReceiptQrParser {
       fields['m'],
     ]);
 
-    final recognized = occurredAt != null || totalMinor != null || merchant != null;
+    final recognized =
+        occurredAt != null || totalMinor != null || merchant != null;
     final complete = occurredAt != null && totalMinor != null;
 
     return ParsedFiscalReceiptQr(
@@ -50,7 +53,11 @@ final class FiscalReceiptQrParser {
       occurredAt: occurredAt,
       totalMinor: totalMinor,
       merchant: merchant,
-      parseStatus: complete ? 'PARSED' : recognized ? 'PARTIAL' : 'NEW',
+      parseStatus: complete
+          ? 'PARSED'
+          : recognized
+          ? 'PARTIAL'
+          : 'NEW',
       parsedPayloadJson: jsonEncode({
         'fields': fields,
         'recognized': recognized,
