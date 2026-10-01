@@ -29,6 +29,7 @@ import '../application/use_cases/create_transaction.dart';
 import '../application/use_cases/create_transfer.dart';
 import '../application/use_cases/delete_transaction.dart';
 import '../application/use_cases/export_report.dart';
+import '../application/use_cases/export_diagnostics.dart';
 import '../application/use_cases/export_budget_backup.dart';
 import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/get_budget_account_balances.dart';
@@ -38,6 +39,7 @@ import '../application/use_cases/import_receipt_photo.dart';
 import '../application/use_cases/pick_budget_invite_file.dart';
 import '../application/use_cases/pick_budget_backup.dart';
 import '../application/use_cases/preview_budget_backup.dart';
+import '../application/use_cases/preview_diagnostics.dart';
 import '../application/use_cases/restore_budget_backup.dart';
 import '../application/use_cases/ensure_local_identity.dart';
 import '../application/use_cases/rename_category.dart';
@@ -77,6 +79,7 @@ import '../data/repositories/drift_budget_snapshot_repository.dart';
 import '../data/repositories/drift_budget_backup_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
+import '../data/repositories/drift_diagnostic_package_repository.dart';
 import '../data/repositories/drift_extended_report_repository.dart';
 import '../data/repositories/drift_identity_repository.dart';
 import '../data/repositories/drift_invitation_repository.dart';
@@ -103,6 +106,8 @@ import '../data/services/mlkit_receipt_photo_analyzer.dart';
 import '../data/services/mock_receipt_enrichment_provider.dart';
 import '../data/services/platform_budget_backup_file_gateway.dart';
 import '../data/services/platform_report_share_gateway.dart';
+import '../data/services/platform_diagnostic_share_gateway.dart';
+import '../data/services/rotating_diagnostic_log_store.dart';
 import '../data/services/random_secure_token_generator.dart';
 import '../data/services/secure_id_generator.dart';
 
@@ -128,6 +133,11 @@ final class AppCompositionRoot {
     final extendedReportRepository = DriftExtendedReportRepository(dal.reports);
     final reportExportRepository = DriftReportExportRepository(
       dal.transactions,
+    );
+    final diagnosticLogStore = RotatingDiagnosticLogStore();
+    final diagnosticRepository = DriftDiagnosticPackageRepository(
+      database: dal.database,
+      logStore: diagnosticLogStore,
     );
     final receiptRepository = DriftReceiptRepository(dal.plansAndReceipts);
     final enrichmentConfig = ReceiptEnrichmentConfig.fromEnvironment();
@@ -338,6 +348,10 @@ final class AppCompositionRoot {
           fileGateway: backupFileGateway,
           authorization: authorization,
         ),
+        exportDiagnostics: ExportDiagnostics(
+          repository: diagnosticRepository,
+          shareGateway: const PlatformDiagnosticShareGateway(),
+        ),
         exportReport: ExportReport(
           reportRepository: extendedReportRepository,
           exportRepository: reportExportRepository,
@@ -366,6 +380,7 @@ final class AppCompositionRoot {
         pickBudgetInviteFile: PickBudgetInviteFile(inviteFileGateway),
         pickBudgetBackup: PickBudgetBackup(backupFileGateway),
         previewBudgetBackup: PreviewBudgetBackup(backupRepository),
+        previewDiagnostics: PreviewDiagnostics(diagnosticRepository),
         restoreBudgetBackup: RestoreBudgetBackup(backupRepository),
         renameCategory: RenameCategory(
           repository: categoryRepository,
@@ -428,6 +443,7 @@ final class AppCompositionRoot {
         watchYearReport: WatchYearReport(extendedReportRepository),
         watchTransactions: WatchTransactions(transactionRepository),
         watchUserBudgets: WatchUserBudgets(budgetRepository),
+        diagnosticLogStore: diagnosticLogStore,
       ),
     );
   }
