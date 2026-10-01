@@ -53,7 +53,7 @@ final class ScanReceiptQr {
       parseStatus: parsed.parseStatus,
       isDuplicate: false,
     );
-    await _receiptRepository.saveQrReceipt(draft);
+    await _receiptRepository.saveReceipt(draft);
     return draft;
   }
 }
