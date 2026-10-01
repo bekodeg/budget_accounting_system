@@ -38,46 +38,47 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
   @override
   Future<BudgetSnapshotPackage> create(String budgetId) {
     return _database.transaction(() async {
-      final budget = await (_database.select(_database.budgets)
-            ..where((row) => row.id.equals(budgetId)))
-          .getSingleOrNull();
+      final budget = await (_database.select(
+        _database.budgets,
+      )..where((row) => row.id.equals(budgetId))).getSingleOrNull();
       if (budget == null) {
         throw StateError('Budget not found: $budgetId');
       }
 
-      final members = await (_database.select(_database.budgetMembers)
-            ..where((row) => row.budgetId.equals(budgetId)))
-          .get();
+      final members = await (_database.select(
+        _database.budgetMembers,
+      )..where((row) => row.budgetId.equals(budgetId))).get();
       final userIds = members.map((row) => row.userId).toSet();
       final users = userIds.isEmpty
           ? <User>[]
-          : await (_database.select(_database.users)
-                ..where((row) => row.id.isIn(userIds)))
-              .get();
+          : await (_database.select(
+              _database.users,
+            )..where((row) => row.id.isIn(userIds))).get();
       final devices = userIds.isEmpty
           ? <Device>[]
-          : await (_database.select(_database.devices)
-                ..where((row) => row.userId.isIn(userIds)))
-              .get();
-      final categories = await (_database.select(_database.categories)
-            ..where((row) => row.budgetId.equals(budgetId)))
-          .get();
-      final accounts = await (_database.select(_database.accounts)
-            ..where((row) => row.budgetId.equals(budgetId)))
-          .get();
-      final receipts = await (_database.select(_database.receipts)
-            ..where((row) => row.budgetId.equals(budgetId)))
-          .get();
-      final transactions = await (_database.select(_database.budgetTransactions)
-            ..where((row) => row.budgetId.equals(budgetId)))
-          .get();
-      final plans = await (_database.select(_database.plans)
-            ..where((row) => row.budgetId.equals(budgetId)))
-          .get();
+          : await (_database.select(
+              _database.devices,
+            )..where((row) => row.userId.isIn(userIds))).get();
+      final categories = await (_database.select(
+        _database.categories,
+      )..where((row) => row.budgetId.equals(budgetId))).get();
+      final accounts = await (_database.select(
+        _database.accounts,
+      )..where((row) => row.budgetId.equals(budgetId))).get();
+      final receipts = await (_database.select(
+        _database.receipts,
+      )..where((row) => row.budgetId.equals(budgetId))).get();
+      final transactions = await (_database.select(
+        _database.budgetTransactions,
+      )..where((row) => row.budgetId.equals(budgetId))).get();
+      final plans = await (_database.select(
+        _database.plans,
+      )..where((row) => row.budgetId.equals(budgetId))).get();
 
       final allOperations = await _syncDao.getAllOperationsForBudget(budgetId);
-      final checkpointOperations =
-          await _syncDao.getCheckpointOperations(budgetId);
+      final checkpointOperations = await _syncDao.getCheckpointOperations(
+        budgetId,
+      );
       final baseline = _compactBaseline(
         allOperations: allOperations,
         checkpointOperations: checkpointOperations,
@@ -164,12 +165,8 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
       _requireBudget(row, expectedBudgetId);
     }
 
-    final usersById = {
-      for (final row in users) _string(row, 'id'): row,
-    };
-    final devicesById = {
-      for (final row in devices) _string(row, 'id'): row,
-    };
+    final usersById = {for (final row in users) _string(row, 'id'): row};
+    final devicesById = {for (final row in devices) _string(row, 'id'): row};
     for (final row in checkpoint) {
       final operation = _snapshotOperation(row);
       final author = usersById[operation.authorId];
@@ -197,91 +194,105 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
 
     await _database.transaction(() async {
       for (final row in users) {
-        await _database.into(_database.users).insertOnConflictUpdate(
-          UsersCompanion.insert(
-            id: _string(row, 'id'),
-            name: _string(row, 'name'),
-            publicKey: _string(row, 'public_key'),
-            createdAt: Value(_date(row, 'created_at')),
-          ),
-        );
+        await _database
+            .into(_database.users)
+            .insertOnConflictUpdate(
+              UsersCompanion.insert(
+                id: _string(row, 'id'),
+                name: _string(row, 'name'),
+                publicKey: _string(row, 'public_key'),
+                createdAt: Value(_date(row, 'created_at')),
+              ),
+            );
       }
 
       for (final row in devices) {
-        await _database.into(_database.devices).insertOnConflictUpdate(
-          DevicesCompanion.insert(
-            id: _string(row, 'id'),
-            userId: _string(row, 'user_id'),
-            name: Value(_nullableString(row, 'name')),
-            createdAt: Value(_date(row, 'created_at')),
-            revokedAt: Value(_nullableDate(row, 'revoked_at')),
-          ),
-        );
+        await _database
+            .into(_database.devices)
+            .insertOnConflictUpdate(
+              DevicesCompanion.insert(
+                id: _string(row, 'id'),
+                userId: _string(row, 'user_id'),
+                name: Value(_nullableString(row, 'name')),
+                createdAt: Value(_date(row, 'created_at')),
+                revokedAt: Value(_nullableDate(row, 'revoked_at')),
+              ),
+            );
       }
 
-      await _database.into(_database.budgets).insertOnConflictUpdate(
-        BudgetsCompanion.insert(
-          id: _string(budget, 'id'),
-          name: _string(budget, 'name'),
-          baseCurrency: _string(budget, 'base_currency'),
-          createdBy: _string(budget, 'created_by'),
-          createdAt: Value(_date(budget, 'created_at')),
-        ),
-      );
+      await _database
+          .into(_database.budgets)
+          .insertOnConflictUpdate(
+            BudgetsCompanion.insert(
+              id: _string(budget, 'id'),
+              name: _string(budget, 'name'),
+              baseCurrency: _string(budget, 'base_currency'),
+              createdBy: _string(budget, 'created_by'),
+              createdAt: Value(_date(budget, 'created_at')),
+            ),
+          );
 
       for (final row in members) {
-        await _database.into(_database.budgetMembers).insertOnConflictUpdate(
-          BudgetMembersCompanion.insert(
-            budgetId: expectedBudgetId,
-            userId: _string(row, 'user_id'),
-            role: _string(row, 'role'),
-            joinedAt: Value(_date(row, 'joined_at')),
-            revokedAt: Value(_nullableDate(row, 'revoked_at')),
-          ),
-        );
+        await _database
+            .into(_database.budgetMembers)
+            .insertOnConflictUpdate(
+              BudgetMembersCompanion.insert(
+                budgetId: expectedBudgetId,
+                userId: _string(row, 'user_id'),
+                role: _string(row, 'role'),
+                joinedAt: Value(_date(row, 'joined_at')),
+                revokedAt: Value(_nullableDate(row, 'revoked_at')),
+              ),
+            );
       }
 
       for (final row in categories) {
-        await _database.into(_database.categories).insertOnConflictUpdate(
-          CategoriesCompanion.insert(
-            id: _string(row, 'id'),
-            budgetId: expectedBudgetId,
-            name: _string(row, 'name'),
-            kind: _string(row, 'kind'),
-            isArchived: Value(_bool(row, 'is_archived')),
-          ),
-        );
+        await _database
+            .into(_database.categories)
+            .insertOnConflictUpdate(
+              CategoriesCompanion.insert(
+                id: _string(row, 'id'),
+                budgetId: expectedBudgetId,
+                name: _string(row, 'name'),
+                kind: _string(row, 'kind'),
+                isArchived: Value(_bool(row, 'is_archived')),
+              ),
+            );
       }
 
       for (final row in accounts) {
-        await _database.into(_database.accounts).insertOnConflictUpdate(
-          AccountsCompanion.insert(
-            id: _string(row, 'id'),
-            budgetId: expectedBudgetId,
-            name: _string(row, 'name'),
-            openingBalanceMinor: Value(
-              BigInt.parse(_string(row, 'opening_balance_minor')),
-            ),
-            currency: _string(row, 'currency'),
-            isArchived: Value(_bool(row, 'is_archived')),
-          ),
-        );
+        await _database
+            .into(_database.accounts)
+            .insertOnConflictUpdate(
+              AccountsCompanion.insert(
+                id: _string(row, 'id'),
+                budgetId: expectedBudgetId,
+                name: _string(row, 'name'),
+                openingBalanceMinor: Value(
+                  BigInt.parse(_string(row, 'opening_balance_minor')),
+                ),
+                currency: _string(row, 'currency'),
+                isArchived: Value(_bool(row, 'is_archived')),
+              ),
+            );
       }
 
       for (final row in receipts) {
-        await _database.into(_database.receipts).insertOnConflictUpdate(
-          ReceiptsCompanion.insert(
-            id: _string(row, 'id'),
-            budgetId: expectedBudgetId,
-            rawQr: Value(_nullableString(row, 'raw_qr')),
-            imagePath: Value(_nullableString(row, 'image_path')),
-            merchant: Value(_nullableString(row, 'merchant')),
-            receiptTime: Value(_nullableDate(row, 'receipt_time')),
-            totalMinor: Value(_nullableBigInt(row, 'total_minor')),
-            parsedPayload: Value(_nullableString(row, 'parsed_payload')),
-            parseStatus: Value(_string(row, 'parse_status')),
-          ),
-        );
+        await _database
+            .into(_database.receipts)
+            .insertOnConflictUpdate(
+              ReceiptsCompanion.insert(
+                id: _string(row, 'id'),
+                budgetId: expectedBudgetId,
+                rawQr: Value(_nullableString(row, 'raw_qr')),
+                imagePath: Value(_nullableString(row, 'image_path')),
+                merchant: Value(_nullableString(row, 'merchant')),
+                receiptTime: Value(_nullableDate(row, 'receipt_time')),
+                totalMinor: Value(_nullableBigInt(row, 'total_minor')),
+                parsedPayload: Value(_nullableString(row, 'parsed_payload')),
+                parseStatus: Value(_string(row, 'parse_status')),
+              ),
+            );
       }
 
       for (final row in transactions) {
@@ -311,37 +322,41 @@ final class DriftBudgetSnapshotRepository implements BudgetSnapshotRepository {
       }
 
       for (final row in plans) {
-        await _database.into(_database.plans).insertOnConflictUpdate(
-          PlansCompanion.insert(
-            id: _string(row, 'id'),
-            budgetId: expectedBudgetId,
-            month: _date(row, 'month'),
-            categoryId: _string(row, 'category_id'),
-            plannedAmountMinor: BigInt.parse(
-              _string(row, 'planned_amount_minor'),
-            ),
-            updatedAt: Value(_date(row, 'updated_at')),
-          ),
-        );
+        await _database
+            .into(_database.plans)
+            .insertOnConflictUpdate(
+              PlansCompanion.insert(
+                id: _string(row, 'id'),
+                budgetId: expectedBudgetId,
+                month: _date(row, 'month'),
+                categoryId: _string(row, 'category_id'),
+                plannedAmountMinor: BigInt.parse(
+                  _string(row, 'planned_amount_minor'),
+                ),
+                updatedAt: Value(_date(row, 'updated_at')),
+              ),
+            );
       }
 
       for (final row in checkpoint) {
-        await _database.into(_database.syncOperations).insert(
-          SyncOperationsCompanion.insert(
-            opId: _string(row, 'op_id'),
-            budgetId: expectedBudgetId,
-            entityType: _string(row, 'entity_type'),
-            entityId: _string(row, 'entity_id'),
-            opType: _string(row, 'op_type'),
-            patch: _string(row, 'patch'),
-            authorId: _string(row, 'author_id'),
-            deviceId: _string(row, 'device_id'),
-            logicalClock: BigInt.parse(_string(row, 'logical_clock')),
-            signature: base64Url.decode(_string(row, 'signature')),
-            createdAt: Value(_date(row, 'created_at')),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
+        await _database
+            .into(_database.syncOperations)
+            .insert(
+              SyncOperationsCompanion.insert(
+                opId: _string(row, 'op_id'),
+                budgetId: expectedBudgetId,
+                entityType: _string(row, 'entity_type'),
+                entityId: _string(row, 'entity_id'),
+                opType: _string(row, 'op_type'),
+                patch: _string(row, 'patch'),
+                authorId: _string(row, 'author_id'),
+                deviceId: _string(row, 'device_id'),
+                logicalClock: BigInt.parse(_string(row, 'logical_clock')),
+                signature: base64Url.decode(_string(row, 'signature')),
+                createdAt: Value(_date(row, 'created_at')),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
       }
     });
   }
@@ -423,9 +438,9 @@ SignedSyncOperation _snapshotOperation(Map<String, dynamic> row) {
       'PATCH' => SyncMutationType.patch,
       'DELETE' => SyncMutationType.delete,
       final value => throw BudgetSnapshotError(
-          BudgetSnapshotErrorCode.invalidFormat,
-          'Unsupported snapshot operation type: $value.',
-        ),
+        BudgetSnapshotErrorCode.invalidFormat,
+        'Unsupported snapshot operation type: $value.',
+      ),
     },
     patchJson: _string(row, 'patch'),
     authorId: _string(row, 'author_id'),
@@ -556,15 +571,17 @@ List<Map<String, dynamic>> _maps(Map<String, dynamic> value, String key) {
       'Snapshot field $key must be an array.',
     );
   }
-  return result.map((item) {
-    if (item is! Map<String, dynamic>) {
-      throw BudgetSnapshotError(
-        BudgetSnapshotErrorCode.invalidFormat,
-        'Snapshot array $key contains a non-object value.',
-      );
-    }
-    return item;
-  }).toList(growable: false);
+  return result
+      .map((item) {
+        if (item is! Map<String, dynamic>) {
+          throw BudgetSnapshotError(
+            BudgetSnapshotErrorCode.invalidFormat,
+            'Snapshot array $key contains a non-object value.',
+          );
+        }
+        return item;
+      })
+      .toList(growable: false);
 }
 
 void _requireBudget(Map<String, dynamic> row, String expectedBudgetId) {

@@ -28,40 +28,48 @@ void main() {
     database = AppDatabase(NativeDatabase.memory());
     syncDao = SyncDao(database);
 
-    await database.into(database.users).insert(
-      UsersCompanion.insert(
-        id: 'user-1',
-        name: 'Alice',
-        publicKey: 'ed25519:test',
-      ),
-    );
-    await database.into(database.devices).insert(
-      DevicesCompanion.insert(id: 'device-1', userId: 'user-1'),
-    );
-    await database.into(database.budgets).insert(
-      BudgetsCompanion.insert(
-        id: 'budget-1',
-        name: 'Household',
-        baseCurrency: 'EUR',
-        createdBy: 'user-1',
-      ),
-    );
-    await database.into(database.accounts).insert(
-      AccountsCompanion.insert(
-        id: 'account-1',
-        budgetId: 'budget-1',
-        name: 'Card',
-        currency: 'EUR',
-      ),
-    );
-    await database.into(database.categories).insert(
-      CategoriesCompanion.insert(
-        id: 'category-1',
-        budgetId: 'budget-1',
-        name: 'Food',
-        kind: 'EXPENSE',
-      ),
-    );
+    await database
+        .into(database.users)
+        .insert(
+          UsersCompanion.insert(
+            id: 'user-1',
+            name: 'Alice',
+            publicKey: 'ed25519:test',
+          ),
+        );
+    await database
+        .into(database.devices)
+        .insert(DevicesCompanion.insert(id: 'device-1', userId: 'user-1'));
+    await database
+        .into(database.budgets)
+        .insert(
+          BudgetsCompanion.insert(
+            id: 'budget-1',
+            name: 'Household',
+            baseCurrency: 'EUR',
+            createdBy: 'user-1',
+          ),
+        );
+    await database
+        .into(database.accounts)
+        .insert(
+          AccountsCompanion.insert(
+            id: 'account-1',
+            budgetId: 'budget-1',
+            name: 'Card',
+            currency: 'EUR',
+          ),
+        );
+    await database
+        .into(database.categories)
+        .insert(
+          CategoriesCompanion.insert(
+            id: 'category-1',
+            budgetId: 'budget-1',
+            name: 'Food',
+            kind: 'EXPENSE',
+          ),
+        );
 
     final executor = DriftSyncMutationExecutor(
       database: database,
@@ -110,42 +118,45 @@ void main() {
     );
   });
 
-  test('transaction create persists domain row and sync operation together', () async {
-    final now = DateTime.utc(2026, 9, 30, 10);
-    final transaction = BudgetTransactionEntry(
-      id: 'tx-1',
-      budgetId: 'budget-1',
-      occurredAt: now,
-      amount: Money.positive(
-        minorUnits: BigInt.from(1250),
-        currency: Currency('EUR'),
-      ),
-      type: TransactionType.expense,
-      authorId: 'user-1',
-      accountId: 'account-1',
-      destinationAccountId: null,
-      categoryId: 'category-1',
-      description: 'Lunch',
-      createdAt: now,
-      updatedAt: now,
-    );
+  test(
+    'transaction create persists domain row and sync operation together',
+    () async {
+      final now = DateTime.utc(2026, 9, 30, 10);
+      final transaction = BudgetTransactionEntry(
+        id: 'tx-1',
+        budgetId: 'budget-1',
+        occurredAt: now,
+        amount: Money.positive(
+          minorUnits: BigInt.from(1250),
+          currency: Currency('EUR'),
+        ),
+        type: TransactionType.expense,
+        authorId: 'user-1',
+        accountId: 'account-1',
+        destinationAccountId: null,
+        categoryId: 'category-1',
+        description: 'Lunch',
+        createdAt: now,
+        updatedAt: now,
+      );
 
-    await repository.createTransaction(transaction);
+      await repository.createTransaction(transaction);
 
-    final stored = await (database.select(database.budgetTransactions)
-          ..where((row) => row.id.equals('tx-1')))
-        .getSingle();
-    final operation = await syncDao.findById('op-1');
+      final stored = await (database.select(
+        database.budgetTransactions,
+      )..where((row) => row.id.equals('tx-1'))).getSingle();
+      final operation = await syncDao.findById('op-1');
 
-    expect(stored.amountMinor, BigInt.from(1250));
-    expect(operation, isNotNull);
-    expect(operation!.entityType, 'transaction');
-    expect(operation.entityId, 'tx-1');
-    expect(operation.opType, 'CREATE');
-    expect(operation.authorId, 'user-1');
-    expect(operation.deviceId, 'device-1');
-    expect(operation.patch, contains('"amount_minor":"1250"'));
-  });
+      expect(stored.amountMinor, BigInt.from(1250));
+      expect(operation, isNotNull);
+      expect(operation!.entityType, 'transaction');
+      expect(operation.entityId, 'tx-1');
+      expect(operation.opType, 'CREATE');
+      expect(operation.authorId, 'user-1');
+      expect(operation.deviceId, 'device-1');
+      expect(operation.patch, contains('"amount_minor":"1250"'));
+    },
+  );
 }
 
 final class _Context implements SyncMutationContextProvider {

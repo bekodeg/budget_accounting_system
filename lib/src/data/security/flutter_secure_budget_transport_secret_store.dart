@@ -15,10 +15,7 @@ final class FlutterSecureBudgetTransportSecretStore
   Future<String?> load(String budgetId) => _storage.read(key: _key(budgetId));
 
   @override
-  Future<void> save({
-    required String budgetId,
-    required String secret,
-  }) {
+  Future<void> save({required String budgetId, required String secret}) {
     return _storage.write(key: _key(budgetId), value: secret);
   }
 

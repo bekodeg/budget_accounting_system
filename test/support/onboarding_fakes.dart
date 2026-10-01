@@ -316,10 +316,7 @@ final class FakeBudgetTransportSecretStore
   Future<String?> load(String budgetId) async => secretsByBudget[budgetId];
 
   @override
-  Future<void> save({
-    required String budgetId,
-    required String secret,
-  }) async {
+  Future<void> save({required String budgetId, required String secret}) async {
     secretsByBudget[budgetId] = secret;
   }
 
@@ -793,7 +790,9 @@ final class FakeCategoryRepository implements CategoryRepository {
   }) async {
     final categories = categoriesByBudget[budgetId];
     if (categories == null) return;
-    final index = categories.indexWhere((category) => category.id == categoryId);
+    final index = categories.indexWhere(
+      (category) => category.id == categoryId,
+    );
     if (index >= 0) {
       categories[index] = categories[index].copyWith(name: name);
       _emit(budgetId);
@@ -808,11 +807,11 @@ final class FakeCategoryRepository implements CategoryRepository {
   }) async {
     final categories = categoriesByBudget[budgetId];
     if (categories == null) return;
-    final index = categories.indexWhere((category) => category.id == categoryId);
+    final index = categories.indexWhere(
+      (category) => category.id == categoryId,
+    );
     if (index >= 0) {
-      categories[index] = categories[index].copyWith(
-        isArchived: isArchived,
-      );
+      categories[index] = categories[index].copyWith(isArchived: isArchived);
       _emit(budgetId);
     }
   }

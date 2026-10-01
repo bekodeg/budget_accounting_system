@@ -31,60 +31,60 @@ void main() {
     await target.database.close();
   });
 
-  test('snapshot plus concurrent tail converges without replaying full history', () async {
-    await source.seedCategoryCreate(
-      operationId: 'op-1',
-      clock: 1,
-      name: 'Food',
-    );
+  test(
+    'snapshot plus concurrent tail converges without replaying full history',
+    () async {
+      await source.seedCategoryCreate(
+        operationId: 'op-1',
+        clock: 1,
+        name: 'Food',
+      );
 
-    final snapshot = await source.snapshots.create('budget-1');
+      final snapshot = await source.snapshots.create('budget-1');
 
-    await source.renameCategory(
-      operationId: 'op-2',
-      clock: 2,
-      name: 'Groceries',
-    );
+      await source.renameCategory(
+        operationId: 'op-2',
+        clock: 2,
+        name: 'Groceries',
+      );
 
-    await target.snapshots.apply(
-      expectedBudgetId: 'budget-1',
-      snapshot: snapshot,
-    );
+      await target.snapshots.apply(
+        expectedBudgetId: 'budget-1',
+        snapshot: snapshot,
+      );
 
-    final imported =
-        await (target.database.select(target.database.categories)
-              ..where((row) => row.id.equals('category-1')))
-            .getSingle();
-    expect(imported.name, 'Food');
+      final imported = await (target.database.select(
+        target.database.categories,
+      )..where((row) => row.id.equals('category-1'))).getSingle();
+      expect(imported.name, 'Food');
 
-    final targetVector = await target.journal.stateVector('budget-1');
-    expect(targetVector.clockFor('device-a'), BigInt.one);
+      final targetVector = await target.journal.stateVector('budget-1');
+      expect(targetVector.clockFor('device-a'), BigInt.one);
 
-    final tail = await source.journal.missingOperations(
-      budgetId: 'budget-1',
-      remoteState: targetVector,
-      limit: 100,
-    );
-    expect(
-      tail.operations.map((wire) => wire.operation.operationId),
-      ['op-2'],
-    );
+      final tail = await source.journal.missingOperations(
+        budgetId: 'budget-1',
+        remoteState: targetVector,
+        limit: 100,
+      );
+      expect(tail.operations.map((wire) => wire.operation.operationId), [
+        'op-2',
+      ]);
 
-    await target.journal.ingest(
-      budgetId: 'budget-1',
-      operations: tail.operations,
-    );
+      await target.journal.ingest(
+        budgetId: 'budget-1',
+        operations: tail.operations,
+      );
 
-    final converged =
-        await (target.database.select(target.database.categories)
-              ..where((row) => row.id.equals('category-1')))
-            .getSingle();
-    expect(converged.name, 'Groceries');
-    expect(
-      await target.journal.stateVector('budget-1'),
-      await source.journal.stateVector('budget-1'),
-    );
-  });
+      final converged = await (target.database.select(
+        target.database.categories,
+      )..where((row) => row.id.equals('category-1'))).getSingle();
+      expect(converged.name, 'Groceries');
+      expect(
+        await target.journal.stateVector('budget-1'),
+        await source.journal.stateVector('budget-1'),
+      );
+    },
+  );
 
   test('corrupted snapshot does not replace local data', () async {
     await source.seedCategoryCreate(
@@ -99,10 +99,7 @@ void main() {
     );
 
     await expectLater(
-      target.snapshots.apply(
-        expectedBudgetId: 'budget-1',
-        snapshot: corrupted,
-      ),
+      target.snapshots.apply(expectedBudgetId: 'budget-1', snapshot: corrupted),
       throwsA(
         isA<BudgetSnapshotError>().having(
           (error) => error.code,
@@ -113,15 +110,15 @@ void main() {
     );
 
     expect(
-      await (target.database.select(target.database.budgets)
-            ..where((row) => row.id.equals('budget-1')))
-          .getSingleOrNull(),
+      await (target.database.select(
+        target.database.budgets,
+      )..where((row) => row.id.equals('budget-1'))).getSingleOrNull(),
       isNull,
     );
     expect(
-      await (target.database.select(target.database.categories)
-            ..where((row) => row.id.equals('category-1')))
-          .getSingleOrNull(),
+      await (target.database.select(
+        target.database.categories,
+      )..where((row) => row.id.equals('category-1'))).getSingleOrNull(),
       isNull,
     );
   });
@@ -173,9 +170,9 @@ final class _Fixture {
           publicKey: 'ed25519:user-a',
         ),
       );
-      await database.into(database.devices).insert(
-        DevicesCompanion.insert(id: 'device-a', userId: 'user-a'),
-      );
+      await database
+          .into(database.devices)
+          .insert(DevicesCompanion.insert(id: 'device-a', userId: 'user-a'));
       await userBudgetDao.upsertBudget(
         BudgetsCompanion.insert(
           id: 'budget-1',
@@ -207,14 +204,16 @@ final class _Fixture {
     required int clock,
     required String name,
   }) async {
-    await database.into(database.categories).insert(
-      CategoriesCompanion.insert(
-        id: 'category-1',
-        budgetId: 'budget-1',
-        name: name,
-        kind: 'EXPENSE',
-      ),
-    );
+    await database
+        .into(database.categories)
+        .insert(
+          CategoriesCompanion.insert(
+            id: 'category-1',
+            budgetId: 'budget-1',
+            name: name,
+            kind: 'EXPENSE',
+          ),
+        );
     await _append(
       SignedSyncOperation(
         operationId: operationId,
@@ -222,8 +221,7 @@ final class _Fixture {
         entityType: 'category',
         entityId: 'category-1',
         type: SyncMutationType.create,
-        patchJson:
-            '{"is_archived":false,"kind":"EXPENSE","name":"$name"}',
+        patchJson: '{"is_archived":false,"kind":"EXPENSE","name":"$name"}',
         authorId: 'user-a',
         deviceId: 'device-a',
         logicalClock: BigInt.from(clock),

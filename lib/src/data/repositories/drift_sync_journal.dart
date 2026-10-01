@@ -192,10 +192,7 @@ final class DriftSyncJournal implements SyncJournal {
         );
       }
 
-      return SyncIngestResult(
-        inserted: inserted,
-        duplicates: duplicates,
-      );
+      return SyncIngestResult(inserted: inserted, duplicates: duplicates);
     });
   }
 

@@ -99,19 +99,16 @@ final class LanPeerSessionManager {
     late final StreamSubscription<LanByteChannel> subscription;
     var closed = false;
 
-    subscription = listener.connections.listen(
-      (rawChannel) {
-        unawaited(
-          _acceptIncoming(
-            rawChannel: rawChannel,
-            budgetId: budgetId,
-            identityUserId: identity.userId,
-            controller: controller,
-          ),
-        );
-      },
-      onError: controller.addError,
-    );
+    subscription = listener.connections.listen((rawChannel) {
+      unawaited(
+        _acceptIncoming(
+          rawChannel: rawChannel,
+          budgetId: budgetId,
+          identityUserId: identity.userId,
+          controller: controller,
+        ),
+      );
+    }, onError: controller.addError);
 
     final hostAddress = await _localAddressResolver.resolveIpv4();
     final manualEndpointCode = hostAddress == null

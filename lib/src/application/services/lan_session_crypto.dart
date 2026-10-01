@@ -6,16 +6,9 @@ import 'package:cryptography/cryptography.dart';
 import '../../domain/models/lan_session.dart';
 
 final class LanSessionCrypto {
-  LanSessionCrypto({
-    Hkdf? hkdf,
-    Chacha20? cipher,
-  }) : _hkdf =
-           hkdf ??
-           Hkdf(
-             hmac: Hmac.sha256(),
-             outputLength: 32,
-           ),
-       _cipher = cipher ?? Chacha20.poly1305Aead();
+  LanSessionCrypto({Hkdf? hkdf, Chacha20? cipher})
+    : _hkdf = hkdf ?? Hkdf(hmac: Hmac.sha256(), outputLength: 32),
+      _cipher = cipher ?? Chacha20.poly1305Aead();
 
   final Hkdf _hkdf;
   final Chacha20 _cipher;
@@ -66,11 +59,7 @@ final class LanSessionCrypto {
     required String budgetId,
   }) {
     return _cipher.decrypt(
-      SecretBox(
-        frame.cipherText,
-        nonce: frame.nonce,
-        mac: Mac(frame.mac),
-      ),
+      SecretBox(frame.cipherText, nonce: frame.nonce, mac: Mac(frame.mac)),
       secretKey: sessionKey,
       aad: utf8.encode('budget-lan-v1|$budgetId'),
     );

@@ -54,7 +54,9 @@ void main() {
       ),
     ];
 
-    final decoded = messages.map((message) => codec.decode(codec.encode(message))).toList();
+    final decoded = messages
+        .map((message) => codec.decode(codec.encode(message)))
+        .toList();
 
     final hello = decoded[0] as SyncHelloMessage;
     expect(hello.deviceId, 'device-a');
@@ -81,7 +83,8 @@ void main() {
     expect(
       () => codec.decode(
         '{"v":2,"type":"hello","budget_id":"budget-1",'
-        '"device_id":"device-a","state_vector":{}}'.codeUnits,
+                '"device_id":"device-a","state_vector":{}}'
+            .codeUnits,
       ),
       throwsA(
         isA<SyncProtocolError>().having(
@@ -97,7 +100,8 @@ void main() {
     expect(
       () => codec.decode(
         '{"v":1,"type":"hello","budget_id":"budget-1",'
-        '"device_id":"device-a","state_vector":{"device-a":"-1"}}'.codeUnits,
+                '"device_id":"device-a","state_vector":{"device-a":"-1"}}'
+            .codeUnits,
       ),
       throwsA(
         isA<SyncProtocolError>().having(

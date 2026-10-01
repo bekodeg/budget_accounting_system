@@ -33,10 +33,7 @@ final class SyncStateVector {
 }
 
 final class SyncWireOperation {
-  const SyncWireOperation({
-    required this.operation,
-    required this.signature,
-  });
+  const SyncWireOperation({required this.operation, required this.signature});
 
   final SignedSyncOperation operation;
   final String signature;
@@ -65,30 +62,21 @@ final class SyncWireOperation {
 }
 
 final class SyncOperationPage {
-  const SyncOperationPage({
-    required this.operations,
-    required this.hasMore,
-  });
+  const SyncOperationPage({required this.operations, required this.hasMore});
 
   final List<SyncWireOperation> operations;
   final bool hasMore;
 }
 
 final class SyncIngestResult {
-  const SyncIngestResult({
-    required this.inserted,
-    required this.duplicates,
-  });
+  const SyncIngestResult({required this.inserted, required this.duplicates});
 
   final int inserted;
   final int duplicates;
 }
 
 sealed class SyncProtocolMessage {
-  const SyncProtocolMessage({
-    required this.version,
-    required this.budgetId,
-  });
+  const SyncProtocolMessage({required this.version, required this.budgetId});
 
   final int version;
   final String budgetId;
@@ -166,10 +154,7 @@ final class SyncSessionMetrics {
   Duration get duration => completedAt.difference(startedAt);
 }
 
-bool _sameOperation(
-  SignedSyncOperation left,
-  SignedSyncOperation right,
-) {
+bool _sameOperation(SignedSyncOperation left, SignedSyncOperation right) {
   return left.operationId == right.operationId &&
       left.budgetId == right.budgetId &&
       left.entityType == right.entityType &&

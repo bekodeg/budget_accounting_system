@@ -145,10 +145,7 @@ final class SyncSessionService {
     }
   }
 
-  Future<void> _send(
-    SecureLanChannel channel,
-    SyncProtocolMessage message,
-  ) {
+  Future<void> _send(SecureLanChannel channel, SyncProtocolMessage message) {
     return channel.send(_codec.encode(message));
   }
 

@@ -7,10 +7,7 @@ import '../../domain/models/budget_snapshot.dart';
 import '../errors/budget_snapshot_error.dart';
 
 final class DecodedBudgetSnapshot {
-  const DecodedBudgetSnapshot({
-    required this.metadata,
-    required this.body,
-  });
+  const DecodedBudgetSnapshot({required this.metadata, required this.body});
 
   final BudgetSnapshotMetadata metadata;
   final Map<String, dynamic> body;

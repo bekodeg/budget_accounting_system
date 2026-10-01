@@ -17,30 +17,30 @@ final class SyncProtocolCodec {
 
     final value = switch (message) {
       SyncHelloMessage hello => {
-          ...base,
-          'type': 'hello',
-          'device_id': hello.deviceId,
-          'state_vector': _encodeVector(hello.stateVector),
-        },
+        ...base,
+        'type': 'hello',
+        'device_id': hello.deviceId,
+        'state_vector': _encodeVector(hello.stateVector),
+      },
       SyncOperationsBatchMessage batch => {
-          ...base,
-          'type': 'batch',
-          'batch_id': batch.batchId,
-          'has_more': batch.hasMore,
-          'operations': batch.operations.map(_encodeOperation).toList(),
-        },
+        ...base,
+        'type': 'batch',
+        'batch_id': batch.batchId,
+        'has_more': batch.hasMore,
+        'operations': batch.operations.map(_encodeOperation).toList(),
+      },
       SyncAckMessage ack => {
-          ...base,
-          'type': 'ack',
-          'batch_id': ack.batchId,
-          'state_vector': _encodeVector(ack.stateVector),
-        },
+        ...base,
+        'type': 'ack',
+        'batch_id': ack.batchId,
+        'state_vector': _encodeVector(ack.stateVector),
+      },
       SyncErrorMessage error => {
-          ...base,
-          'type': 'error',
-          'code': error.code,
-          'message': error.message,
-        },
+        ...base,
+        'type': 'error',
+        'code': error.code,
+        'message': error.message,
+      },
     };
 
     return utf8.encode(jsonEncode(value));
@@ -83,34 +83,34 @@ final class SyncProtocolCodec {
 
     return switch (type) {
       'hello' => SyncHelloMessage(
-          version: version,
-          budgetId: budgetId,
-          deviceId: _string(decoded, 'device_id'),
-          stateVector: _decodeVector(decoded['state_vector']),
-        ),
+        version: version,
+        budgetId: budgetId,
+        deviceId: _string(decoded, 'device_id'),
+        stateVector: _decodeVector(decoded['state_vector']),
+      ),
       'batch' => SyncOperationsBatchMessage(
-          version: version,
-          budgetId: budgetId,
-          batchId: _string(decoded, 'batch_id'),
-          operations: _decodeOperations(decoded['operations']),
-          hasMore: _bool(decoded, 'has_more'),
-        ),
+        version: version,
+        budgetId: budgetId,
+        batchId: _string(decoded, 'batch_id'),
+        operations: _decodeOperations(decoded['operations']),
+        hasMore: _bool(decoded, 'has_more'),
+      ),
       'ack' => SyncAckMessage(
-          version: version,
-          budgetId: budgetId,
-          batchId: _string(decoded, 'batch_id'),
-          stateVector: _decodeVector(decoded['state_vector']),
-        ),
+        version: version,
+        budgetId: budgetId,
+        batchId: _string(decoded, 'batch_id'),
+        stateVector: _decodeVector(decoded['state_vector']),
+      ),
       'error' => SyncErrorMessage(
-          version: version,
-          budgetId: budgetId,
-          code: _string(decoded, 'code'),
-          message: _string(decoded, 'message'),
-        ),
+        version: version,
+        budgetId: budgetId,
+        code: _string(decoded, 'code'),
+        message: _string(decoded, 'message'),
+      ),
       _ => throw SyncProtocolError(
-          SyncProtocolErrorCode.invalidMessage,
-          'Unknown sync frame type: $type.',
-        ),
+        SyncProtocolErrorCode.invalidMessage,
+        'Unknown sync frame type: $type.',
+      ),
     };
   }
 
@@ -247,9 +247,9 @@ SyncMutationType _type(String value) {
     'PATCH' => SyncMutationType.patch,
     'DELETE' => SyncMutationType.delete,
     _ => throw SyncProtocolError(
-        SyncProtocolErrorCode.invalidMessage,
-        'Unsupported operation type: $value.',
-      ),
+      SyncProtocolErrorCode.invalidMessage,
+      'Unsupported operation type: $value.',
+    ),
   };
 }
 

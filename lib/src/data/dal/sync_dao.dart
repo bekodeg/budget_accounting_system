@@ -43,9 +43,7 @@ final class SyncDao {
         .get();
   }
 
-  Future<List<SyncOperation>> getAllOperationsForBudget(
-    String budgetId,
-  ) {
+  Future<List<SyncOperation>> getAllOperationsForBudget(String budgetId) {
     return (_db.select(_db.syncOperations)
           ..where((row) => row.budgetId.equals(budgetId))
           ..orderBy([
@@ -61,16 +59,17 @@ final class SyncDao {
     final result = <SyncOperation>[];
 
     for (final entry in vector.entries) {
-      final row = await (_db.select(_db.syncOperations)
-            ..where(
-              (item) =>
-                  item.budgetId.equals(budgetId) &
-                  item.deviceId.equals(entry.key) &
-                  item.logicalClock.equals(entry.value),
-            )
-            ..orderBy([(item) => OrderingTerm.asc(item.opId)])
-            ..limit(1))
-          .getSingleOrNull();
+      final row =
+          await (_db.select(_db.syncOperations)
+                ..where(
+                  (item) =>
+                      item.budgetId.equals(budgetId) &
+                      item.deviceId.equals(entry.key) &
+                      item.logicalClock.equals(entry.value),
+                )
+                ..orderBy([(item) => OrderingTerm.asc(item.opId)])
+                ..limit(1))
+              .getSingleOrNull();
       if (row != null) result.add(row);
     }
 
@@ -92,7 +91,6 @@ final class SyncDao {
           ..limit(limit))
         .get();
   }
-
 
   Future<Map<String, BigInt>> getStateVector(String budgetId) async {
     final maxClock = _db.syncOperations.logicalClock.max();

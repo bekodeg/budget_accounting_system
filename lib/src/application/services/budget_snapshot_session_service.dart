@@ -47,10 +47,7 @@ final class BudgetSnapshotSessionService {
 
     final hook = _compactionHook;
     if (hook != null) {
-      await hook.onSnapshotConfirmed(
-        budgetId: budgetId,
-        snapshot: snapshot,
-      );
+      await hook.onSnapshotConfirmed(budgetId: budgetId, snapshot: snapshot);
     }
   }
 
@@ -74,10 +71,7 @@ final class BudgetSnapshotSessionService {
       bodyJson: decoded['body'] as String,
       digestBase64: decoded['digest'] as String,
     );
-    await _repository.apply(
-      expectedBudgetId: budgetId,
-      snapshot: snapshot,
-    );
+    await _repository.apply(expectedBudgetId: budgetId, snapshot: snapshot);
     await channel.send(
       utf8.encode(
         jsonEncode({
