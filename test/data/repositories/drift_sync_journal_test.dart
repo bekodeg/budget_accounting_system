@@ -122,7 +122,10 @@ void main() {
       );
 
       await expectLater(
-        target.journal.ingest(budgetId: 'budget-1', operations: [conflicting]),
+        () => target.journal.ingest(
+          budgetId: 'budget-1',
+          operations: [conflicting],
+        ),
         throwsA(
           isA<SyncProtocolError>().having(
             (error) => error.code,
