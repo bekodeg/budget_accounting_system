@@ -7,6 +7,8 @@ import 'package:sqlite3/sqlite3.dart';
 import '../application/ports/database_key_store.dart';
 import '../application/ports/secure_token_generator.dart';
 
+typedef DatabasePathResolver = Future<String> Function();
+
 final class DatabaseEncryptionConfig {
   const DatabaseEncryptionConfig({
     required this.databasePath,
@@ -28,19 +30,21 @@ final class DatabaseKeyMissingException implements Exception {
 }
 
 final class DatabaseEncryptionBootstrap {
-  const DatabaseEncryptionBootstrap({
+  DatabaseEncryptionBootstrap({
     required DatabaseKeyStore keyStore,
     required SecureTokenGenerator tokenGenerator,
+    DatabasePathResolver? databasePathResolver,
   }) : _keyStore = keyStore,
-       _tokenGenerator = tokenGenerator;
+       _tokenGenerator = tokenGenerator,
+       _databasePathResolver =
+           databasePathResolver ?? _defaultDatabasePathResolver;
 
   final DatabaseKeyStore _keyStore;
   final SecureTokenGenerator _tokenGenerator;
+  final DatabasePathResolver _databasePathResolver;
 
   Future<DatabaseEncryptionConfig> prepare() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final path =
-        '${directory.path}${Platform.pathSeparator}budget_accounting.sqlite';
+    final path = await _databasePathResolver();
     final file = File(path);
     final exists = await file.exists();
     final isPlaintext = exists && await _hasPlainSqliteHeader(file);
@@ -74,6 +78,11 @@ final class DatabaseEncryptionBootstrap {
       key: key,
       migratedPlaintextDatabase: isPlaintext,
     );
+  }
+
+  static Future<String> _defaultDatabasePathResolver() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}${Platform.pathSeparator}budget_accounting.sqlite';
   }
 
   Future<bool> _hasPlainSqliteHeader(File file) async {
