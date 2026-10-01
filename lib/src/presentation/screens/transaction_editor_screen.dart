@@ -9,6 +9,7 @@ import '../../domain/models/budget_account.dart';
 import '../../domain/models/budget_category.dart';
 import '../../domain/models/budget_transaction_entry.dart';
 import '../../domain/models/domain_types.dart';
+import '../../domain/models/receipt_qr_draft.dart';
 
 final class TransactionEditorScreen extends StatefulWidget {
   const TransactionEditorScreen({
@@ -16,6 +17,7 @@ final class TransactionEditorScreen extends StatefulWidget {
     required this.budgetId,
     required this.authorId,
     this.transaction,
+    this.receiptDraft,
     super.key,
   });
 
@@ -23,6 +25,7 @@ final class TransactionEditorScreen extends StatefulWidget {
   final String budgetId;
   final String authorId;
   final BudgetTransactionEntry? transaction;
+  final ReceiptQrDraft? receiptDraft;
 
   @override
   State<TransactionEditorScreen> createState() =>
@@ -47,18 +50,22 @@ final class _TransactionEditorScreenState
   void initState() {
     super.initState();
     final transaction = widget.transaction;
+    final receiptDraft = widget.receiptDraft;
     _type = transaction?.type ?? TransactionType.expense;
-    _occurredAt = transaction?.occurredAt ?? DateTime.now();
+    _occurredAt =
+        transaction?.occurredAt ?? receiptDraft?.occurredAt ?? DateTime.now();
     _accountId = transaction?.accountId;
     _destinationAccountId = transaction?.destinationAccountId;
     _categoryId = transaction?.categoryId;
     _amountController = TextEditingController(
-      text: transaction == null
+      text: transaction != null
+          ? formatMinorUnits(transaction.amount.minorUnits)
+          : receiptDraft?.totalMinor == null
           ? ''
-          : formatMinorUnits(transaction.amount.minorUnits),
+          : formatMinorUnits(receiptDraft!.totalMinor!),
     );
     _descriptionController = TextEditingController(
-      text: transaction?.description ?? '',
+      text: transaction?.description ?? receiptDraft?.description ?? '',
     );
   }
 
@@ -319,6 +326,21 @@ final class _TransactionEditorScreenState
                 key: const ValueKey('transaction-editor'),
                 padding: const EdgeInsets.all(16),
                 children: [
+                  if (!_editing && widget.receiptDraft != null) ...[
+                    Card(
+                      key: const ValueKey('receipt-draft-banner'),
+                      child: ListTile(
+                        leading: const Icon(Icons.receipt_long_outlined),
+                        title: const Text('Черновик из QR чека'),
+                        subtitle: Text(
+                          widget.receiptDraft!.parseStatus == 'PARSED'
+                              ? 'Дата и сумма распознаны. Проверьте счет и категорию.'
+                              : 'QR сохранен. Проверьте и дополните данные вручную.',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SegmentedButton<TransactionType>(
                     key: const ValueKey('transaction-type'),
                     segments: const [

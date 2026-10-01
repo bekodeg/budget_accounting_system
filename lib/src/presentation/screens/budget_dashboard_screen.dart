@@ -4,6 +4,9 @@ import '../../application/app_services.dart';
 import '../../application/authorization/budget_action.dart';
 import '../../application/formatters/minor_units_text.dart';
 import '../../domain/models/dashboard_summary.dart';
+import '../../domain/models/receipt_qr_draft.dart';
+import 'receipt_photo_import_screen.dart';
+import 'receipt_qr_scanner_screen.dart';
 import 'transaction_crud_screen.dart';
 import 'transaction_editor_screen.dart';
 
@@ -26,6 +29,58 @@ final class BudgetDashboardScreen extends StatelessWidget {
           services: services,
           budgetId: budgetId,
           authorId: userId,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _scanReceipt(BuildContext context) async {
+    final scanReceiptQr = services.scanReceiptQr;
+    if (scanReceiptQr == null) return;
+
+    final draft = await Navigator.of(context).push<ReceiptQrDraft>(
+      MaterialPageRoute<ReceiptQrDraft>(
+        builder: (context) => ReceiptQrScannerScreen(
+          scanReceiptQr: scanReceiptQr,
+          budgetId: budgetId,
+        ),
+      ),
+    );
+    if (draft == null || !context.mounted) return;
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => TransactionEditorScreen(
+          services: services,
+          budgetId: budgetId,
+          authorId: userId,
+          receiptDraft: draft,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _importReceiptPhoto(BuildContext context) async {
+    final importReceiptPhoto = services.importReceiptPhoto;
+    if (importReceiptPhoto == null) return;
+
+    final draft = await Navigator.of(context).push<ReceiptQrDraft>(
+      MaterialPageRoute<ReceiptQrDraft>(
+        builder: (context) => ReceiptPhotoImportScreen(
+          importReceiptPhoto: importReceiptPhoto,
+          budgetId: budgetId,
+        ),
+      ),
+    );
+    if (draft == null || !context.mounted) return;
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => TransactionEditorScreen(
+          services: services,
+          budgetId: budgetId,
+          authorId: userId,
+          receiptDraft: draft,
         ),
       ),
     );
@@ -66,6 +121,13 @@ final class BudgetDashboardScreen extends StatelessWidget {
                 return _DashboardHeader(
                   summary: snapshot.data!,
                   onQuickAdd: canEdit ? () => _quickAdd(context) : null,
+                  onScanReceipt: canEdit && services.scanReceiptQr != null
+                      ? () => _scanReceipt(context)
+                      : null,
+                  onImportReceiptPhoto:
+                      canEdit && services.importReceiptPhoto != null
+                      ? () => _importReceiptPhoto(context)
+                      : null,
                 );
               },
             ),
@@ -86,10 +148,17 @@ final class BudgetDashboardScreen extends StatelessWidget {
 }
 
 final class _DashboardHeader extends StatelessWidget {
-  const _DashboardHeader({required this.summary, required this.onQuickAdd});
+  const _DashboardHeader({
+    required this.summary,
+    required this.onQuickAdd,
+    required this.onScanReceipt,
+    required this.onImportReceiptPhoto,
+  });
 
   final DashboardSummary summary;
   final VoidCallback? onQuickAdd;
+  final VoidCallback? onScanReceipt;
+  final VoidCallback? onImportReceiptPhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +176,20 @@ final class _DashboardHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
+              if (onImportReceiptPhoto != null)
+                IconButton(
+                  key: const ValueKey('dashboard-photo-receipt'),
+                  tooltip: 'Фото чека',
+                  onPressed: onImportReceiptPhoto,
+                  icon: const Icon(Icons.document_scanner_outlined),
+                ),
+              if (onScanReceipt != null)
+                IconButton(
+                  key: const ValueKey('dashboard-scan-receipt'),
+                  tooltip: 'Сканировать чек',
+                  onPressed: onScanReceipt,
+                  icon: const Icon(Icons.qr_code_scanner),
+                ),
               if (onQuickAdd != null)
                 FilledButton.icon(
                   key: const ValueKey('dashboard-quick-add'),

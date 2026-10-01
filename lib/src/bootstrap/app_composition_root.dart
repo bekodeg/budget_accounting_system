@@ -9,6 +9,10 @@ import '../application/services/lan_session_crypto.dart';
 import '../application/services/sync_coordinator_service.dart';
 import '../application/services/sync_session_service.dart';
 import '../application/services/session_sync_mutation_context_provider.dart';
+import '../application/services/fiscal_receipt_qr_parser.dart';
+import '../application/services/receipt_ocr_parser.dart';
+import '../application/services/receipt_enrichment_config.dart';
+import '../application/services/receipt_enrichment_coordinator.dart';
 import '../application/use_cases/accept_budget_invite.dart';
 import '../application/use_cases/apply_budget_snapshot.dart';
 import '../application/use_cases/apply_category_templates.dart';
@@ -25,17 +29,25 @@ import '../application/use_cases/create_transaction.dart';
 import '../application/use_cases/create_transfer.dart';
 import '../application/use_cases/delete_transaction.dart';
 import '../application/use_cases/export_report.dart';
+import '../application/use_cases/export_diagnostics.dart';
+import '../application/use_cases/export_budget_backup.dart';
 import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/get_budget_account_balances.dart';
 import '../application/use_cases/get_public_identity.dart';
 import '../application/use_cases/inspect_budget_invite.dart';
+import '../application/use_cases/import_receipt_photo.dart';
 import '../application/use_cases/pick_budget_invite_file.dart';
+import '../application/use_cases/pick_budget_backup.dart';
+import '../application/use_cases/preview_budget_backup.dart';
+import '../application/use_cases/preview_diagnostics.dart';
+import '../application/use_cases/restore_budget_backup.dart';
 import '../application/use_cases/ensure_local_identity.dart';
 import '../application/use_cases/rename_category.dart';
 import '../application/use_cases/require_account_in_budget.dart';
 import '../application/use_cases/require_category_in_budget.dart';
 import '../application/use_cases/resolve_app_startup.dart';
 import '../application/use_cases/select_budget.dart';
+import '../application/use_cases/scan_receipt_qr.dart';
 import '../application/use_cases/share_budget_invite_file.dart';
 import '../application/use_cases/set_monthly_plan_amount.dart';
 import '../application/use_cases/update_account.dart';
@@ -64,14 +76,17 @@ import '../data/security/secure_invite_consumption_store.dart';
 import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
 import '../data/repositories/drift_budget_snapshot_repository.dart';
+import '../data/repositories/drift_budget_backup_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
+import '../data/repositories/drift_diagnostic_package_repository.dart';
 import '../data/repositories/drift_extended_report_repository.dart';
 import '../data/repositories/drift_identity_repository.dart';
 import '../data/repositories/drift_invitation_repository.dart';
 import '../data/repositories/drift_membership_repository.dart';
 import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
+import '../data/repositories/drift_receipt_repository.dart';
 import '../data/repositories/drift_report_export_repository.dart';
 import '../data/repositories/drift_sync_journal.dart';
 import '../data/repositories/drift_transaction_repository.dart';
@@ -86,7 +101,13 @@ import '../data/services/drift_sync_materializer.dart';
 import '../data/services/drift_sync_mutation_executor.dart';
 import '../data/services/excel_report_document_encoder.dart';
 import '../data/services/platform_invite_file_gateway.dart';
+import '../data/services/platform_receipt_image_store.dart';
+import '../data/services/mlkit_receipt_photo_analyzer.dart';
+import '../data/services/mock_receipt_enrichment_provider.dart';
+import '../data/services/platform_budget_backup_file_gateway.dart';
 import '../data/services/platform_report_share_gateway.dart';
+import '../data/services/platform_diagnostic_share_gateway.dart';
+import '../data/services/rotating_diagnostic_log_store.dart';
 import '../data/services/random_secure_token_generator.dart';
 import '../data/services/secure_id_generator.dart';
 
@@ -94,8 +115,8 @@ final class AppCompositionRoot {
   AppCompositionRoot._({required BudgetDal dal, required this.services})
     : _dal = dal;
 
-  factory AppCompositionRoot.defaults() {
-    final dal = BudgetDal.defaults();
+  factory AppCompositionRoot.defaults({AppDatabase? database}) {
+    final dal = BudgetDal(database ?? AppDatabase.defaults());
     final budgetRepository = DriftBudgetRepository(dal.usersAndBudgets);
     final baseCategoryRepository = DriftCategoryRepository(
       dal.categoriesAndAccounts,
@@ -113,6 +134,19 @@ final class AppCompositionRoot {
     final reportExportRepository = DriftReportExportRepository(
       dal.transactions,
     );
+    final diagnosticLogStore = RotatingDiagnosticLogStore();
+    final diagnosticRepository = DriftDiagnosticPackageRepository(
+      database: dal.database,
+      logStore: diagnosticLogStore,
+    );
+    final receiptRepository = DriftReceiptRepository(dal.plansAndReceipts);
+    final enrichmentConfig = ReceiptEnrichmentConfig.fromEnvironment();
+    final receiptEnrichment = enrichmentConfig.mode == 'mock'
+        ? ReceiptEnrichmentCoordinator(
+            provider: const MockReceiptEnrichmentProvider(),
+            repository: receiptRepository,
+          )
+        : null;
     final identityRepository = DriftIdentityRepository(dal.usersAndBudgets);
     final invitationRepository = DriftInvitationRepository(dal.usersAndBudgets);
     final baseMembershipRepository = DriftMembershipRepository(
@@ -177,6 +211,12 @@ final class AppCompositionRoot {
       syncDao: dal.sync,
       signatureService: identitySignatureService,
     );
+    final backupRepository = DriftBudgetBackupRepository(
+      database: dal.database,
+      snapshotRepository: snapshotRepository,
+      idGenerator: idGenerator,
+    );
+    const backupFileGateway = PlatformBudgetBackupFileGateway();
     final budgetSnapshotSessions = BudgetSnapshotSessionService(
       snapshotRepository,
     );
@@ -303,6 +343,15 @@ final class AppCompositionRoot {
           repository: transactionRepository,
           authorization: authorization,
         ),
+        exportBudgetBackup: ExportBudgetBackup(
+          repository: backupRepository,
+          fileGateway: backupFileGateway,
+          authorization: authorization,
+        ),
+        exportDiagnostics: ExportDiagnostics(
+          repository: diagnosticRepository,
+          shareGateway: const PlatformDiagnosticShareGateway(),
+        ),
         exportReport: ExportReport(
           reportRepository: extendedReportRepository,
           exportRepository: reportExportRepository,
@@ -314,11 +363,25 @@ final class AppCompositionRoot {
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
         getPublicIdentity: getPublicIdentity,
         inspectBudgetInvite: inspectBudgetInvite,
+        importReceiptPhoto: ImportReceiptPhoto(
+          receiptRepository: receiptRepository,
+          imageStore: const PlatformReceiptImageStore(),
+          analyzer: const MlKitReceiptPhotoAnalyzer(),
+          qrParser: const FiscalReceiptQrParser(),
+          ocrParser: const ReceiptOcrParser(),
+          idGenerator: idGenerator,
+          authorization: authorization,
+          enrichmentCoordinator: receiptEnrichment,
+        ),
         budgetSnapshotSessions: budgetSnapshotSessions,
         lanPeerSessions: lanPeerSessions,
         syncCoordinator: syncCoordinator,
         syncSessions: syncSessions,
         pickBudgetInviteFile: PickBudgetInviteFile(inviteFileGateway),
+        pickBudgetBackup: PickBudgetBackup(backupFileGateway),
+        previewBudgetBackup: PreviewBudgetBackup(backupRepository),
+        previewDiagnostics: PreviewDiagnostics(diagnosticRepository),
+        restoreBudgetBackup: RestoreBudgetBackup(backupRepository),
         renameCategory: RenameCategory(
           repository: categoryRepository,
           authorization: authorization,
@@ -333,6 +396,13 @@ final class AppCompositionRoot {
         selectBudget: SelectBudget(
           budgetRepository: budgetRepository,
           sessionStore: sessionStore,
+        ),
+        scanReceiptQr: ScanReceiptQr(
+          receiptRepository: receiptRepository,
+          parser: const FiscalReceiptQrParser(),
+          idGenerator: idGenerator,
+          authorization: authorization,
+          enrichmentCoordinator: receiptEnrichment,
         ),
         shareBudgetInviteFile: ShareBudgetInviteFile(inviteFileGateway),
         setMonthlyPlanAmount: SetMonthlyPlanAmount(
@@ -373,6 +443,7 @@ final class AppCompositionRoot {
         watchYearReport: WatchYearReport(extendedReportRepository),
         watchTransactions: WatchTransactions(transactionRepository),
         watchUserBudgets: WatchUserBudgets(budgetRepository),
+        diagnosticLogStore: diagnosticLogStore,
       ),
     );
   }

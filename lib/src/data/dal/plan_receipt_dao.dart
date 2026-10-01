@@ -95,4 +95,16 @@ final class PlanReceiptDao {
       _db.receipts,
     )..where((row) => row.id.equals(id))).getSingleOrNull();
   }
+
+  Future<Receipt?> findReceiptByRawQr({
+    required String budgetId,
+    required String rawQr,
+  }) {
+    return (_db.select(_db.receipts)
+          ..where(
+            (row) => row.budgetId.equals(budgetId) & row.rawQr.equals(rawQr),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+  }
 }
