@@ -1,3 +1,4 @@
+import 'ports/diagnostic_log_store.dart';
 import 'services/budget_snapshot_session_service.dart';
 import 'services/lan_peer_session_manager.dart';
 import 'services/sync_coordinator_service.dart';
@@ -17,14 +18,17 @@ import 'use_cases/create_transaction.dart';
 import 'use_cases/create_transfer.dart';
 import 'use_cases/delete_transaction.dart';
 import 'use_cases/export_report.dart';
+import 'use_cases/export_diagnostics.dart';
 import 'use_cases/export_budget_backup.dart';
 import 'use_cases/get_account_balance.dart';
 import 'use_cases/get_budget_account_balances.dart';
 import 'use_cases/get_public_identity.dart';
 import 'use_cases/inspect_budget_invite.dart';
+import 'use_cases/import_receipt_photo.dart';
 import 'use_cases/pick_budget_invite_file.dart';
 import 'use_cases/pick_budget_backup.dart';
 import 'use_cases/preview_budget_backup.dart';
+import 'use_cases/preview_diagnostics.dart';
 import 'use_cases/restore_budget_backup.dart';
 import 'use_cases/rename_category.dart';
 import 'use_cases/require_account_in_budget.dart';
@@ -67,11 +71,13 @@ final class AppServices {
     required this.createTransfer,
     required this.deleteTransaction,
     required this.exportReport,
+    this.exportDiagnostics,
     this.exportBudgetBackup,
     required this.getAccountBalance,
     required this.getBudgetAccountBalances,
     required this.getPublicIdentity,
     required this.inspectBudgetInvite,
+    this.importReceiptPhoto,
     this.budgetSnapshotSessions,
     this.lanPeerSessions,
     this.syncCoordinator,
@@ -79,6 +85,7 @@ final class AppServices {
     required this.pickBudgetInviteFile,
     this.pickBudgetBackup,
     this.previewBudgetBackup,
+    this.previewDiagnostics,
     this.restoreBudgetBackup,
     required this.renameCategory,
     required this.requireAccountInBudget,
@@ -103,6 +110,7 @@ final class AppServices {
     required this.watchYearReport,
     required this.watchTransactions,
     required this.watchUserBudgets,
+    this.diagnosticLogStore,
   });
 
   final AcceptBudgetInvite acceptBudgetInvite;
@@ -120,11 +128,13 @@ final class AppServices {
   final CreateTransfer createTransfer;
   final DeleteTransaction deleteTransaction;
   final ExportReport exportReport;
+  final ExportDiagnostics? exportDiagnostics;
   final ExportBudgetBackup? exportBudgetBackup;
   final GetAccountBalance getAccountBalance;
   final GetBudgetAccountBalances getBudgetAccountBalances;
   final GetPublicIdentity getPublicIdentity;
   final InspectBudgetInvite inspectBudgetInvite;
+  final ImportReceiptPhoto? importReceiptPhoto;
   final BudgetSnapshotSessionService? budgetSnapshotSessions;
   final LanPeerSessionManager? lanPeerSessions;
   final SyncCoordinatorService? syncCoordinator;
@@ -132,6 +142,7 @@ final class AppServices {
   final PickBudgetInviteFile pickBudgetInviteFile;
   final PickBudgetBackup? pickBudgetBackup;
   final PreviewBudgetBackup? previewBudgetBackup;
+  final PreviewDiagnostics? previewDiagnostics;
   final RestoreBudgetBackup? restoreBudgetBackup;
   final RenameCategory renameCategory;
   final RequireAccountInBudget requireAccountInBudget;
@@ -156,4 +167,5 @@ final class AppServices {
   final WatchYearReport watchYearReport;
   final WatchTransactions watchTransactions;
   final WatchUserBudgets watchUserBudgets;
+  final DiagnosticLogStore? diagnosticLogStore;
 }

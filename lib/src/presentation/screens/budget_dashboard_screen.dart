@@ -5,6 +5,7 @@ import '../../application/authorization/budget_action.dart';
 import '../../application/formatters/minor_units_text.dart';
 import '../../domain/models/dashboard_summary.dart';
 import '../../domain/models/receipt_qr_draft.dart';
+import 'receipt_photo_import_screen.dart';
 import 'receipt_qr_scanner_screen.dart';
 import 'transaction_crud_screen.dart';
 import 'transaction_editor_screen.dart';
@@ -59,6 +60,33 @@ final class BudgetDashboardScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _importReceiptPhoto(BuildContext context) async {
+    final importReceiptPhoto = services.importReceiptPhoto;
+    if (importReceiptPhoto == null) return;
+
+    final draft = await Navigator.of(context).push<ReceiptQrDraft>(
+      MaterialPageRoute<ReceiptQrDraft>(
+        builder: (context) => ReceiptPhotoImportScreen(
+          importReceiptPhoto: importReceiptPhoto,
+          budgetId: budgetId,
+        ),
+      ),
+    );
+    if (draft == null || !context.mounted) return;
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => TransactionEditorScreen(
+          services: services,
+          budgetId: budgetId,
+          authorId: userId,
+          receiptDraft: draft,
+        ),
+      ),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -97,6 +125,10 @@ final class BudgetDashboardScreen extends StatelessWidget {
                   onScanReceipt: canEdit && services.scanReceiptQr != null
                       ? () => _scanReceipt(context)
                       : null,
+                  onImportReceiptPhoto:
+                      canEdit && services.importReceiptPhoto != null
+                      ? () => _importReceiptPhoto(context)
+                      : null,
                 );
               },
             ),
@@ -121,11 +153,13 @@ final class _DashboardHeader extends StatelessWidget {
     required this.summary,
     required this.onQuickAdd,
     required this.onScanReceipt,
+    required this.onImportReceiptPhoto,
   });
 
   final DashboardSummary summary;
   final VoidCallback? onQuickAdd;
   final VoidCallback? onScanReceipt;
+  final VoidCallback? onImportReceiptPhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +177,13 @@ final class _DashboardHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
+              if (onImportReceiptPhoto != null)
+                IconButton(
+                  key: const ValueKey('dashboard-photo-receipt'),
+                  tooltip: 'Фото чека',
+                  onPressed: onImportReceiptPhoto,
+                  icon: const Icon(Icons.document_scanner_outlined),
+                ),
               if (onScanReceipt != null)
                 IconButton(
                   key: const ValueKey('dashboard-scan-receipt'),

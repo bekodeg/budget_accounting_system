@@ -6,6 +6,7 @@ import 'account_management_screen.dart';
 import 'category_management_screen.dart';
 import 'budget_members_screen.dart';
 import 'budget_backup_screen.dart';
+import 'diagnostics_screen.dart';
 
 final class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
@@ -27,7 +28,7 @@ final class SettingsScreen extends StatelessWidget {
       builder: (context, snapshot) {
         final canEdit = snapshot.data ?? false;
         return DefaultTabController(
-          length: 4,
+          length: 5,
           child: Column(
             key: const ValueKey('settings-screen'),
             children: [
@@ -37,6 +38,7 @@ final class SettingsScreen extends StatelessWidget {
                   Tab(text: 'Категории'),
                   Tab(text: 'Участники'),
                   Tab(text: 'Backup'),
+                  Tab(text: 'Диагностика'),
                 ],
               ),
               Expanded(
@@ -54,6 +56,7 @@ final class SettingsScreen extends StatelessWidget {
                     ),
                     BudgetMembersScreen(services: services, budgetId: budgetId),
                     BudgetBackupScreen(services: services, budgetId: budgetId),
+                    DiagnosticsScreen(services: services),
                   ],
                 ),
               ),

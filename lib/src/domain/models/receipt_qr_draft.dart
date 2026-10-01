@@ -9,6 +9,7 @@ final class ReceiptQrDraft {
     required this.parsedPayloadJson,
     required this.parseStatus,
     required this.isDuplicate,
+    this.imagePath,
   });
 
   final String receiptId;
@@ -20,4 +21,5 @@ final class ReceiptQrDraft {
   final String parsedPayloadJson;
   final String parseStatus;
   final bool isDuplicate;
+  final String? imagePath;
 }
