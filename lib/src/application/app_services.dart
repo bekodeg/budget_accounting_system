@@ -27,6 +27,7 @@ import 'use_cases/require_account_in_budget.dart';
 import 'use_cases/require_category_in_budget.dart';
 import 'use_cases/resolve_app_startup.dart';
 import 'use_cases/select_budget.dart';
+import 'use_cases/scan_receipt_qr.dart';
 import 'use_cases/share_budget_invite_file.dart';
 import 'use_cases/set_monthly_plan_amount.dart';
 import 'use_cases/update_account.dart';
@@ -76,6 +77,7 @@ final class AppServices {
     required this.requireCategoryInBudget,
     required this.resolveAppStartup,
     required this.selectBudget,
+    this.scanReceiptQr,
     required this.shareBudgetInviteFile,
     required this.setMonthlyPlanAmount,
     required this.updateAccount,
@@ -124,6 +126,7 @@ final class AppServices {
   final RequireCategoryInBudget requireCategoryInBudget;
   final ResolveAppStartup resolveAppStartup;
   final SelectBudget selectBudget;
+  final ScanReceiptQr? scanReceiptQr;
   final ShareBudgetInviteFile shareBudgetInviteFile;
   final SetMonthlyPlanAmount setMonthlyPlanAmount;
   final UpdateAccount updateAccount;

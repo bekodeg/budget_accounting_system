@@ -9,6 +9,7 @@ import '../application/services/lan_session_crypto.dart';
 import '../application/services/sync_coordinator_service.dart';
 import '../application/services/sync_session_service.dart';
 import '../application/services/session_sync_mutation_context_provider.dart';
+import '../application/services/fiscal_receipt_qr_parser.dart';
 import '../application/use_cases/accept_budget_invite.dart';
 import '../application/use_cases/apply_budget_snapshot.dart';
 import '../application/use_cases/apply_category_templates.dart';
@@ -36,6 +37,7 @@ import '../application/use_cases/require_account_in_budget.dart';
 import '../application/use_cases/require_category_in_budget.dart';
 import '../application/use_cases/resolve_app_startup.dart';
 import '../application/use_cases/select_budget.dart';
+import '../application/use_cases/scan_receipt_qr.dart';
 import '../application/use_cases/share_budget_invite_file.dart';
 import '../application/use_cases/set_monthly_plan_amount.dart';
 import '../application/use_cases/update_account.dart';
@@ -72,6 +74,7 @@ import '../data/repositories/drift_invitation_repository.dart';
 import '../data/repositories/drift_membership_repository.dart';
 import '../data/repositories/drift_monthly_report_repository.dart';
 import '../data/repositories/drift_plan_repository.dart';
+import '../data/repositories/drift_receipt_repository.dart';
 import '../data/repositories/drift_report_export_repository.dart';
 import '../data/repositories/drift_sync_journal.dart';
 import '../data/repositories/drift_transaction_repository.dart';
@@ -113,6 +116,7 @@ final class AppCompositionRoot {
     final reportExportRepository = DriftReportExportRepository(
       dal.transactions,
     );
+    final receiptRepository = DriftReceiptRepository(dal.plansAndReceipts);
     final identityRepository = DriftIdentityRepository(dal.usersAndBudgets);
     final invitationRepository = DriftInvitationRepository(dal.usersAndBudgets);
     final baseMembershipRepository = DriftMembershipRepository(
@@ -333,6 +337,12 @@ final class AppCompositionRoot {
         selectBudget: SelectBudget(
           budgetRepository: budgetRepository,
           sessionStore: sessionStore,
+        ),
+        scanReceiptQr: ScanReceiptQr(
+          receiptRepository: receiptRepository,
+          parser: const FiscalReceiptQrParser(),
+          idGenerator: idGenerator,
+          authorization: authorization,
         ),
         shareBudgetInviteFile: ShareBudgetInviteFile(inviteFileGateway),
         setMonthlyPlanAmount: SetMonthlyPlanAmount(
