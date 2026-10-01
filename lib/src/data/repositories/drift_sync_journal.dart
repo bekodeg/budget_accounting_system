@@ -195,10 +195,7 @@ final class DriftSyncJournal implements SyncJournal {
     });
   }
 
-  bool _matchesStoredOperation(
-    SyncOperation stored,
-    SyncWireOperation wire,
-  ) {
+  bool _matchesStoredOperation(SyncOperation stored, SyncWireOperation wire) {
     final operation = wire.operation;
     if (stored.opId != operation.operationId ||
         stored.budgetId != operation.budgetId ||
