@@ -39,11 +39,12 @@ final class ReceiptOcrParser {
       occurredAt: occurredAt,
       totalMinor: totalMinor,
       merchant: merchant,
-      parseStatus: complete ? 'PARSED' : recognized ? 'PARTIAL' : 'FAILED',
-      parsedPayloadJson: jsonEncode({
-        'source': 'ocr',
-        'text': normalized,
-      }),
+      parseStatus: complete
+          ? 'PARSED'
+          : recognized
+          ? 'PARTIAL'
+          : 'FAILED',
+      parsedPayloadJson: jsonEncode({'source': 'ocr', 'text': normalized}),
     );
   }
 
@@ -79,8 +80,7 @@ final class ReceiptOcrParser {
       if (matches.isEmpty) continue;
       final raw = matches.last.group(1)!.replaceAll(',', '.');
       final parts = raw.split('.');
-      return BigInt.parse(parts[0]) * BigInt.from(100) +
-          BigInt.parse(parts[1]);
+      return BigInt.parse(parts[0]) * BigInt.from(100) + BigInt.parse(parts[1]);
     }
     return null;
   }

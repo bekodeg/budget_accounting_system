@@ -17,10 +17,7 @@ final class DiagnosticLogRecord {
 }
 
 abstract interface class DiagnosticLogStore {
-  Future<void> append({
-    required String category,
-    required String code,
-  });
+  Future<void> append({required String category, required String code});
 
   Future<List<DiagnosticLogRecord>> readRecent({int limit = 100});
 }

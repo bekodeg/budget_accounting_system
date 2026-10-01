@@ -62,10 +62,7 @@ final class ReceiptEnrichmentCoordinator {
     } on Object {
       decoded = <String, dynamic>{};
     }
-    decoded['enrichment'] = {
-      'provider': providerId,
-      'items': items,
-    };
+    decoded['enrichment'] = {'provider': providerId, 'items': items};
     return jsonEncode(decoded);
   }
 

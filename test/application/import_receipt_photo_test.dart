@@ -43,27 +43,30 @@ void main() {
     expect(repository.saved, hasLength(1));
   });
 
-  test('recognition failure still saves original image and failed receipt', () async {
-    final repository = _Repository();
-    final useCase = ImportReceiptPhoto(
-      receiptRepository: repository,
-      imageStore: _ImageStore(),
-      analyzer: const _FailingAnalyzer(),
-      qrParser: const FiscalReceiptQrParser(),
-      ocrParser: const ReceiptOcrParser(),
-      idGenerator: const _Ids(),
-      authorization: const _Authorization(),
-    );
+  test(
+    'recognition failure still saves original image and failed receipt',
+    () async {
+      final repository = _Repository();
+      final useCase = ImportReceiptPhoto(
+        receiptRepository: repository,
+        imageStore: _ImageStore(),
+        analyzer: const _FailingAnalyzer(),
+        qrParser: const FiscalReceiptQrParser(),
+        ocrParser: const ReceiptOcrParser(),
+        idGenerator: const _Ids(),
+        authorization: const _Authorization(),
+      );
 
-    final result = await useCase(
-      budgetId: 'budget-1',
-      sourcePath: '/incoming/photo.jpg',
-    );
+      final result = await useCase(
+        budgetId: 'budget-1',
+        sourcePath: '/incoming/photo.jpg',
+      );
 
-    expect(result.parseStatus, 'FAILED');
-    expect(result.imagePath, '/safe/receipt-1.jpg');
-    expect(repository.saved.single.imagePath, isNotNull);
-  });
+      expect(result.parseStatus, 'FAILED');
+      expect(result.imagePath, '/safe/receipt-1.jpg');
+      expect(repository.saved.single.imagePath, isNotNull);
+    },
+  );
 
   test('QR on photo is preferred over OCR', () async {
     final repository = _Repository();

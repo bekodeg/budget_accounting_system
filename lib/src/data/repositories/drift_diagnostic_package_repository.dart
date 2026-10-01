@@ -63,9 +63,7 @@ final class DriftDiagnosticPackageRepository
       },
     };
 
-    final errors = logs
-        .map((record) => jsonEncode(record.toJson()))
-        .join('\n');
+    final errors = logs.map((record) => jsonEncode(record.toJson())).join('\n');
 
     final preview = DiagnosticPackagePreview(
       appVersion: appVersion,
@@ -96,12 +94,7 @@ final class DriftDiagnosticPackageRepository
 
   String _safeOsVersion(String raw) {
     final firstLine = raw.split('\n').first.trim();
-    final sanitized = firstLine.replaceAll(
-      RegExp(r'[^A-Za-z0-9 ._()\/-]'),
-      '',
-    );
-    return sanitized.length <= 120
-        ? sanitized
-        : sanitized.substring(0, 120);
+    final sanitized = firstLine.replaceAll(RegExp(r'[^A-Za-z0-9 ._()\/-]'), '');
+    return sanitized.length <= 120 ? sanitized : sanitized.substring(0, 120);
   }
 }
