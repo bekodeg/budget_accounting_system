@@ -73,6 +73,7 @@ dart run build_runner build --delete-conflicting-outputs
 
 ```bash
 flutter create --platforms=android,ios .
+python3 tool/configure_lan_platform_permissions.py
 ```
 
 После этого:
@@ -124,4 +125,11 @@ dart run drift_dev make-migrations
 - [Issues, ошибки и ветки исправлений](docs/15_issue_and_bug_workflow.md)
 - [Месячный план по категориям](docs/15_monthly_plans.md)
 - [Экспорт отчетов CSV/XLSX](docs/16_report_export.md)
+- [Локальная identity пользователя и устройства](docs/17_local_identity.md)
+- [Роли участников и авторизация бюджета](docs/18_budget_roles.md)
+- [Offline invitation через QR и файл](docs/19_offline_invites.md)
+- [P2P-соединение в локальной сети](docs/20_lan_p2p.md)
+- [Coordinator topology для multi-peer sync](docs/22_sync_coordinator.md)
+- [Первичная синхронизация snapshot + tail](docs/23_snapshot_bootstrap.md)
+- [State vector sync protocol](docs/21_state_vector_sync.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)

@@ -60,10 +60,11 @@ feature/*, fix/*, chore/*
 9. запускает `flutter analyze`;
 10. запускает полный `flutter test --coverage`;
 11. публикует coverage summary и LCOV artifact;
-12. восстанавливает постоянный Android release keystore из GitHub Actions Secrets;
-13. проверяет SHA-256 отпечаток сертификата подписи;
-14. собирает подписанный Android release APK;
-15. публикует APK для ручного тестирования.
+12. генерирует Android host project и добавляет LAN permissions для P2P discovery;
+13. восстанавливает постоянный Android release keystore из GitHub Actions Secrets;
+14. проверяет SHA-256 отпечаток сертификата подписи;
+15. собирает подписанный Android release APK;
+16. публикует APK для ручного тестирования.
 
 Trivy запускается до Flutter setup и остальных дорогих шагов, чтобы security blocker
 останавливал Stage CI как можно раньше. Используется `aquasecurity/trivy-action`

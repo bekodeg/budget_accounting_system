@@ -69,6 +69,17 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: 1
+
       - name: Generate Drift code
         run: dart run build_runner build --delete-conflicting-outputs
 
@@ -151,6 +162,9 @@ jobs:
           --org com.bekodeg
           --no-pub
           .
+
+      - name: Configure LAN platform permissions
+        run: python3 tool/configure_lan_platform_permissions.py
 
       - name: Validate Android signing secrets
         env:

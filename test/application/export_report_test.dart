@@ -11,6 +11,8 @@ import 'package:budget_accounting_system/src/domain/repositories/extended_report
 import 'package:budget_accounting_system/src/domain/repositories/report_export_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/onboarding_fakes.dart';
+
 void main() {
   test(
     'builds safe deterministic names and sends both documents to share gateway',
@@ -24,6 +26,7 @@ void main() {
         exportRepository: exportRepository,
         encoder: encoder,
         shareGateway: shareGateway,
+        authorization: FakeBudgetAuthorizationGuard(),
       );
       final filter = ReportFilter(
         budgetId: 'Дом / 2026',

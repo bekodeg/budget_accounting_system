@@ -3,6 +3,9 @@ import '../../domain/models/domain_types.dart';
 import '../../domain/models/transaction_draft.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/value_objects/money.dart';
+import '../authorization/budget_action.dart';
+import '../authorization/budget_authorization_guard.dart';
+import '../errors/authorization_error.dart';
 import '../ports/id_generator.dart';
 import 'require_account_in_budget.dart';
 
@@ -11,13 +14,16 @@ final class CreateTransfer {
     required TransactionRepository transactionRepository,
     required RequireAccountInBudget requireAccountInBudget,
     required IdGenerator idGenerator,
+    required BudgetAuthorizationGuard authorization,
   }) : _transactionRepository = transactionRepository,
        _requireAccountInBudget = requireAccountInBudget,
-       _idGenerator = idGenerator;
+       _idGenerator = idGenerator,
+       _authorization = authorization;
 
   final TransactionRepository _transactionRepository;
   final RequireAccountInBudget _requireAccountInBudget;
   final IdGenerator _idGenerator;
+  final BudgetAuthorizationGuard _authorization;
 
   Future<BudgetTransactionEntry> call({
     required String budgetId,
@@ -28,6 +34,17 @@ final class CreateTransfer {
     required String destinationAccountId,
     String? description,
   }) async {
+    final member = await _authorization.require(
+      budgetId: budgetId,
+      action: BudgetAction.mutate,
+    );
+    if (authorId != member.userId) {
+      throw const AuthorizationError(
+        code: AuthorizationErrorCode.forbidden,
+        message: 'Нельзя создавать перевод от имени другого участника.',
+      );
+    }
+
     final source = await _requireAccountInBudget(
       budgetId: budgetId,
       accountId: sourceAccountId,

@@ -2,6 +2,8 @@ import '../../domain/models/domain_types.dart';
 import '../../domain/models/monthly_plan.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../domain/repositories/plan_repository.dart';
+import '../authorization/budget_action.dart';
+import '../authorization/budget_authorization_guard.dart';
 import '../errors/plan_error.dart';
 import '../ports/id_generator.dart';
 
@@ -10,13 +12,16 @@ final class SetMonthlyPlanAmount {
     required PlanRepository planRepository,
     required CategoryRepository categoryRepository,
     required IdGenerator idGenerator,
+    required BudgetAuthorizationGuard authorization,
   }) : _planRepository = planRepository,
        _categoryRepository = categoryRepository,
-       _idGenerator = idGenerator;
+       _idGenerator = idGenerator,
+       _authorization = authorization;
 
   final PlanRepository _planRepository;
   final CategoryRepository _categoryRepository;
   final IdGenerator _idGenerator;
+  final BudgetAuthorizationGuard _authorization;
 
   Future<void> call({
     required String budgetId,
@@ -24,6 +29,11 @@ final class SetMonthlyPlanAmount {
     required DateTime month,
     required BigInt plannedAmountMinor,
   }) async {
+    await _authorization.require(
+      budgetId: budgetId,
+      action: BudgetAction.mutate,
+    );
+
     if (plannedAmountMinor.isNegative) {
       throw const PlanError(
         PlanErrorCode.negativeAmount,

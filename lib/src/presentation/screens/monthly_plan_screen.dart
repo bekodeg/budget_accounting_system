@@ -11,11 +11,13 @@ final class MonthlyPlanScreen extends StatefulWidget {
   const MonthlyPlanScreen({
     required this.services,
     required this.budgetId,
+    this.canEdit = true,
     super.key,
   });
 
   final AppServices services;
   final String budgetId;
+  final bool canEdit;
 
   @override
   State<MonthlyPlanScreen> createState() => _MonthlyPlanScreenState();
@@ -170,12 +172,14 @@ final class _MonthlyPlanScreenState extends State<MonthlyPlanScreen> {
                     amount:
                         plansByCategory[category.id]?.plannedAmountMinor ??
                         BigInt.zero,
-                    editable: true,
-                    onTap: () => _edit(
-                      category,
-                      plansByCategory[category.id]?.plannedAmountMinor ??
-                          BigInt.zero,
-                    ),
+                    editable: widget.canEdit,
+                    onTap: widget.canEdit
+                        ? () => _edit(
+                            category,
+                            plansByCategory[category.id]?.plannedAmountMinor ??
+                                BigInt.zero,
+                          )
+                        : null,
                   ),
                 if (historical.isNotEmpty) ...[
                   const SizedBox(height: 20),

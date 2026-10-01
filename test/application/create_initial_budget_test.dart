@@ -16,7 +16,9 @@ void main() {
       budgetRepository: repository,
       categoryRepository: categoryRepository,
       sessionStore: sessionStore,
-      idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
+      identityKeyStore: FakeIdentityKeyStore(),
+      identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
     );
 
     final session = await useCase(
@@ -30,7 +32,8 @@ void main() {
     expect(repository.createdUserName, 'Alice');
     expect(repository.createdBudgetName, 'Family');
     expect(repository.createdCurrency, Currency('EUR'));
-    expect(repository.createdPublicKey, 'local-unverified:user-1');
+    expect(repository.createdPublicKey, 'ed25519:public-test-key');
+    expect(repository.createdDeviceId, 'device-1');
     expect(sessionStore.currentUserId, 'user-1');
     expect(sessionStore.currentBudgetId, 'budget-1');
   });
@@ -57,7 +60,9 @@ void main() {
       budgetRepository: repository,
       categoryRepository: categoryRepository,
       sessionStore: FakeSessionStore(),
-      idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
+      identityKeyStore: FakeIdentityKeyStore(),
+      identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
     );
 
     await useCase(
@@ -92,7 +97,9 @@ void main() {
       budgetRepository: repository,
       categoryRepository: categoryRepository,
       sessionStore: FakeSessionStore(),
-      idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
+      identityKeyStore: FakeIdentityKeyStore(),
+      identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
     );
 
     await useCase(
@@ -112,7 +119,9 @@ void main() {
       budgetRepository: repository,
       categoryRepository: FakeCategoryRepository(),
       sessionStore: sessionStore,
-      idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
+      identityKeyStore: FakeIdentityKeyStore(),
+      identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
     );
 
     await expectLater(
@@ -134,6 +143,31 @@ void main() {
     expect(sessionStore.currentUserId, isNull);
   });
 
+  test('removes secure identity when database creation fails', () async {
+    final repository = FakeBudgetRepository(createError: StateError('db'));
+    final keyStore = FakeIdentityKeyStore();
+    final useCase = CreateInitialBudget(
+      budgetRepository: repository,
+      categoryRepository: FakeCategoryRepository(),
+      sessionStore: FakeSessionStore(),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
+      identityKeyStore: keyStore,
+      identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
+    );
+
+    await expectLater(
+      useCase(
+        userName: 'Alice',
+        budgetName: 'Family',
+        baseCurrency: Currency('EUR'),
+      ),
+      throwsStateError,
+    );
+
+    expect(keyStore.deviceByUser, isEmpty);
+    expect(keyStore.privateKeyByDevice, isEmpty);
+  });
+
   test(
     'keeps created budget usable if preferences cannot be written',
     () async {
@@ -143,7 +177,9 @@ void main() {
         budgetRepository: repository,
         categoryRepository: FakeCategoryRepository(),
         sessionStore: sessionStore,
-        idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+        idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
+        identityKeyStore: FakeIdentityKeyStore(),
+        identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
       );
 
       final session = await useCase(

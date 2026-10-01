@@ -10,6 +10,8 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/onboarding_fakes.dart';
+
 void main() {
   late AppDatabase database;
   late UserBudgetDao userBudgetDao;
@@ -69,7 +71,10 @@ void main() {
   });
 
   test('reapplying templates does not duplicate categories', () async {
-    final applyTemplates = ApplyCategoryTemplates(repository);
+    final applyTemplates = ApplyCategoryTemplates(
+      repository: repository,
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
     final templateCount = (await repository.getTemplates()).length;
 
     await applyTemplates('budget-1');
@@ -120,8 +125,13 @@ void main() {
       'income-1',
     ]);
 
-    await repository.renameCategory(categoryId: 'expense-1', name: 'Продукты');
+    await repository.renameCategory(
+      budgetId: 'budget-1',
+      categoryId: 'expense-1',
+      name: 'Продукты',
+    );
     await repository.setCategoryArchived(
+      budgetId: 'budget-1',
       categoryId: 'expense-1',
       isArchived: true,
     );
@@ -172,6 +182,7 @@ void main() {
     );
 
     await repository.setCategoryArchived(
+      budgetId: 'budget-1',
       categoryId: 'category-1',
       isArchived: true,
     );

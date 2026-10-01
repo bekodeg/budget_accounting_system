@@ -2,16 +2,20 @@ import '../../domain/models/budget_summary.dart';
 import '../../domain/repositories/budget_repository.dart';
 import '../models/app_startup_state.dart';
 import '../ports/session_store.dart';
+import 'ensure_local_identity.dart';
 
 final class ResolveAppStartup {
   const ResolveAppStartup({
     required BudgetRepository budgetRepository,
     required SessionStore sessionStore,
+    EnsureLocalIdentity? ensureLocalIdentity,
   }) : _budgetRepository = budgetRepository,
-       _sessionStore = sessionStore;
+       _sessionStore = sessionStore,
+       _ensureLocalIdentity = ensureLocalIdentity;
 
   final BudgetRepository _budgetRepository;
   final SessionStore _sessionStore;
+  final EnsureLocalIdentity? _ensureLocalIdentity;
 
   Future<AppStartupState> call() async {
     final storedUserId = await _sessionStore.loadCurrentUserId();
@@ -43,6 +47,7 @@ final class ResolveAppStartup {
     String userId,
     List<BudgetSummary> budgets,
   ) async {
+    await _ensureLocalIdentity?.call(userId);
     final storedBudgetId = await _sessionStore.loadCurrentBudgetId();
     final storedBudgetExists = budgets.any(
       (budget) => budget.id == storedBudgetId,

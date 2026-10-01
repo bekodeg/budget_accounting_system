@@ -15,6 +15,40 @@
 
 Так пользователь никогда не ждет сеть для сохранения данных.
 
+### Реализация mutation pipeline
+
+В production composition root изменяющие repositories оборачиваются sync-decorators:
+
+- transactions;
+- accounts;
+- categories;
+- monthly plans;
+- membership role changes.
+
+Каждый decorator передает доменную запись в единый `SyncMutationExecutor`.
+`DriftSyncMutationExecutor` открывает одну Drift/SQLite transaction, внутри которой:
+
+1. проверяется уникальность `op_id`;
+2. вычисляется следующий Lamport clock текущего устройства;
+3. строится canonical JSON patch;
+4. операция подписывается Ed25519 private key текущего устройства;
+5. выполняется доменная mutation;
+6. строго вставляется `sync_operations`;
+7. transaction коммитится только если все шаги успешны.
+
+Если domain mutation или запись журнала завершается ошибкой, SQLite откатывает обе части.
+Повторный `op_id` отклоняется до выполнения domain callback.
+
+Если mutation возвращает признак "ничего не изменено" (например, update не нашел
+целевую запись), sync-operation не создается. Такой no-op не увеличивает Lamport clock
+и не загрязняет журнал.
+
+Если доменная запись успела измениться, но строгая вставка `sync_operations`
+завершилась ошибкой (например, нарушена целостность journal row), общая SQLite
+transaction откатывает и доменное изменение.
+
+Lamport clock монотонен на уровне устройства, а не только отдельного бюджета.
+
 ## 4.3. Протокол обмена
 
 ```mermaid
@@ -25,17 +59,19 @@ sequenceDiagram
 
     A->>C: Hello(budget_id, device_id, state_vector)
     B->>C: Hello(budget_id, device_id, state_vector)
-    C-->>A: Missing operations
-    C-->>B: Missing operations
-    A->>C: Operations batch
-    B->>C: Operations batch
-    C-->>A: Operations from peers
-    C-->>B: Operations from peers
-    A->>A: Merge + rebuild affected views
-    B->>B: Merge + rebuild affected views
+    A->>C: Hello(state_vector)
+    B->>C: Hello(state_vector)
+    C-->>A: Missing operations batch
+    C-->>B: Missing operations batch
+    A->>C: Ack(updated state_vector)
+    B->>C: Ack(updated state_vector)
+    A->>A: Merge affected entities
+    B->>B: Merge affected entities
 ```
 
 Координатор хранит данные только как обычный участник бюджета. После завершения сессии специальный серверный процесс отсутствует.
+
+Базовая peer-to-peer реализация использует симметричный versioned протокол hello/state-vector/batch/ack/error. Peer передает только операции, чей per-device Lamport clock выше значения в remote state vector. Детали: [State vector sync](21_state_vector_sync.md).
 
 ## 4.4. Разрешение конфликтов
 
@@ -61,6 +97,33 @@ sequenceDiagram
 ### DELETE против UPDATE
 `DELETE` имеет приоритет, если его версия не старше update. Удаление реализуется tombstone/soft delete, чтобы удаленная запись не воскресла после синхронизации со старым устройством.
 
+### Реализация merge engine
+
+`SyncMergeEngine` не зависит от порядка доставки операций.
+
+Для каждого поля хранится:
+
+- значение;
+- версия `(logical_clock, device_id)`;
+- `op_id`, который установил победившее значение.
+
+CREATE/PATCH сравниваются независимо по каждому полю. DELETE хранится отдельным
+entity-level tombstone register. Сущность считается удаленной, если версия tombstone
+не старше самой новой CREATE/PATCH операции.
+
+Повтор одного и того же `op_id` с тем же содержимым игнорируется. Если одинаковый
+`op_id` приходит с другим содержимым, merge завершается типизированной ошибкой,
+поскольку это нарушение глобальной уникальности операции.
+
+Один вызов merge обрабатывает операции только одной сущности
+`(budget_id, entity_type, entity_id)`. Смешивание разных сущностей отклоняется,
+чтобы field-level state не мог случайно склеиться между объектами.
+
+Если две разные операции имеют полностью одинаковую версию
+`(logical_clock, device_id)`, это считается поврежденным журналом независимо от
+того, меняют ли они одно поле, разные поля или представляют DELETE против UPDATE:
+корректное устройство увеличивает Lamport clock для каждой новой операции.
+
 ## 4.5. Идемпотентность
 
 `op_id` уникален. Повторная доставка одной операции безопасна и игнорируется.
@@ -79,9 +142,13 @@ sequenceDiagram
 
 Для устройств в одной локальной сети:
 
-- mDNS/Bonjour или аналог локального service discovery;
-- ручное подключение по QR как fallback;
-- соединение защищается ключом бюджета/сессии.
+- mDNS/Bonjour service `_budgetsync._tcp`;
+- discovery-token является HMAC от budget transport secret и не раскрывает budget id;
+- ручное подключение по versioned endpoint QR используется как fallback;
+- peer подтверждает владение budget secret и подписывает hello своей identity;
+- payload TCP-сессии защищается HKDF-derived ChaCha20-Poly1305 session key.
+
+Детали реализации и platform permissions: [P2P LAN](20_lan_p2p.md).
 
 ## 4.8. Новое устройство
 
