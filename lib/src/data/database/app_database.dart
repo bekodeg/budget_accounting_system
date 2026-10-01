@@ -63,8 +63,26 @@ final class AppDatabase extends _$AppDatabase {
     beforeOpen: (OpeningDetails details) async {
       await customStatement('PRAGMA foreign_keys = ON');
       await customStatement('PRAGMA journal_mode = WAL');
+      await _ensurePerformanceIndexes();
     },
   );
+
+  Future<void> _ensurePerformanceIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS '
+      'idx_transactions_budget_destination_account_occurred '
+      'ON transactions (budget_id, destination_account_id, occurred_at)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sync_operations_budget_device_clock '
+      'ON sync_operations (budget_id, device_id, logical_clock, op_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sync_operations_budget_entity_clock '
+      'ON sync_operations '
+      '(budget_id, entity_type, entity_id, logical_clock, device_id, op_id)',
+    );
+  }
 
   Future<void> _seedCategoryTemplates() async {
     await batch((Batch batch) {
