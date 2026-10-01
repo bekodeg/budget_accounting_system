@@ -59,9 +59,9 @@ void main() {
       ),
     ];
 
-    final states = _permutations(operations)
-        .map(engine.merge)
-        .toList(growable: false);
+    final states = _permutations(
+      operations,
+    ).map(engine.merge).toList(growable: false);
 
     for (final state in states) {
       expect(state.values, states.first.values);
