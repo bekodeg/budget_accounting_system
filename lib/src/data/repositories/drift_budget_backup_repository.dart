@@ -170,20 +170,24 @@ final class DriftBudgetBackupRepository implements BudgetBackupRepository {
       row['budget_id'] = newBudgetId;
     }
     for (final row in _maps(data, 'categories')) {
+      final oldId = _string(row, 'id');
       row['budget_id'] = newBudgetId;
-      row['id'] = categoryIds[_string(row, 'id')];
+      row['id'] = categoryIds[oldId];
     }
     for (final row in _maps(data, 'accounts')) {
+      final oldId = _string(row, 'id');
       row['budget_id'] = newBudgetId;
-      row['id'] = accountIds[_string(row, 'id')];
+      row['id'] = accountIds[oldId];
     }
     for (final row in _maps(data, 'receipts')) {
+      final oldId = _string(row, 'id');
       row['budget_id'] = newBudgetId;
-      row['id'] = receiptIds[_string(row, 'id')];
+      row['id'] = receiptIds[oldId];
     }
     for (final row in _maps(data, 'transactions')) {
+      final oldId = _string(row, 'id');
       row['budget_id'] = newBudgetId;
-      row['id'] = transactionIds[_string(row, 'id')];
+      row['id'] = transactionIds[oldId];
       row['account_id'] = accountIds[_string(row, 'account_id')];
       final destination = _nullableString(row, 'destination_account_id');
       row['destination_account_id'] =
@@ -194,8 +198,9 @@ final class DriftBudgetBackupRepository implements BudgetBackupRepository {
       row['receipt_id'] = receipt == null ? null : receiptIds[receipt];
     }
     for (final row in _maps(data, 'plans')) {
+      final oldId = _string(row, 'id');
       row['budget_id'] = newBudgetId;
-      row['id'] = planIds[_string(row, 'id')];
+      row['id'] = planIds[oldId];
       row['category_id'] = categoryIds[_string(row, 'category_id')];
     }
 
