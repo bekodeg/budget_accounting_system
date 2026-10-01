@@ -15,7 +15,7 @@ import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
 import 'package:budget_accounting_system/src/domain/models/public_identity.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/money.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
