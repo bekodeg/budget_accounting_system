@@ -77,7 +77,10 @@ final class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
             _row('Платформа', data.platform),
             _row('Бюджетов (count)', data.budgetCount.toString()),
             _row('Sync operations (count)', data.syncOperationCount.toString()),
-            _row('Failed receipt OCR (count)', data.failedReceiptCount.toString()),
+            _row(
+              'Failed receipt OCR (count)',
+              data.failedReceiptCount.toString(),
+            ),
             _row('Последних safe errors', data.recentErrorCount.toString()),
             const SizedBox(height: 12),
             Text('Файлы: ${data.archiveEntries.join(', ')}'),

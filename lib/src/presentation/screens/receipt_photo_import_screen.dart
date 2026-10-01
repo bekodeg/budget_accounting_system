@@ -17,10 +17,12 @@ final class ReceiptPhotoImportScreen extends StatefulWidget {
   final ImagePicker? imagePicker;
 
   @override
-  State<ReceiptPhotoImportScreen> createState() => _ReceiptPhotoImportScreenState();
+  State<ReceiptPhotoImportScreen> createState() =>
+      _ReceiptPhotoImportScreenState();
 }
 
-final class _ReceiptPhotoImportScreenState extends State<ReceiptPhotoImportScreen> {
+final class _ReceiptPhotoImportScreenState
+    extends State<ReceiptPhotoImportScreen> {
   bool _processing = false;
   String? _error;
 

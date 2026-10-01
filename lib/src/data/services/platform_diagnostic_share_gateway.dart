@@ -22,17 +22,13 @@ final class PlatformDiagnosticShareGateway implements DiagnosticShareGateway {
       await directory.delete(recursive: true);
     }
     await directory.create(recursive: true);
-    final file = File(
-      '${directory.path}${Platform.pathSeparator}$fileName',
-    );
+    final file = File('${directory.path}${Platform.pathSeparator}$fileName');
     await file.writeAsBytes(zipBytes, flush: true);
 
     try {
       await SharePlus.instance.share(
         ShareParams(
-          files: [
-            XFile(file.path, mimeType: 'application/zip'),
-          ],
+          files: [XFile(file.path, mimeType: 'application/zip')],
           subject: 'Budget Accounting diagnostics',
         ),
       );
