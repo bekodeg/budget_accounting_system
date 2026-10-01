@@ -114,7 +114,10 @@ void main() {
       );
 
       expect(
-        plans.snapshot(session.budgetId, DateTime(2026, 9)).single.plannedAmountMinor,
+        plans
+            .snapshot(session.budgetId, DateTime(2026, 9))
+            .single
+            .plannedAmountMinor,
         BigInt.from(70000),
       );
 
