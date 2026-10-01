@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:budget_accounting_system/src/application/errors/sync_coordinator_error.dart';
 import 'package:budget_accounting_system/src/application/services/sync_coordinator_service.dart';
 import 'package:flutter_test/flutter_test.dart';
