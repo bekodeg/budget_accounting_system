@@ -39,33 +39,10 @@ void main() {
     expect(repository.current.parsedPayloadJson, contains('"A"'));
   });
 
-  test('provider network failure is non-blocking and does not mutate receipt', () async {
-    final original = ReceiptQrDraft(
-      receiptId: 'receipt-1',
-      budgetId: 'budget-1',
-      rawQr: 'qr',
-      occurredAt: null,
-      totalMinor: null,
-      description: null,
-      parsedPayloadJson: '{}',
-      parseStatus: 'NEW',
-      isDuplicate: false,
-    );
-    final repository = _Repository(original);
-    final coordinator = ReceiptEnrichmentCoordinator(
-      provider: const _FailingProvider(),
-      repository: repository,
-    );
-
-    await coordinator.enrichInBackground(original);
-
-    expect(repository.current.parsedPayloadJson, '{}');
-    expect(repository.saves, 0);
-  });
-
-  test('provider can be replaced without changing coordinator contract', () async {
-    final repository = _Repository(
-      ReceiptQrDraft(
+  test(
+    'provider network failure is non-blocking and does not mutate receipt',
+    () async {
+      final original = ReceiptQrDraft(
         receiptId: 'receipt-1',
         budgetId: 'budget-1',
         rawQr: 'qr',
@@ -75,22 +52,51 @@ void main() {
         parsedPayloadJson: '{}',
         parseStatus: 'NEW',
         isDuplicate: false,
-      ),
-    );
-
-    for (final provider in <ReceiptEnrichmentProvider>[
-      const _Provider(ReceiptEnrichment(merchant: 'A')),
-      const _SecondProvider(),
-    ]) {
+      );
+      final repository = _Repository(original);
       final coordinator = ReceiptEnrichmentCoordinator(
-        provider: provider,
+        provider: const _FailingProvider(),
         repository: repository,
       );
-      await coordinator.enrichInBackground(repository.current);
-    }
 
-    expect(repository.current.description, 'A');
-  });
+      await coordinator.enrichInBackground(original);
+
+      expect(repository.current.parsedPayloadJson, '{}');
+      expect(repository.saves, 0);
+    },
+  );
+
+  test(
+    'provider can be replaced without changing coordinator contract',
+    () async {
+      final repository = _Repository(
+        ReceiptQrDraft(
+          receiptId: 'receipt-1',
+          budgetId: 'budget-1',
+          rawQr: 'qr',
+          occurredAt: null,
+          totalMinor: null,
+          description: null,
+          parsedPayloadJson: '{}',
+          parseStatus: 'NEW',
+          isDuplicate: false,
+        ),
+      );
+
+      for (final provider in <ReceiptEnrichmentProvider>[
+        const _Provider(ReceiptEnrichment(merchant: 'A')),
+        const _SecondProvider(),
+      ]) {
+        final coordinator = ReceiptEnrichmentCoordinator(
+          provider: provider,
+          repository: repository,
+        );
+        await coordinator.enrichInBackground(repository.current);
+      }
+
+      expect(repository.current.description, 'A');
+    },
+  );
 }
 
 final class _Repository implements ReceiptRepository {

@@ -86,7 +86,6 @@ final class BudgetDashboardScreen extends StatelessWidget {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();

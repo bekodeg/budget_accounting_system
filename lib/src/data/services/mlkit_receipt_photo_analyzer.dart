@@ -19,10 +19,7 @@ final class MlKitReceiptPhotoAnalyzer implements ReceiptPhotoAnalyzer {
       for (final code in codes) {
         final raw = code.rawValue?.trim();
         if (raw != null && raw.isNotEmpty) {
-          return ReceiptPhotoAnalysis(
-            qrRawValue: raw,
-            recognizedText: '',
-          );
+          return ReceiptPhotoAnalysis(qrRawValue: raw, recognizedText: '');
         }
       }
     } finally {

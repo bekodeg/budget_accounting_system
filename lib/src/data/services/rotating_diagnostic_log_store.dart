@@ -12,8 +12,7 @@ final class RotatingDiagnosticLogStore implements DiagnosticLogStore {
     DiagnosticLogDirectoryResolver? directoryResolver,
     this.maxFileBytes = 64 * 1024,
     this.maxFiles = 3,
-  }) : _directoryResolver =
-           directoryResolver ?? _defaultDirectoryResolver;
+  }) : _directoryResolver = directoryResolver ?? _defaultDirectoryResolver;
 
   final DiagnosticLogDirectoryResolver _directoryResolver;
   final int maxFileBytes;
@@ -21,16 +20,11 @@ final class RotatingDiagnosticLogStore implements DiagnosticLogStore {
 
   static Future<Directory> _defaultDirectoryResolver() async {
     final root = await getApplicationSupportDirectory();
-    return Directory(
-      '${root.path}${Platform.pathSeparator}diagnostics',
-    );
+    return Directory('${root.path}${Platform.pathSeparator}diagnostics');
   }
 
   @override
-  Future<void> append({
-    required String category,
-    required String code,
-  }) async {
+  Future<void> append({required String category, required String code}) async {
     final safeCategory = _sanitizeToken(category, fallback: 'app');
     final safeCode = _sanitizeToken(code, fallback: 'unknown_error');
     final directory = await _directoryResolver();
@@ -39,8 +33,7 @@ final class RotatingDiagnosticLogStore implements DiagnosticLogStore {
     final current = File(
       '${directory.path}${Platform.pathSeparator}diagnostic-0.jsonl',
     );
-    if (await current.exists() &&
-        await current.length() >= maxFileBytes) {
+    if (await current.exists() && await current.length() >= maxFileBytes) {
       await _rotate(directory);
     }
 
@@ -121,13 +114,11 @@ final class RotatingDiagnosticLogStore implements DiagnosticLogStore {
   }
 
   String _sanitizeToken(String value, {required String fallback}) {
-    final normalized = value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9_.-]'), '_');
+    final normalized = value.trim().toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9_.-]'),
+      '_',
+    );
     if (normalized.isEmpty) return fallback;
-    return normalized.length <= 80
-        ? normalized
-        : normalized.substring(0, 80);
+    return normalized.length <= 80 ? normalized : normalized.substring(0, 80);
   }
 }
