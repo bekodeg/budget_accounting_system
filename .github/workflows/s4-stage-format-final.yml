@@ -1,0 +1,61 @@
+name: One-shot S4 stage-order format
+
+on:
+  push:
+    branches:
+      - chore/s4-stage-format-final
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: chore/s4-stage-format-final
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Drift code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate Drift migrations
+        run: dart run drift_dev make-migrations
+
+      - name: Generate Drift migration test helper
+        run: >-
+          dart run drift_dev schema generate
+          --data-classes
+          --companions
+          drift_schemas/app_database/
+          test/drift/generated_migrations/
+
+      - name: Format Dart sources
+        run: dart format lib test
+
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/s4-stage-format-final.yml
+
+      - name: Commit stage-order formatting
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib test .github/workflows/s4-stage-format-final.yml
+          if git diff --cached --quiet; then
+            echo "No formatting changes."
+            exit 0
+          fi
+          git commit -m "chore: align S4 formatting with stage pipeline"
+          git push origin HEAD:chore/s4-stage-format-final
