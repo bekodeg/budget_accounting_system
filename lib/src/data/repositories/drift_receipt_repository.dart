@@ -28,7 +28,13 @@ final class DriftReceiptRepository implements ReceiptRepository {
     return _dao.upsertReceipt(
       ReceiptsCompanion.insert(
         id: receipt.receiptId,
-        budgetId: receipt.rawQr.isEmpty ? '' : receipt.receiptId,
+        budgetId: receipt.budgetId,
+        rawQr: Value(receipt.rawQr),
+        merchant: Value(receipt.description),
+        receiptTime: Value(receipt.occurredAt),
+        totalMinor: Value(receipt.totalMinor),
+        parsedPayload: Value(receipt.parsedPayloadJson),
+        parseStatus: Value(receipt.parseStatus),
       ),
     );
   }
@@ -36,10 +42,12 @@ final class DriftReceiptRepository implements ReceiptRepository {
   ReceiptQrDraft _toDraft(Receipt row, {required bool isDuplicate}) {
     return ReceiptQrDraft(
       receiptId: row.id,
+      budgetId: row.budgetId,
       rawQr: row.rawQr ?? '',
       occurredAt: row.receiptTime,
       totalMinor: row.totalMinor,
       description: row.merchant,
+      parsedPayloadJson: row.parsedPayload ?? '{}',
       parseStatus: row.parseStatus,
       isDuplicate: isDuplicate,
     );
