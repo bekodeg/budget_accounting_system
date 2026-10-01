@@ -121,19 +121,18 @@ void main() {
         signature: wire.signature,
       );
 
-      await expectLater(
-        () => target.journal.ingest(
+      SyncProtocolError? collision;
+      try {
+        await target.journal.ingest(
           budgetId: 'budget-1',
           operations: [conflicting],
-        ),
-        throwsA(
-          isA<SyncProtocolError>().having(
-            (error) => error.code,
-            'code',
-            SyncProtocolErrorCode.operationCollision,
-          ),
-        ),
-      );
+        );
+      } on SyncProtocolError catch (error) {
+        collision = error;
+      }
+
+      expect(collision, isNotNull);
+      expect(collision!.code, SyncProtocolErrorCode.operationCollision);
     },
   );
 
