@@ -35,7 +35,8 @@ final class PlatformReportShareGateway implements ReportShareGateway {
             XFile(files.csvFile.path, mimeType: 'text/csv'),
             XFile(
               files.xlsxFile.path,
-              mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              mimeType:
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ),
           ],
           subject: 'Budget report',

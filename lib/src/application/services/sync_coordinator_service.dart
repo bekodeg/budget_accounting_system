@@ -3,10 +3,11 @@ import 'dart:async';
 import '../../domain/models/sync_coordinator.dart';
 import '../errors/sync_coordinator_error.dart';
 
-typedef PairSync = Future<void> Function({
-  required String coordinatorDeviceId,
-  required String peerDeviceId,
-});
+typedef PairSync =
+    Future<void> Function({
+      required String coordinatorDeviceId,
+      required String peerDeviceId,
+    });
 
 final class SyncCoordinatorService {
   const SyncCoordinatorService({this.maxConcurrentConnections = 4})
