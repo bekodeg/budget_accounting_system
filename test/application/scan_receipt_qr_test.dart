@@ -35,6 +35,14 @@ final class _ReceiptRepository implements ReceiptRepository {
   final List<ReceiptQrDraft> saved = [];
 
   @override
+  Future<ReceiptQrDraft?> findById(String receiptId) async {
+    for (final item in saved) {
+      if (item.receiptId == receiptId) return item;
+    }
+    return null;
+  }
+
+  @override
   Future<ReceiptQrDraft?> findByRawQr({
     required String budgetId,
     required String rawQr,
