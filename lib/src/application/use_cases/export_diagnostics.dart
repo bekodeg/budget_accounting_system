@@ -20,7 +20,7 @@ final class ExportDiagnostics {
     final archive = Archive()
       ..addFile(ArchiveFile.string('diagnostics.json', bundle.diagnosticsJson))
       ..addFile(ArchiveFile.string('errors.jsonl', bundle.errorsJsonLines));
-    final encoded = ZipEncoder().encodeBytes(archive);
+    final encoded = ZipEncoder().encode(archive) ?? const <int>[];
     await _shareGateway.share(
       fileName: 'budget-accounting-diagnostics.zip',
       zipBytes: Uint8List.fromList(encoded),
