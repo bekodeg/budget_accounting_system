@@ -97,8 +97,8 @@ final class AppCompositionRoot {
   AppCompositionRoot._({required BudgetDal dal, required this.services})
     : _dal = dal;
 
-  factory AppCompositionRoot.defaults() {
-    final dal = BudgetDal.defaults();
+  factory AppCompositionRoot.defaults({AppDatabase? database}) {
+    final dal = BudgetDal(database ?? AppDatabase.defaults());
     final budgetRepository = DriftBudgetRepository(dal.usersAndBudgets);
     final baseCategoryRepository = DriftCategoryRepository(
       dal.categoriesAndAccounts,

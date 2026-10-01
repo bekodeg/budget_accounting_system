@@ -31,6 +31,22 @@ final class AppDatabase extends _$AppDatabase {
         ),
       );
 
+  AppDatabase.encrypted({
+    required String key,
+    required String databasePath,
+  }) : super(
+         driftDatabase(
+           name: 'budget_accounting',
+           native: DriftNativeOptions(
+             shareAcrossIsolates: true,
+             databasePath: () async => databasePath,
+             setup: (database) {
+               database.execute("PRAGMA key = '$key';");
+             },
+           ),
+         ),
+       );
+
   @override
   int get schemaVersion => 1;
 

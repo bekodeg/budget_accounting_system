@@ -21,6 +21,7 @@ dependencies:
   mobile_scanner: ^7.4.2
   share_plus: ^13.3.0
   shared_preferences: ^2.5.5
+  sqlite3: ^3.7.0
 
 dev_dependencies:
   flutter_test:
@@ -31,3 +32,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
