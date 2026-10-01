@@ -172,10 +172,12 @@ final class _CreatedInviteDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            QrImageView(
-              key: const ValueKey('budget-invite-qr'),
-              data: preview.rawPayload,
-              size: 240,
+            SizedBox.square(
+              dimension: 240,
+              child: QrImageView(
+                key: const ValueKey('budget-invite-qr'),
+                data: preview.rawPayload,
+              ),
             ),
             const SizedBox(height: 12),
             Text(invite.budgetName),
