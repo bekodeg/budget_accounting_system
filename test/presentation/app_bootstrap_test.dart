@@ -16,7 +16,7 @@ void main() {
     final services = fakeAppServices(
       repository: repository,
       sessionStore: sessionStore,
-      idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
     );
 
     await tester.pumpWidget(BudgetAccountingApp(services: services));
@@ -63,7 +63,7 @@ void main() {
       repository: repository,
       categoryRepository: categoryRepository,
       sessionStore: FakeSessionStore(),
-      idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
     );
 
     await tester.pumpWidget(BudgetAccountingApp(services: services));
@@ -93,7 +93,7 @@ void main() {
     final services = fakeAppServices(
       repository: repository,
       sessionStore: FakeSessionStore(),
-      idGenerator: FakeIdGenerator(['user-1', 'budget-1']),
+      idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
     );
 
     await tester.pumpWidget(BudgetAccountingApp(services: services));
