@@ -11,6 +11,8 @@ import '../application/services/sync_session_service.dart';
 import '../application/services/session_sync_mutation_context_provider.dart';
 import '../application/services/fiscal_receipt_qr_parser.dart';
 import '../application/services/receipt_ocr_parser.dart';
+import '../application/services/receipt_enrichment_config.dart';
+import '../application/services/receipt_enrichment_coordinator.dart';
 import '../application/use_cases/accept_budget_invite.dart';
 import '../application/use_cases/apply_budget_snapshot.dart';
 import '../application/use_cases/apply_category_templates.dart';
@@ -98,6 +100,7 @@ import '../data/services/excel_report_document_encoder.dart';
 import '../data/services/platform_invite_file_gateway.dart';
 import '../data/services/platform_receipt_image_store.dart';
 import '../data/services/mlkit_receipt_photo_analyzer.dart';
+import '../data/services/mock_receipt_enrichment_provider.dart';
 import '../data/services/platform_budget_backup_file_gateway.dart';
 import '../data/services/platform_report_share_gateway.dart';
 import '../data/services/random_secure_token_generator.dart';
@@ -127,6 +130,13 @@ final class AppCompositionRoot {
       dal.transactions,
     );
     final receiptRepository = DriftReceiptRepository(dal.plansAndReceipts);
+    final enrichmentConfig = ReceiptEnrichmentConfig.fromEnvironment();
+    final receiptEnrichment = enrichmentConfig.mode == 'mock'
+        ? ReceiptEnrichmentCoordinator(
+            provider: const MockReceiptEnrichmentProvider(),
+            repository: receiptRepository,
+          )
+        : null;
     final identityRepository = DriftIdentityRepository(dal.usersAndBudgets);
     final invitationRepository = DriftInvitationRepository(dal.usersAndBudgets);
     final baseMembershipRepository = DriftMembershipRepository(
@@ -347,6 +357,7 @@ final class AppCompositionRoot {
           ocrParser: const ReceiptOcrParser(),
           idGenerator: idGenerator,
           authorization: authorization,
+          enrichmentCoordinator: receiptEnrichment,
         ),
         budgetSnapshotSessions: budgetSnapshotSessions,
         lanPeerSessions: lanPeerSessions,
@@ -376,6 +387,7 @@ final class AppCompositionRoot {
           parser: const FiscalReceiptQrParser(),
           idGenerator: idGenerator,
           authorization: authorization,
+          enrichmentCoordinator: receiptEnrichment,
         ),
         shareBudgetInviteFile: ShareBudgetInviteFile(inviteFileGateway),
         setMonthlyPlanAmount: SetMonthlyPlanAmount(
