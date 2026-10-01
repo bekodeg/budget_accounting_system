@@ -26,11 +26,15 @@ import '../application/use_cases/create_transaction.dart';
 import '../application/use_cases/create_transfer.dart';
 import '../application/use_cases/delete_transaction.dart';
 import '../application/use_cases/export_report.dart';
+import '../application/use_cases/export_budget_backup.dart';
 import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/get_budget_account_balances.dart';
 import '../application/use_cases/get_public_identity.dart';
 import '../application/use_cases/inspect_budget_invite.dart';
 import '../application/use_cases/pick_budget_invite_file.dart';
+import '../application/use_cases/pick_budget_backup.dart';
+import '../application/use_cases/preview_budget_backup.dart';
+import '../application/use_cases/restore_budget_backup.dart';
 import '../application/use_cases/ensure_local_identity.dart';
 import '../application/use_cases/rename_category.dart';
 import '../application/use_cases/require_account_in_budget.dart';
@@ -66,6 +70,7 @@ import '../data/security/secure_invite_consumption_store.dart';
 import '../data/repositories/drift_account_repository.dart';
 import '../data/repositories/drift_budget_repository.dart';
 import '../data/repositories/drift_budget_snapshot_repository.dart';
+import '../data/repositories/drift_budget_backup_repository.dart';
 import '../data/repositories/drift_category_repository.dart';
 import '../data/repositories/drift_dashboard_repository.dart';
 import '../data/repositories/drift_extended_report_repository.dart';
@@ -89,6 +94,7 @@ import '../data/services/drift_sync_materializer.dart';
 import '../data/services/drift_sync_mutation_executor.dart';
 import '../data/services/excel_report_document_encoder.dart';
 import '../data/services/platform_invite_file_gateway.dart';
+import '../data/services/platform_budget_backup_file_gateway.dart';
 import '../data/services/platform_report_share_gateway.dart';
 import '../data/services/random_secure_token_generator.dart';
 import '../data/services/secure_id_generator.dart';
@@ -181,6 +187,12 @@ final class AppCompositionRoot {
       syncDao: dal.sync,
       signatureService: identitySignatureService,
     );
+    final backupRepository = DriftBudgetBackupRepository(
+      database: dal.database,
+      snapshotRepository: snapshotRepository,
+      idGenerator: idGenerator,
+    );
+    const backupFileGateway = PlatformBudgetBackupFileGateway();
     final budgetSnapshotSessions = BudgetSnapshotSessionService(
       snapshotRepository,
     );
@@ -307,6 +319,11 @@ final class AppCompositionRoot {
           repository: transactionRepository,
           authorization: authorization,
         ),
+        exportBudgetBackup: ExportBudgetBackup(
+          repository: backupRepository,
+          fileGateway: backupFileGateway,
+          authorization: authorization,
+        ),
         exportReport: ExportReport(
           reportRepository: extendedReportRepository,
           exportRepository: reportExportRepository,
@@ -323,6 +340,9 @@ final class AppCompositionRoot {
         syncCoordinator: syncCoordinator,
         syncSessions: syncSessions,
         pickBudgetInviteFile: PickBudgetInviteFile(inviteFileGateway),
+        pickBudgetBackup: PickBudgetBackup(backupFileGateway),
+        previewBudgetBackup: PreviewBudgetBackup(backupRepository),
+        restoreBudgetBackup: RestoreBudgetBackup(backupRepository),
         renameCategory: RenameCategory(
           repository: categoryRepository,
           authorization: authorization,

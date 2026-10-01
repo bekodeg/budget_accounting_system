@@ -17,11 +17,15 @@ import 'use_cases/create_transaction.dart';
 import 'use_cases/create_transfer.dart';
 import 'use_cases/delete_transaction.dart';
 import 'use_cases/export_report.dart';
+import 'use_cases/export_budget_backup.dart';
 import 'use_cases/get_account_balance.dart';
 import 'use_cases/get_budget_account_balances.dart';
 import 'use_cases/get_public_identity.dart';
 import 'use_cases/inspect_budget_invite.dart';
 import 'use_cases/pick_budget_invite_file.dart';
+import 'use_cases/pick_budget_backup.dart';
+import 'use_cases/preview_budget_backup.dart';
+import 'use_cases/restore_budget_backup.dart';
 import 'use_cases/rename_category.dart';
 import 'use_cases/require_account_in_budget.dart';
 import 'use_cases/require_category_in_budget.dart';
@@ -63,6 +67,7 @@ final class AppServices {
     required this.createTransfer,
     required this.deleteTransaction,
     required this.exportReport,
+    this.exportBudgetBackup,
     required this.getAccountBalance,
     required this.getBudgetAccountBalances,
     required this.getPublicIdentity,
@@ -72,6 +77,9 @@ final class AppServices {
     this.syncCoordinator,
     this.syncSessions,
     required this.pickBudgetInviteFile,
+    this.pickBudgetBackup,
+    this.previewBudgetBackup,
+    this.restoreBudgetBackup,
     required this.renameCategory,
     required this.requireAccountInBudget,
     required this.requireCategoryInBudget,
@@ -112,6 +120,7 @@ final class AppServices {
   final CreateTransfer createTransfer;
   final DeleteTransaction deleteTransaction;
   final ExportReport exportReport;
+  final ExportBudgetBackup? exportBudgetBackup;
   final GetAccountBalance getAccountBalance;
   final GetBudgetAccountBalances getBudgetAccountBalances;
   final GetPublicIdentity getPublicIdentity;
@@ -121,6 +130,9 @@ final class AppServices {
   final SyncCoordinatorService? syncCoordinator;
   final SyncSessionService? syncSessions;
   final PickBudgetInviteFile pickBudgetInviteFile;
+  final PickBudgetBackup? pickBudgetBackup;
+  final PreviewBudgetBackup? previewBudgetBackup;
+  final RestoreBudgetBackup? restoreBudgetBackup;
   final RenameCategory renameCategory;
   final RequireAccountInBudget requireAccountInBudget;
   final RequireCategoryInBudget requireCategoryInBudget;
