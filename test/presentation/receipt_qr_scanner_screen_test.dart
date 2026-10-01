@@ -48,11 +48,13 @@ void main() {
     );
 
     await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const ValueKey('receipt-scanner-mock')), findsOneWidget);
 
     scans.add('t=20260930T1913&s=15.20');
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(result, isNotNull);
     expect(result!.totalMinor, BigInt.from(1520));
@@ -85,7 +87,8 @@ void main() {
     );
 
     scans.add(raw);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(
       find.byKey(const ValueKey('receipt-duplicate-dialog')),
