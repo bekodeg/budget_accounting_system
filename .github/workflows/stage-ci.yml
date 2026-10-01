@@ -166,6 +166,14 @@ jobs:
       - name: Configure LAN platform permissions
         run: python3 tool/configure_lan_platform_permissions.py
 
+      - name: Configure ML Kit Android dependencies
+        run: |
+          python3 tool/configure_mlkit_android_dependencies.py
+          grep -F 'com.google.mlkit:text-recognition-chinese:16.0.1' android/app/build.gradle.kts
+          grep -F 'com.google.mlkit:text-recognition-devanagari:16.0.1' android/app/build.gradle.kts
+          grep -F 'com.google.mlkit:text-recognition-japanese:16.0.1' android/app/build.gradle.kts
+          grep -F 'com.google.mlkit:text-recognition-korean:16.0.1' android/app/build.gradle.kts
+
       - name: Validate Android signing secrets
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
