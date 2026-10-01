@@ -77,7 +77,7 @@ final class AppServices {
     required this.requireCategoryInBudget,
     required this.resolveAppStartup,
     required this.selectBudget,
-    required this.scanReceiptQr,
+    this.scanReceiptQr,
     required this.shareBudgetInviteFile,
     required this.setMonthlyPlanAmount,
     required this.updateAccount,
@@ -126,7 +126,7 @@ final class AppServices {
   final RequireCategoryInBudget requireCategoryInBudget;
   final ResolveAppStartup resolveAppStartup;
   final SelectBudget selectBudget;
-  final ScanReceiptQr scanReceiptQr;
+  final ScanReceiptQr? scanReceiptQr;
   final ShareBudgetInviteFile shareBudgetInviteFile;
   final SetMonthlyPlanAmount setMonthlyPlanAmount;
   final UpdateAccount updateAccount;
