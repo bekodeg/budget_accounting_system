@@ -107,7 +107,35 @@ final class DriftSyncJournal implements SyncJournal {
 
         final existing = await _syncDao.findById(operation.operationId);
         if (existing != null) {
-          if (!_matchesStoredOperation(existing, wire)) {
+          final publicKey = await _identityRepository.getUserPublicKey(
+            operation.authorId,
+          );
+          final device = await _identityRepository.findDevice(
+            operation.deviceId,
+          );
+          final valid =
+              publicKey != null &&
+              !publicKey.startsWith('local-unverified:') &&
+              device != null &&
+              device.userId == operation.authorId &&
+              !device.isRevoked &&
+              await _signatureService.verify(
+                publicKey: publicKey,
+                message: _operationCodec.signingBytes(operation),
+                signature: wire.signature,
+              );
+
+          Uint8List incomingSignature;
+          try {
+            incomingSignature = base64Url.decode(wire.signature);
+          } on FormatException {
+            throw SyncProtocolError(
+              SyncProtocolErrorCode.operationCollision,
+              'Remote op_id collision: ${operation.operationId}.',
+            );
+          }
+
+          if (!valid || !_sameBytes(existing.signature, incomingSignature)) {
             throw SyncProtocolError(
               SyncProtocolErrorCode.operationCollision,
               'Remote op_id collision: ${operation.operationId}.',
@@ -195,34 +223,10 @@ final class DriftSyncJournal implements SyncJournal {
     });
   }
 
-  bool _matchesStoredOperation(SyncOperation stored, SyncWireOperation wire) {
-    final operation = wire.operation;
-    if (stored.opId != operation.operationId ||
-        stored.budgetId != operation.budgetId ||
-        stored.entityType != operation.entityType ||
-        stored.entityId != operation.entityId ||
-        stored.opType != syncMutationTypeName(operation.type) ||
-        stored.patch != operation.patchJson ||
-        stored.authorId != operation.authorId ||
-        stored.deviceId != operation.deviceId ||
-        stored.logicalClock != operation.logicalClock ||
-        stored.createdAt != operation.createdAt) {
-      return false;
-    }
-
-    Uint8List incomingSignature;
-    try {
-      incomingSignature = base64Url.decode(wire.signature);
-    } on FormatException {
-      return false;
-    }
-    if (stored.signature.length != incomingSignature.length) {
-      return false;
-    }
-    for (var index = 0; index < stored.signature.length; index += 1) {
-      if (stored.signature[index] != incomingSignature[index]) {
-        return false;
-      }
+  bool _sameBytes(Uint8List left, Uint8List right) {
+    if (left.length != right.length) return false;
+    for (var index = 0; index < left.length; index += 1) {
+      if (left[index] != right[index]) return false;
     }
     return true;
   }
