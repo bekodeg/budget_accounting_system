@@ -25,6 +25,7 @@ dependencies:
   share_plus: ^13.3.0
   shared_preferences: ^2.5.5
   sqlite3: ^3.7.0
+  archive: ^4.3.0
 
 dev_dependencies:
   flutter_test:
