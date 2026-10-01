@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cryptography/cryptography.dart';
 
@@ -50,7 +51,8 @@ final class BudgetBackupCodec {
       );
     }
 
-    final salt = Cryptography.instance.randomBytes(16);
+    final random = Random.secure();
+    final salt = List<int>.generate(16, (_) => random.nextInt(256));
     final nonce = _cipher.newNonce();
     final secretKey = await _kdf.deriveKey(
       secretKey: SecretKey(utf8.encode(normalizedPassword)),
