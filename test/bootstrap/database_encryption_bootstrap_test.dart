@@ -26,7 +26,7 @@ void main() {
     final plain = sqlite3.open(databasePath);
     plain.execute('CREATE TABLE sample (value TEXT NOT NULL);');
     plain.execute("INSERT INTO sample(value) VALUES ('kept');");
-    plain.dispose();
+    plain.close();
 
     final keyStore = _KeyStore();
     final bootstrap = DatabaseEncryptionBootstrap(
@@ -45,13 +45,13 @@ void main() {
       () => withoutKey.select('SELECT value FROM sample;'),
       throwsA(isA<SqliteException>()),
     );
-    withoutKey.dispose();
+    withoutKey.close();
 
     final encrypted = sqlite3.open(databasePath);
     encrypted.execute("PRAGMA key = '${config.key}';");
     final rows = encrypted.select('SELECT value FROM sample;');
     expect(rows.single['value'], 'kept');
-    encrypted.dispose();
+    encrypted.close();
   });
 
   test(
@@ -68,7 +68,7 @@ void main() {
       final encrypted = sqlite3.open(databasePath);
       encrypted.execute("PRAGMA key = '${first.key}';");
       encrypted.execute('CREATE TABLE sample (value INTEGER NOT NULL);');
-      encrypted.dispose();
+      encrypted.close();
 
       keyStore.key = null;
 
