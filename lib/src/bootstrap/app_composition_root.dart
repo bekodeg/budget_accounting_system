@@ -10,6 +10,7 @@ import '../application/services/sync_coordinator_service.dart';
 import '../application/services/sync_session_service.dart';
 import '../application/services/session_sync_mutation_context_provider.dart';
 import '../application/services/fiscal_receipt_qr_parser.dart';
+import '../application/services/receipt_ocr_parser.dart';
 import '../application/use_cases/accept_budget_invite.dart';
 import '../application/use_cases/apply_budget_snapshot.dart';
 import '../application/use_cases/apply_category_templates.dart';
@@ -31,6 +32,7 @@ import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/get_budget_account_balances.dart';
 import '../application/use_cases/get_public_identity.dart';
 import '../application/use_cases/inspect_budget_invite.dart';
+import '../application/use_cases/import_receipt_photo.dart';
 import '../application/use_cases/pick_budget_invite_file.dart';
 import '../application/use_cases/pick_budget_backup.dart';
 import '../application/use_cases/preview_budget_backup.dart';
@@ -94,6 +96,8 @@ import '../data/services/drift_sync_materializer.dart';
 import '../data/services/drift_sync_mutation_executor.dart';
 import '../data/services/excel_report_document_encoder.dart';
 import '../data/services/platform_invite_file_gateway.dart';
+import '../data/services/platform_receipt_image_store.dart';
+import '../data/services/mlkit_receipt_photo_analyzer.dart';
 import '../data/services/platform_budget_backup_file_gateway.dart';
 import '../data/services/platform_report_share_gateway.dart';
 import '../data/services/random_secure_token_generator.dart';
@@ -335,6 +339,15 @@ final class AppCompositionRoot {
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
         getPublicIdentity: getPublicIdentity,
         inspectBudgetInvite: inspectBudgetInvite,
+        importReceiptPhoto: ImportReceiptPhoto(
+          receiptRepository: receiptRepository,
+          imageStore: const PlatformReceiptImageStore(),
+          analyzer: const MlKitReceiptPhotoAnalyzer(),
+          qrParser: const FiscalReceiptQrParser(),
+          ocrParser: const ReceiptOcrParser(),
+          idGenerator: idGenerator,
+          authorization: authorization,
+        ),
         budgetSnapshotSessions: budgetSnapshotSessions,
         lanPeerSessions: lanPeerSessions,
         syncCoordinator: syncCoordinator,
