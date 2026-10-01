@@ -54,27 +54,30 @@ void main() {
     encrypted.dispose();
   });
 
-  test('refuses encrypted database when secure-storage key is missing', () async {
-    final keyStore = _KeyStore();
-    final bootstrap = DatabaseEncryptionBootstrap(
-      keyStore: keyStore,
-      tokenGenerator: const _TokenGenerator(),
-      databasePathResolver: () async => databasePath,
-    );
+  test(
+    'refuses encrypted database when secure-storage key is missing',
+    () async {
+      final keyStore = _KeyStore();
+      final bootstrap = DatabaseEncryptionBootstrap(
+        keyStore: keyStore,
+        tokenGenerator: const _TokenGenerator(),
+        databasePathResolver: () async => databasePath,
+      );
 
-    final first = await bootstrap.prepare();
-    final encrypted = sqlite3.open(databasePath);
-    encrypted.execute("PRAGMA key = '${first.key}';");
-    encrypted.execute('CREATE TABLE sample (value INTEGER NOT NULL);');
-    encrypted.dispose();
+      final first = await bootstrap.prepare();
+      final encrypted = sqlite3.open(databasePath);
+      encrypted.execute("PRAGMA key = '${first.key}';");
+      encrypted.execute('CREATE TABLE sample (value INTEGER NOT NULL);');
+      encrypted.dispose();
 
-    keyStore.key = null;
+      keyStore.key = null;
 
-    await expectLater(
-      bootstrap.prepare(),
-      throwsA(isA<DatabaseKeyMissingException>()),
-    );
-  });
+      await expectLater(
+        bootstrap.prepare(),
+        throwsA(isA<DatabaseKeyMissingException>()),
+      );
+    },
+  );
 
   test('creates and persists key for a new database', () async {
     final keyStore = _KeyStore();

@@ -13,82 +13,85 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('encrypted backup restores complete budget into a new database', () async {
-    final source = await _Fixture.create(seedBudget: true);
-    final target = await _Fixture.create(seedBudget: false);
-    addTearDown(source.database.close);
-    addTearDown(target.database.close);
+  test(
+    'encrypted backup restores complete budget into a new database',
+    () async {
+      final source = await _Fixture.create(seedBudget: true);
+      final target = await _Fixture.create(seedBudget: false);
+      addTearDown(source.database.close);
+      addTearDown(target.database.close);
 
-    final payload = await source.backups.createEncrypted(
-      budgetId: 'budget-1',
-      password: 'correct horse battery staple',
-    );
+      final payload = await source.backups.createEncrypted(
+        budgetId: 'budget-1',
+        password: 'correct horse battery staple',
+      );
 
-    expect(payload, isNot(contains('Coffee')));
-    expect(payload, isNot(contains('1250')));
+      expect(payload, isNot(contains('Coffee')));
+      expect(payload, isNot(contains('1250')));
 
-    final preview = await target.backups.preview(
-      payload: payload,
-      password: 'correct horse battery staple',
-    );
-    expect(preview.budgetName, 'Shared');
-    expect(preview.memberCount, 1);
-    expect(preview.categoryCount, 1);
-    expect(preview.accountCount, 1);
-    expect(preview.transactionCount, 1);
-    expect(preview.planCount, 1);
-    expect(preview.receiptCount, 1);
+      final preview = await target.backups.preview(
+        payload: payload,
+        password: 'correct horse battery staple',
+      );
+      expect(preview.budgetName, 'Shared');
+      expect(preview.memberCount, 1);
+      expect(preview.categoryCount, 1);
+      expect(preview.accountCount, 1);
+      expect(preview.transactionCount, 1);
+      expect(preview.planCount, 1);
+      expect(preview.receiptCount, 1);
 
-    final restored = await target.backups.restore(
-      payload: payload,
-      password: 'correct horse battery staple',
-    );
-    expect(restored.budgetId, 'budget-1');
-    expect(restored.restoredAsNewBudget, isFalse);
+      final restored = await target.backups.restore(
+        payload: payload,
+        password: 'correct horse battery staple',
+      );
+      expect(restored.budgetId, 'budget-1');
+      expect(restored.restoredAsNewBudget, isFalse);
 
-    final budget = await (target.database.select(
-      target.database.budgets,
-    )..where((row) => row.id.equals('budget-1'))).getSingle();
-    expect(budget.name, 'Shared');
+      final budget = await (target.database.select(
+        target.database.budgets,
+      )..where((row) => row.id.equals('budget-1'))).getSingle();
+      expect(budget.name, 'Shared');
 
-    expect(
-      await (target.database.select(target.database.budgetMembers)
-            ..where((row) => row.budgetId.equals('budget-1')))
-          .get(),
-      hasLength(1),
-    );
-    expect(
-      await (target.database.select(target.database.categories)
-            ..where((row) => row.budgetId.equals('budget-1')))
-          .get(),
-      hasLength(1),
-    );
-    expect(
-      await (target.database.select(target.database.accounts)
-            ..where((row) => row.budgetId.equals('budget-1')))
-          .get(),
-      hasLength(1),
-    );
+      expect(
+        await (target.database.select(
+          target.database.budgetMembers,
+        )..where((row) => row.budgetId.equals('budget-1'))).get(),
+        hasLength(1),
+      );
+      expect(
+        await (target.database.select(
+          target.database.categories,
+        )..where((row) => row.budgetId.equals('budget-1'))).get(),
+        hasLength(1),
+      );
+      expect(
+        await (target.database.select(
+          target.database.accounts,
+        )..where((row) => row.budgetId.equals('budget-1'))).get(),
+        hasLength(1),
+      );
 
-    final receipts = await (target.database.select(
-      target.database.receipts,
-    )..where((row) => row.budgetId.equals('budget-1'))).get();
-    expect(receipts, hasLength(1));
-    expect(receipts.single.rawQr, 't=20260930T1200&s=12.50');
+      final receipts = await (target.database.select(
+        target.database.receipts,
+      )..where((row) => row.budgetId.equals('budget-1'))).get();
+      expect(receipts, hasLength(1));
+      expect(receipts.single.rawQr, 't=20260930T1200&s=12.50');
 
-    final transactions = await (target.database.select(
-      target.database.budgetTransactions,
-    )..where((row) => row.budgetId.equals('budget-1'))).get();
-    expect(transactions, hasLength(1));
-    expect(transactions.single.amountMinor, BigInt.from(1250));
-    expect(transactions.single.receiptId, 'receipt-1');
+      final transactions = await (target.database.select(
+        target.database.budgetTransactions,
+      )..where((row) => row.budgetId.equals('budget-1'))).get();
+      expect(transactions, hasLength(1));
+      expect(transactions.single.amountMinor, BigInt.from(1250));
+      expect(transactions.single.receiptId, 'receipt-1');
 
-    final plans = await (target.database.select(
-      target.database.plans,
-    )..where((row) => row.budgetId.equals('budget-1'))).get();
-    expect(plans, hasLength(1));
-    expect(plans.single.plannedAmountMinor, BigInt.from(50000));
-  });
+      final plans = await (target.database.select(
+        target.database.plans,
+      )..where((row) => row.budgetId.equals('budget-1'))).get();
+      expect(plans, hasLength(1));
+      expect(plans.single.plannedAmountMinor, BigInt.from(50000));
+    },
+  );
 
   test('wrong password or corrupted backup does not mutate database', () async {
     final source = await _Fixture.create(seedBudget: true);
@@ -112,7 +115,10 @@ void main() {
       ),
     );
 
-    expect(await target.database.select(target.database.budgets).get(), isEmpty);
+    expect(
+      await target.database.select(target.database.budgets).get(),
+      isEmpty,
+    );
     expect(
       await target.database.select(target.database.budgetTransactions).get(),
       isEmpty,
@@ -127,7 +133,10 @@ void main() {
       ),
       throwsA(isA<BudgetBackupError>()),
     );
-    expect(await target.database.select(target.database.budgets).get(), isEmpty);
+    expect(
+      await target.database.select(target.database.budgets).get(),
+      isEmpty,
+    );
   });
 
   test('budget id conflict restores as a separate remapped budget', () async {
@@ -175,10 +184,7 @@ void main() {
 }
 
 final class _Fixture {
-  _Fixture({
-    required this.database,
-    required this.backups,
-  });
+  _Fixture({required this.database, required this.backups});
 
   final AppDatabase database;
   final DriftBudgetBackupRepository backups;
@@ -202,17 +208,21 @@ final class _Fixture {
     );
 
     if (seedBudget) {
-      await database.into(database.users).insert(
+      await database
+          .into(database.users)
+          .insert(
             UsersCompanion.insert(
               id: 'user-1',
               name: 'Alice',
               publicKey: 'public-key-1',
             ),
           );
-      await database.into(database.devices).insert(
-            DevicesCompanion.insert(id: 'device-1', userId: 'user-1'),
-          );
-      await database.into(database.budgets).insert(
+      await database
+          .into(database.devices)
+          .insert(DevicesCompanion.insert(id: 'device-1', userId: 'user-1'));
+      await database
+          .into(database.budgets)
+          .insert(
             BudgetsCompanion.insert(
               id: 'budget-1',
               name: 'Shared',
@@ -220,7 +230,9 @@ final class _Fixture {
               createdBy: 'user-1',
             ),
           );
-      await database.into(database.budgetMembers).insert(
+      await database
+          .into(database.budgetMembers)
+          .insert(
             BudgetMembersCompanion.insert(
               budgetId: 'budget-1',
               userId: 'user-1',
@@ -230,7 +242,9 @@ final class _Fixture {
     }
 
     if (seedBudget && dataRows) {
-      await database.into(database.categories).insert(
+      await database
+          .into(database.categories)
+          .insert(
             CategoriesCompanion.insert(
               id: 'category-1',
               budgetId: 'budget-1',
@@ -238,7 +252,9 @@ final class _Fixture {
               kind: 'EXPENSE',
             ),
           );
-      await database.into(database.accounts).insert(
+      await database
+          .into(database.accounts)
+          .insert(
             AccountsCompanion.insert(
               id: 'account-1',
               budgetId: 'budget-1',
@@ -246,7 +262,9 @@ final class _Fixture {
               currency: 'EUR',
             ),
           );
-      await database.into(database.receipts).insert(
+      await database
+          .into(database.receipts)
+          .insert(
             ReceiptsCompanion.insert(
               id: 'receipt-1',
               budgetId: 'budget-1',
@@ -258,7 +276,9 @@ final class _Fixture {
               parseStatus: const Value('PARSED'),
             ),
           );
-      await database.into(database.budgetTransactions).insert(
+      await database
+          .into(database.budgetTransactions)
+          .insert(
             BudgetTransactionsCompanion.insert(
               id: 'transaction-1',
               budgetId: 'budget-1',
@@ -273,7 +293,9 @@ final class _Fixture {
               description: const Value('Coffee'),
             ),
           );
-      await database.into(database.plans).insert(
+      await database
+          .into(database.plans)
+          .insert(
             PlansCompanion.insert(
               id: 'plan-1',
               budgetId: 'budget-1',
@@ -302,14 +324,12 @@ final class _SignatureService implements IdentitySignatureService {
   Future<String> sign({
     required String deviceId,
     required Uint8List message,
-  }) async =>
-      base64Url.encode(message);
+  }) async => base64Url.encode(message);
 
   @override
   Future<bool> verify({
     required String publicKey,
     required Uint8List message,
     required String signature,
-  }) async =>
-      signature == base64Url.encode(message);
+  }) async => signature == base64Url.encode(message);
 }

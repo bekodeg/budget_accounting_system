@@ -96,10 +96,7 @@ final class DatabaseEncryptionBootstrap {
     }
   }
 
-  void _encryptPlaintextDatabase({
-    required String path,
-    required String key,
-  }) {
+  void _encryptPlaintextDatabase({required String path, required String key}) {
     final database = sqlite3.open(path);
     try {
       database.execute('PRAGMA journal_mode = DELETE;');

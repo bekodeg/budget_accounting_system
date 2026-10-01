@@ -47,7 +47,10 @@ final class DriftBudgetBackupRepository implements BudgetBackupRepository {
     required String payload,
     required String password,
   }) async {
-    final decoded = await _decodeValidated(payload: payload, password: password);
+    final decoded = await _decodeValidated(
+      payload: payload,
+      password: password,
+    );
     return _previewFromBody(
       formatVersion: BudgetBackupCodec.currentVersion,
       createdAt: decoded.backup.createdAt,
@@ -60,7 +63,10 @@ final class DriftBudgetBackupRepository implements BudgetBackupRepository {
     required String payload,
     required String password,
   }) async {
-    final decoded = await _decodeValidated(payload: payload, password: password);
+    final decoded = await _decodeValidated(
+      payload: payload,
+      password: password,
+    );
     final sourceBudgetId = decoded.backup.sourceBudgetId;
     final body = decoded.snapshot.body;
     await _validateIdentityConflicts(body);
@@ -135,8 +141,7 @@ final class DriftBudgetBackupRepository implements BudgetBackupRepository {
       final existing = await (_database.select(
         _database.devices,
       )..where((row) => row.id.equals(id))).getSingleOrNull();
-      if (existing != null &&
-          existing.userId != _string(device, 'user_id')) {
+      if (existing != null && existing.userId != _string(device, 'user_id')) {
         throw const BudgetBackupError(
           BudgetBackupErrorCode.invalidSnapshot,
           'Backup конфликтует с локальной device identity.',
@@ -190,8 +195,9 @@ final class DriftBudgetBackupRepository implements BudgetBackupRepository {
       row['id'] = transactionIds[oldId];
       row['account_id'] = accountIds[_string(row, 'account_id')];
       final destination = _nullableString(row, 'destination_account_id');
-      row['destination_account_id'] =
-          destination == null ? null : accountIds[destination];
+      row['destination_account_id'] = destination == null
+          ? null
+          : accountIds[destination];
       final category = _nullableString(row, 'category_id');
       row['category_id'] = category == null ? null : categoryIds[category];
       final receipt = _nullableString(row, 'receipt_id');
@@ -211,9 +217,7 @@ final class DriftBudgetBackupRepository implements BudgetBackupRepository {
   }
 
   Map<String, String> _idMap(List<Map<String, dynamic>> rows) {
-    return {
-      for (final row in rows) _string(row, 'id'): _idGenerator.nextId(),
-    };
+    return {for (final row in rows) _string(row, 'id'): _idGenerator.nextId()};
   }
 
   BudgetBackupPreview _previewFromBody({
