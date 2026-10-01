@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:budget_accounting_system/src/application/errors/budget_snapshot_error.dart';
 import 'package:budget_accounting_system/src/application/ports/identity_signature_service.dart';
@@ -13,7 +12,7 @@ import 'package:budget_accounting_system/src/data/repositories/drift_sync_journa
 import 'package:budget_accounting_system/src/data/services/drift_sync_materializer.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_snapshot.dart';
 import 'package:budget_accounting_system/src/domain/models/sync_mutation.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
