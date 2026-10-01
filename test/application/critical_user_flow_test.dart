@@ -15,133 +15,136 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/onboarding_fakes.dart';
 
 void main() {
-  test('critical flow: onboarding -> budget -> categories -> account -> transactions -> plan -> report', () async {
-    final budgets = FakeBudgetRepository();
-    final categories = FakeCategoryRepository();
-    final accounts = FakeAccountRepository();
-    final transactions = FakeTransactionRepository();
-    final plans = FakePlanRepository();
-    final sessionStore = FakeSessionStore();
+  test(
+    'critical flow: onboarding -> budget -> categories -> account -> transactions -> plan -> report',
+    () async {
+      final budgets = FakeBudgetRepository();
+      final categories = FakeCategoryRepository();
+      final accounts = FakeAccountRepository();
+      final transactions = FakeTransactionRepository();
+      final plans = FakePlanRepository();
+      final sessionStore = FakeSessionStore();
 
-    final session =
-        await CreateInitialBudget(
-          budgetRepository: budgets,
-          categoryRepository: categories,
-          sessionStore: sessionStore,
-          idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
-          identityKeyStore: FakeIdentityKeyStore(),
-          identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
-        )(
-          userName: 'Alice',
-          budgetName: 'Family',
-          baseCurrency: Currency('EUR'),
-          applyDefaultCategories: false,
-        );
+      final session =
+          await CreateInitialBudget(
+            budgetRepository: budgets,
+            categoryRepository: categories,
+            sessionStore: sessionStore,
+            idGenerator: FakeIdGenerator(['user-1', 'budget-1', 'device-1']),
+            identityKeyStore: FakeIdentityKeyStore(),
+            identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
+          )(
+            userName: 'Alice',
+            budgetName: 'Family',
+            baseCurrency: Currency('EUR'),
+            applyDefaultCategories: false,
+          );
 
-    expect(session.userId, 'user-1');
-    expect(session.budgetId, 'budget-1');
-    expect(sessionStore.currentBudgetId, 'budget-1');
+      expect(session.userId, 'user-1');
+      expect(session.budgetId, 'budget-1');
+      expect(sessionStore.currentBudgetId, 'budget-1');
 
-    final createCategory = CreateCategory(
-      categoryRepository: categories,
-      idGenerator: FakeIdGenerator(['expense-food', 'income-salary']),
-      authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
-    );
-    final expenseCategory = await createCategory(
-      budgetId: session.budgetId,
-      name: 'Food',
-      kind: CategoryKind.expense,
-    );
-    final incomeCategory = await createCategory(
-      budgetId: session.budgetId,
-      name: 'Salary',
-      kind: CategoryKind.income,
-    );
+      final createCategory = CreateCategory(
+        categoryRepository: categories,
+        idGenerator: FakeIdGenerator(['expense-food', 'income-salary']),
+        authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
+      );
+      final expenseCategory = await createCategory(
+        budgetId: session.budgetId,
+        name: 'Food',
+        kind: CategoryKind.expense,
+      );
+      final incomeCategory = await createCategory(
+        budgetId: session.budgetId,
+        name: 'Salary',
+        kind: CategoryKind.income,
+      );
 
-    final account =
-        await CreateAccount(
-          accountRepository: accounts,
-          idGenerator: FakeIdGenerator(['account-1']),
-          authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
-        )(
-          budgetId: session.budgetId,
-          name: 'Main card',
-          currency: Currency('EUR'),
-          openingBalanceMinor: BigInt.zero,
-        );
+      final account =
+          await CreateAccount(
+            accountRepository: accounts,
+            idGenerator: FakeIdGenerator(['account-1']),
+            authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
+          )(
+            budgetId: session.budgetId,
+            name: 'Main card',
+            currency: Currency('EUR'),
+            openingBalanceMinor: BigInt.zero,
+          );
 
-    final createTransaction = CreateTransaction(
-      transactionRepository: transactions,
-      requireAccountInBudget: RequireAccountInBudget(accounts),
-      requireCategoryInBudget: RequireCategoryInBudget(categories),
-      idGenerator: FakeIdGenerator(['income-1', 'expense-1']),
-      authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
-    );
+      final createTransaction = CreateTransaction(
+        transactionRepository: transactions,
+        requireAccountInBudget: RequireAccountInBudget(accounts),
+        requireCategoryInBudget: RequireCategoryInBudget(categories),
+        idGenerator: FakeIdGenerator(['income-1', 'expense-1']),
+        authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
+      );
 
-    final income = await createTransaction(
-      budgetId: session.budgetId,
-      authorId: session.userId,
-      occurredAt: DateTime(2026, 9, 5),
-      amountMinor: BigInt.from(250000),
-      type: TransactionType.income,
-      accountId: account.id,
-      categoryId: incomeCategory.id,
-      description: 'Salary',
-    );
-    final expense = await createTransaction(
-      budgetId: session.budgetId,
-      authorId: session.userId,
-      occurredAt: DateTime(2026, 9, 10),
-      amountMinor: BigInt.from(50000),
-      type: TransactionType.expense,
-      accountId: account.id,
-      categoryId: expenseCategory.id,
-      description: 'Groceries',
-    );
+      final income = await createTransaction(
+        budgetId: session.budgetId,
+        authorId: session.userId,
+        occurredAt: DateTime(2026, 9, 5),
+        amountMinor: BigInt.from(250000),
+        type: TransactionType.income,
+        accountId: account.id,
+        categoryId: incomeCategory.id,
+        description: 'Salary',
+      );
+      final expense = await createTransaction(
+        budgetId: session.budgetId,
+        authorId: session.userId,
+        occurredAt: DateTime(2026, 9, 10),
+        amountMinor: BigInt.from(50000),
+        type: TransactionType.expense,
+        accountId: account.id,
+        categoryId: expenseCategory.id,
+        description: 'Groceries',
+      );
 
-    expect(transactions.snapshot(session.budgetId), hasLength(2));
+      expect(transactions.snapshot(session.budgetId), hasLength(2));
 
-    await SetMonthlyPlanAmount(
-      planRepository: plans,
-      categoryRepository: categories,
-      idGenerator: FakeIdGenerator(['plan-1']),
-      authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
-    )(
-      budgetId: session.budgetId,
-      categoryId: expenseCategory.id,
-      month: DateTime(2026, 9, 20),
-      plannedAmountMinor: BigInt.from(70000),
-    );
+      await SetMonthlyPlanAmount(
+        planRepository: plans,
+        categoryRepository: categories,
+        idGenerator: FakeIdGenerator(['plan-1']),
+        authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
+      )(
+        budgetId: session.budgetId,
+        categoryId: expenseCategory.id,
+        month: DateTime(2026, 9, 20),
+        plannedAmountMinor: BigInt.from(70000),
+      );
 
-    expect(
-      plans
-          .snapshot(session.budgetId, DateTime(2026, 9))
-          .single
-          .plannedAmountMinor,
-      BigInt.from(70000),
-    );
+      expect(
+        plans
+            .snapshot(session.budgetId, DateTime(2026, 9))
+            .single
+            .plannedAmountMinor,
+        BigInt.from(70000),
+      );
 
-    final report = MonthlyReport(
-      monthStart: DateTime(2026, 9),
-      baseCurrency: 'EUR',
-      incomeMinorByCurrency: {'EUR': income.amount.minorUnits},
-      expenseMinorByCurrency: {'EUR': expense.amount.minorUnits},
-      categories: const [],
-      accountBalances: const [],
-    );
-    final watched = await WatchMonthlyReport(
-      FakeMonthlyReportRepository(report: report),
-    )(budgetId: session.budgetId, month: DateTime(2026, 9, 30)).first;
+      final report = MonthlyReport(
+        monthStart: DateTime(2026, 9),
+        baseCurrency: 'EUR',
+        incomeMinorByCurrency: {'EUR': income.amount.minorUnits},
+        expenseMinorByCurrency: {'EUR': expense.amount.minorUnits},
+        categories: const [],
+        accountBalances: const [],
+      );
+      final watched = await WatchMonthlyReport(
+        FakeMonthlyReportRepository(report: report),
+      )(budgetId: session.budgetId, month: DateTime(2026, 9, 30)).first;
 
-    expect(watched.monthStart, DateTime(2026, 9));
-    expect(watched.incomeMinorByCurrency['EUR'], BigInt.from(250000));
-    expect(watched.expenseMinorByCurrency['EUR'], BigInt.from(50000));
+      expect(watched.monthStart, DateTime(2026, 9));
+      expect(watched.incomeMinorByCurrency['EUR'], BigInt.from(250000));
+      expect(watched.expenseMinorByCurrency['EUR'], BigInt.from(50000));
 
-    await DeleteTransaction(
-      repository: transactions,
-      authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
-    )(budgetId: session.budgetId, transactionId: expense.id);
+      await DeleteTransaction(
+        repository: transactions,
+        authorization: FakeBudgetAuthorizationGuard(userId: session.userId),
+      )(budgetId: session.budgetId, transactionId: expense.id);
 
-    expect(transactions.snapshot(session.budgetId), [income]);
-  });
+      expect(transactions.snapshot(session.budgetId), [income]);
+    },
+  );
 }
