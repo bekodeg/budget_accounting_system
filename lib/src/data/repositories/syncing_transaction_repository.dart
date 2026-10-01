@@ -19,8 +19,9 @@ final class SyncingTransactionRepository implements TransactionRepository {
   final SyncMutationContextProvider _contextProvider;
 
   @override
-  Stream<List<BudgetTransactionEntry>> watchActiveTransactions(String budgetId) =>
-      _delegate.watchActiveTransactions(budgetId);
+  Stream<List<BudgetTransactionEntry>> watchActiveTransactions(
+    String budgetId,
+  ) => _delegate.watchActiveTransactions(budgetId);
 
   @override
   Stream<List<BudgetTransactionEntry>> watchFilteredTransactions(
@@ -31,11 +32,10 @@ final class SyncingTransactionRepository implements TransactionRepository {
   Future<BudgetTransactionEntry?> findActiveTransaction({
     required String budgetId,
     required String transactionId,
-  }) =>
-      _delegate.findActiveTransaction(
-        budgetId: budgetId,
-        transactionId: transactionId,
-      );
+  }) => _delegate.findActiveTransaction(
+    budgetId: budgetId,
+    transactionId: transactionId,
+  );
 
   @override
   Future<void> createTransaction(BudgetTransactionEntry transaction) async {

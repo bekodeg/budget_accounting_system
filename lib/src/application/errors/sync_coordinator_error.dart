@@ -1,7 +1,4 @@
-enum SyncCoordinatorErrorCode {
-  noPeers,
-  coordinatorUnavailable,
-}
+enum SyncCoordinatorErrorCode { noPeers, coordinatorUnavailable }
 
 final class SyncCoordinatorError implements Exception {
   const SyncCoordinatorError(this.code, this.message, {this.deviceId});

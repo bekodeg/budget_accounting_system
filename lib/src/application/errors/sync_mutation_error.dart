@@ -1,6 +1,4 @@
-enum SyncMutationErrorCode {
-  duplicateOperation,
-}
+enum SyncMutationErrorCode { duplicateOperation }
 
 final class SyncMutationError implements Exception {
   const SyncMutationError(this.code, this.message);

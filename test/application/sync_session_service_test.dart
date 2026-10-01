@@ -75,52 +75,55 @@ void main() {
     expect(secondMetrics[1].sentBatches, 1);
   });
 
-  test('interrupted session safely resumes from updated state vectors', () async {
-    final journalA = _MemoryJournal([
-      _op('a-1', device: 'device-a', clock: 1),
-      _op('a-2', device: 'device-a', clock: 2),
-      _op('a-3', device: 'device-a', clock: 3),
-    ]);
-    final journalB = _MemoryJournal();
-    final serviceA = SyncSessionService(journal: journalA, batchSize: 1);
-    final serviceB = SyncSessionService(journal: journalB, batchSize: 1);
+  test(
+    'interrupted session safely resumes from updated state vectors',
+    () async {
+      final journalA = _MemoryJournal([
+        _op('a-1', device: 'device-a', clock: 1),
+        _op('a-2', device: 'device-a', clock: 2),
+        _op('a-3', device: 'device-a', clock: 3),
+      ]);
+      final journalB = _MemoryJournal();
+      final serviceA = SyncSessionService(journal: journalA, batchSize: 1);
+      final serviceB = SyncSessionService(journal: journalB, batchSize: 1);
 
-    final broken = _channelPair(failASendNumber: 3);
-    await expectLater(
-      Future.wait([
+      final broken = _channelPair(failASendNumber: 3);
+      await expectLater(
+        Future.wait([
+          serviceA.synchronize(
+            channel: broken.a,
+            budgetId: budgetId,
+            localDeviceId: 'device-a',
+          ),
+          serviceB.synchronize(
+            channel: broken.b,
+            budgetId: budgetId,
+            localDeviceId: 'device-b',
+          ),
+        ]),
+        throwsA(anything),
+      );
+
+      final beforeRetryCount = journalB.operationIds.length;
+
+      final retry = _channelPair();
+      await Future.wait([
         serviceA.synchronize(
-          channel: broken.a,
+          channel: retry.a,
           budgetId: budgetId,
           localDeviceId: 'device-a',
         ),
         serviceB.synchronize(
-          channel: broken.b,
+          channel: retry.b,
           budgetId: budgetId,
           localDeviceId: 'device-b',
         ),
-      ]),
-      throwsA(anything),
-    );
+      ]);
 
-    final beforeRetryCount = journalB.operationIds.length;
-
-    final retry = _channelPair();
-    await Future.wait([
-      serviceA.synchronize(
-        channel: retry.a,
-        budgetId: budgetId,
-        localDeviceId: 'device-a',
-      ),
-      serviceB.synchronize(
-        channel: retry.b,
-        budgetId: budgetId,
-        localDeviceId: 'device-b',
-      ),
-    ]);
-
-    expect(beforeRetryCount, greaterThanOrEqualTo(1));
-    expect(journalB.operationIds, journalA.operationIds);
-  });
+      expect(beforeRetryCount, greaterThanOrEqualTo(1));
+      expect(journalB.operationIds, journalA.operationIds);
+    },
+  );
 
   test('three peers converge through pairwise sessions', () async {
     final a = _MemoryJournal([_op('a-1', device: 'device-a', clock: 1)]);
@@ -133,10 +136,7 @@ void main() {
       _MemoryJournal right,
       String rightDevice,
     ) async {
-      final pair = _channelPair(
-        aDevice: leftDevice,
-        bDevice: rightDevice,
-      );
+      final pair = _channelPair(aDevice: leftDevice, bDevice: rightDevice);
       await Future.wait([
         SyncSessionService(journal: left).synchronize(
           channel: pair.a,
@@ -163,9 +163,7 @@ void main() {
   test('authenticated channel peer must match protocol hello device', () async {
     final journalA = _MemoryJournal();
     final journalB = _MemoryJournal();
-    final pair = _channelPair(
-      aRemoteDeviceOverride: 'unexpected-device',
-    );
+    final pair = _channelPair(aRemoteDeviceOverride: 'unexpected-device');
 
     await expectLater(
       Future.wait([
@@ -191,11 +189,7 @@ void main() {
   });
 }
 
-SyncWireOperation _op(
-  String id, {
-  required String device,
-  required int clock,
-}) {
+SyncWireOperation _op(String id, {required String device, required int clock}) {
   return SyncWireOperation(
     operation: SignedSyncOperation(
       operationId: id,
@@ -224,9 +218,8 @@ final class _MemoryJournal implements SyncJournal {
 
   Set<String> get operationIds => Set.unmodifiable(_operations.keys);
 
-  List<SignedSyncOperation> get signedOperations => _operations.values
-      .map((wire) => wire.operation)
-      .toList(growable: false);
+  List<SignedSyncOperation> get signedOperations =>
+      _operations.values.map((wire) => wire.operation).toList(growable: false);
 
   @override
   Future<SyncStateVector> stateVector(String budgetId) async {
@@ -248,24 +241,24 @@ final class _MemoryJournal implements SyncJournal {
     required SyncStateVector remoteState,
     required int limit,
   }) async {
-    final missing = _operations.values.where((wire) {
-      final operation = wire.operation;
-      return operation.budgetId == budgetId &&
-          operation.logicalClock > remoteState.clockFor(operation.deviceId);
-    }).toList()
-      ..sort((left, right) {
-        final clock = left.operation.logicalClock.compareTo(
-          right.operation.logicalClock,
-        );
-        if (clock != 0) return clock;
-        final device = left.operation.deviceId.compareTo(
-          right.operation.deviceId,
-        );
-        if (device != 0) return device;
-        return left.operation.operationId.compareTo(
-          right.operation.operationId,
-        );
-      });
+    final missing =
+        _operations.values.where((wire) {
+          final operation = wire.operation;
+          return operation.budgetId == budgetId &&
+              operation.logicalClock > remoteState.clockFor(operation.deviceId);
+        }).toList()..sort((left, right) {
+          final clock = left.operation.logicalClock.compareTo(
+            right.operation.logicalClock,
+          );
+          if (clock != 0) return clock;
+          final device = left.operation.deviceId.compareTo(
+            right.operation.deviceId,
+          );
+          if (device != 0) return device;
+          return left.operation.operationId.compareTo(
+            right.operation.operationId,
+          );
+        });
 
     return SyncOperationPage(
       operations: missing.take(limit).toList(growable: false),
@@ -306,7 +299,7 @@ final class _MemoryJournal implements SyncJournal {
   }
 }
 
-({ _MemorySecureChannel a, _MemorySecureChannel b }) _channelPair({
+({_MemorySecureChannel a, _MemorySecureChannel b}) _channelPair({
   String aDevice = 'device-a',
   String bDevice = 'device-b',
   String? aRemoteDeviceOverride,
@@ -333,10 +326,7 @@ LanPeerDescriptor _peer(String deviceId) {
 }
 
 final class _MemorySecureChannel implements SecureLanChannel {
-  _MemorySecureChannel({
-    required this.remotePeer,
-    this.failSendNumber,
-  });
+  _MemorySecureChannel({required this.remotePeer, this.failSendNumber});
 
   @override
   final LanPeerDescriptor remotePeer;

@@ -22,8 +22,7 @@ final class SyncingMembershipRepository implements MembershipRepository {
   Future<BudgetMemberProfile?> findActiveMember({
     required String budgetId,
     required String userId,
-  }) =>
-      _delegate.findActiveMember(budgetId: budgetId, userId: userId);
+  }) => _delegate.findActiveMember(budgetId: budgetId, userId: userId);
 
   @override
   Stream<List<BudgetMemberProfile>> watchMembers(String budgetId) =>

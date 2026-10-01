@@ -26,24 +26,28 @@ void main() {
       signatureService: const _Signer(),
     );
 
-    await database.into(database.users).insert(
-      UsersCompanion.insert(
-        id: 'user-1',
-        name: 'Alice',
-        publicKey: 'ed25519:test',
-      ),
-    );
-    await database.into(database.devices).insert(
-      DevicesCompanion.insert(id: 'device-1', userId: 'user-1'),
-    );
-    await database.into(database.budgets).insert(
-      BudgetsCompanion.insert(
-        id: 'budget-1',
-        name: 'Household',
-        baseCurrency: 'EUR',
-        createdBy: 'user-1',
-      ),
-    );
+    await database
+        .into(database.users)
+        .insert(
+          UsersCompanion.insert(
+            id: 'user-1',
+            name: 'Alice',
+            publicKey: 'ed25519:test',
+          ),
+        );
+    await database
+        .into(database.devices)
+        .insert(DevicesCompanion.insert(id: 'device-1', userId: 'user-1'));
+    await database
+        .into(database.budgets)
+        .insert(
+          BudgetsCompanion.insert(
+            id: 'budget-1',
+            name: 'Household',
+            baseCurrency: 'EUR',
+            createdBy: 'user-1',
+          ),
+        );
   });
 
   tearDown(() => database.close());
@@ -64,33 +68,38 @@ void main() {
   }
 
   Future<void> insertCategory() {
-    return database.into(database.categories).insert(
-      CategoriesCompanion.insert(
-        id: 'category-1',
-        budgetId: 'budget-1',
-        name: 'Food',
-        kind: 'EXPENSE',
-      ),
-    );
+    return database
+        .into(database.categories)
+        .insert(
+          CategoriesCompanion.insert(
+            id: 'category-1',
+            budgetId: 'budget-1',
+            name: 'Food',
+            kind: 'EXPENSE',
+          ),
+        );
   }
 
-  test('commits domain mutation and signed operation in one transaction', () async {
-    await executor.execute<void>(
-      draft: draft(operationId: 'op-1'),
-      mutate: insertCategory,
-    );
+  test(
+    'commits domain mutation and signed operation in one transaction',
+    () async {
+      await executor.execute<void>(
+        draft: draft(operationId: 'op-1'),
+        mutate: insertCategory,
+      );
 
-    final category = await (database.select(database.categories)
-          ..where((row) => row.id.equals('category-1')))
-        .getSingle();
-    final operation = await syncDao.findById('op-1');
+      final category = await (database.select(
+        database.categories,
+      )..where((row) => row.id.equals('category-1'))).getSingle();
+      final operation = await syncDao.findById('op-1');
 
-    expect(category.name, 'Food');
-    expect(operation, isNotNull);
-    expect(operation!.logicalClock, BigInt.one);
-    expect(operation.deviceId, 'device-1');
-    expect(operation.signature, utf8.encode('signature'));
-  });
+      expect(category.name, 'Food');
+      expect(operation, isNotNull);
+      expect(operation!.logicalClock, BigInt.one);
+      expect(operation.deviceId, 'device-1');
+      expect(operation.signature, utf8.encode('signature'));
+    },
+  );
 
   test('Lamport clock grows monotonically for the device', () async {
     await executor.execute<void>(
@@ -110,9 +119,10 @@ void main() {
         authorId: 'user-1',
         deviceId: 'device-1',
       ),
-      mutate: () => (database.update(database.categories)
-            ..where((row) => row.id.equals('category-1')))
-          .write(const CategoriesCompanion(name: Value('Groceries'))),
+      mutate: () =>
+          (database.update(database.categories)
+                ..where((row) => row.id.equals('category-1')))
+              .write(const CategoriesCompanion(name: Value('Groceries'))),
     );
 
     expect((await syncDao.findById('op-1'))!.logicalClock, BigInt.one);
@@ -137,10 +147,13 @@ void main() {
     );
 
     expect(called, isFalse);
-    expect(await syncDao.getOperationsAfter(
-      budgetId: 'budget-1',
-      logicalClock: BigInt.zero,
-    ), hasLength(1));
+    expect(
+      await syncDao.getOperationsAfter(
+        budgetId: 'budget-1',
+        logicalClock: BigInt.zero,
+      ),
+      hasLength(1),
+    );
   });
 
   test('rolls back domain mutation when journal insert fails', () async {
@@ -158,17 +171,14 @@ void main() {
     );
 
     await expectLater(
-      executor.execute<void>(
-        draft: invalidDraft,
-        mutate: insertCategory,
-      ),
+      executor.execute<void>(draft: invalidDraft, mutate: insertCategory),
       throwsA(anything),
     );
 
     expect(
-      await (database.select(database.categories)
-            ..where((row) => row.id.equals('category-1')))
-          .getSingleOrNull(),
+      await (database.select(
+        database.categories,
+      )..where((row) => row.id.equals('category-1'))).getSingleOrNull(),
       isNull,
     );
     expect(await syncDao.findById('op-invalid-author'), isNull);
@@ -183,10 +193,7 @@ void main() {
 
     expect(result, isFalse);
     expect(await syncDao.findById('op-noop'), isNull);
-    expect(
-      await syncDao.getMaxLogicalClockForDevice('device-1'),
-      BigInt.zero,
-    );
+    expect(await syncDao.getMaxLogicalClockForDevice('device-1'), BigInt.zero);
   });
 
   test('rolls back domain mutation when mutation callback fails', () async {
@@ -202,9 +209,9 @@ void main() {
     );
 
     expect(
-      await (database.select(database.categories)
-            ..where((row) => row.id.equals('category-1')))
-          .getSingleOrNull(),
+      await (database.select(
+        database.categories,
+      )..where((row) => row.id.equals('category-1'))).getSingleOrNull(),
       isNull,
     );
     expect(await syncDao.findById('op-rollback'), isNull);

@@ -17,8 +17,5 @@ abstract interface class LanListener {
 abstract interface class LanTransportGateway {
   Future<LanListener> listen();
 
-  Future<LanByteChannel> connect({
-    required String host,
-    required int port,
-  });
+  Future<LanByteChannel> connect({required String host, required int port});
 }

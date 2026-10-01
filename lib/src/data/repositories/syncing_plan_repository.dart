@@ -21,8 +21,7 @@ final class SyncingPlanRepository implements PlanRepository {
   Stream<List<MonthlyPlan>> watchMonth({
     required String budgetId,
     required DateTime month,
-  }) =>
-      _delegate.watchMonth(budgetId: budgetId, month: month);
+  }) => _delegate.watchMonth(budgetId: budgetId, month: month);
 
   @override
   Future<void> upsert(MonthlyPlan plan) async {
@@ -58,8 +57,7 @@ final class SyncingPlanRepository implements PlanRepository {
     required String categoryId,
   }) async {
     final context = await _contextProvider.current();
-    final entityId =
-        '$budgetId:${month.year}-${month.month}:$categoryId';
+    final entityId = '$budgetId:${month.year}-${month.month}:$categoryId';
     await _executor.execute<void>(
       draft: SyncMutationDraft(
         spec: SyncMutationSpec(

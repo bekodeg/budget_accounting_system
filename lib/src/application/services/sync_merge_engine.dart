@@ -91,7 +91,8 @@ final class SyncMergeEngine {
           continue;
         }
 
-        if (version == current.version && !_deepEquals(entry.value, current.value)) {
+        if (version == current.version &&
+            !_deepEquals(entry.value, current.value)) {
           throw SyncMergeError(
             SyncMergeErrorCode.versionCollision,
             'Две операции с одинаковой версией изменяют поле '
@@ -128,8 +129,7 @@ final class SyncMergeEngine {
     }
 
     return {
-      for (final entry in decoded.entries)
-        entry.key.toString(): entry.value,
+      for (final entry in decoded.entries) entry.key.toString(): entry.value,
     };
   }
 }

@@ -115,7 +115,9 @@ final class AppCompositionRoot {
     );
     final identityRepository = DriftIdentityRepository(dal.usersAndBudgets);
     final invitationRepository = DriftInvitationRepository(dal.usersAndBudgets);
-    final baseMembershipRepository = DriftMembershipRepository(dal.usersAndBudgets);
+    final baseMembershipRepository = DriftMembershipRepository(
+      dal.usersAndBudgets,
+    );
     final sessionStore = SharedPreferencesSessionStore();
     final identityKeyStore = FlutterSecureIdentityKeyStore();
     final identityKeyPairGenerator = Ed25519IdentityKeyPairGenerator();
@@ -175,7 +177,9 @@ final class AppCompositionRoot {
       syncDao: dal.sync,
       signatureService: identitySignatureService,
     );
-    final budgetSnapshotSessions = BudgetSnapshotSessionService(snapshotRepository);
+    final budgetSnapshotSessions = BudgetSnapshotSessionService(
+      snapshotRepository,
+    );
     final syncSessions = SyncSessionService(journal: syncJournal);
     const syncCoordinator = SyncCoordinatorService();
     final lanPeerSessions = LanPeerSessionManager(

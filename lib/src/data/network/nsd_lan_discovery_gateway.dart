@@ -38,8 +38,9 @@ final class NsdLanDiscoveryGateway implements LanDiscoveryGateway {
     required String discoveryToken,
     required String localDeviceId,
   }) async {
-    final controller =
-        StreamController<List<LanPeerEndpoint>>.broadcast(sync: true);
+    final controller = StreamController<List<LanPeerEndpoint>>.broadcast(
+      sync: true,
+    );
     final peers = <String, LanPeerEndpoint>{};
     final discovery = await nsd.startDiscovery(serviceType);
 
@@ -83,10 +84,7 @@ final class NsdLanDiscoveryGateway implements LanDiscoveryGateway {
     });
 
     emit();
-    return _NsdDiscovery(
-      discovery: discovery,
-      controller: controller,
-    );
+    return _NsdDiscovery(discovery: discovery, controller: controller);
   }
 }
 
@@ -130,8 +128,7 @@ final class _NsdAdvertisement implements LanAdvertisementHandle {
 String? _readTxt(Uint8List? value) =>
     value == null ? null : utf8.decode(value, allowMalformed: false);
 
-String _serviceName(String deviceId) =>
-    'Budget-${_deviceHint(deviceId)}';
+String _serviceName(String deviceId) => 'Budget-${_deviceHint(deviceId)}';
 
 String _deviceHint(String deviceId) {
   final normalized = deviceId.replaceAll(RegExp('[^A-Za-z0-9]'), '');

@@ -72,10 +72,7 @@ final class LanHandshakeService {
     }
 
     final secret = await _transportSecretManager.require(expectedBudgetId);
-    final expectedProof = await _secretProof(
-      secret: secret,
-      peer: hello.peer,
-    );
+    final expectedProof = await _secretProof(secret: secret, peer: hello.peer);
     if (!_constantTimeEquals(
       base64Url.decode(expectedProof),
       base64Url.decode(hello.secretProof),

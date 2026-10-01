@@ -21,78 +21,86 @@ import '../support/onboarding_fakes.dart';
 void main() {
   const budgetId = 'budget-1';
 
-  test('manual endpoint establishes encrypted session and reconnects', () async {
-    final ownerSecrets = FakeBudgetTransportSecretStore()
-      ..secretsByBudget[budgetId] = _secret;
-    final memberSecrets = FakeBudgetTransportSecretStore()
-      ..secretsByBudget[budgetId] = _secret;
-    final discovery = _DiscoveryGateway();
+  test(
+    'manual endpoint establishes encrypted session and reconnects',
+    () async {
+      final ownerSecrets = FakeBudgetTransportSecretStore()
+        ..secretsByBudget[budgetId] = _secret;
+      final memberSecrets = FakeBudgetTransportSecretStore()
+        ..secretsByBudget[budgetId] = _secret;
+      final discovery = _DiscoveryGateway();
 
-    final owner = _manager(
-      userId: 'owner-1',
-      deviceId: 'owner-device',
-      role: MemberRole.owner,
-      secrets: ownerSecrets,
-      discovery: discovery,
-    );
-    final member = _manager(
-      userId: 'member-1',
-      deviceId: 'member-device',
-      role: MemberRole.editor,
-      secrets: memberSecrets,
-      discovery: discovery,
-    );
+      final owner = _manager(
+        userId: 'owner-1',
+        deviceId: 'owner-device',
+        role: MemberRole.owner,
+        secrets: ownerSecrets,
+        discovery: discovery,
+      );
+      final member = _manager(
+        userId: 'member-1',
+        deviceId: 'member-device',
+        role: MemberRole.editor,
+        secrets: memberSecrets,
+        discovery: discovery,
+      );
 
-    final hosted = await owner.host(budgetId);
-    try {
-      expect(hosted.manualEndpointCode, isNotNull);
-      final endpoint = member.decodeManualEndpoint(hosted.manualEndpointCode!);
-
-      Future<void> connectAndExchange(String payload) async {
-        final incomingFuture = hosted.channels.first;
-        final outgoing = await member.connect(
-          budgetId: budgetId,
-          endpoint: endpoint,
+      final hosted = await owner.host(budgetId);
+      try {
+        expect(hosted.manualEndpointCode, isNotNull);
+        final endpoint = member.decodeManualEndpoint(
+          hosted.manualEndpointCode!,
         );
-        final incoming = await incomingFuture;
 
-        try {
-          await outgoing.send(utf8.encode(payload));
-          expect(utf8.decode(await incoming.receive()), payload);
-        } finally {
-          await outgoing.close();
-          await incoming.close();
+        Future<void> connectAndExchange(String payload) async {
+          final incomingFuture = hosted.channels.first;
+          final outgoing = await member.connect(
+            budgetId: budgetId,
+            endpoint: endpoint,
+          );
+          final incoming = await incomingFuture;
+
+          try {
+            await outgoing.send(utf8.encode(payload));
+            expect(utf8.decode(await incoming.receive()), payload);
+          } finally {
+            await outgoing.close();
+            await incoming.close();
+          }
         }
+
+        await connectAndExchange('first connection');
+        await connectAndExchange('reconnected');
+      } finally {
+        await hosted.close();
       }
+    },
+  );
 
-      await connectAndExchange('first connection');
-      await connectAndExchange('reconnected');
-    } finally {
-      await hosted.close();
-    }
-  });
+  test(
+    'discovery derives private budget token and filters local device id',
+    () async {
+      final secrets = FakeBudgetTransportSecretStore()
+        ..secretsByBudget[budgetId] = _secret;
+      final discovery = _DiscoveryGateway();
+      final manager = _manager(
+        userId: 'user-1',
+        deviceId: 'device-1',
+        role: MemberRole.viewer,
+        secrets: secrets,
+        discovery: discovery,
+      );
 
-  test('discovery derives private budget token and filters local device id', () async {
-    final secrets = FakeBudgetTransportSecretStore()
-      ..secretsByBudget[budgetId] = _secret;
-    final discovery = _DiscoveryGateway();
-    final manager = _manager(
-      userId: 'user-1',
-      deviceId: 'device-1',
-      role: MemberRole.viewer,
-      secrets: secrets,
-      discovery: discovery,
-    );
-
-    final browser = await manager.discover(budgetId);
-    try {
-      expect(discovery.lastDiscoveryToken, isNotNull);
-      expect(discovery.lastDiscoveryToken, isNot(contains(budgetId)));
-      expect(discovery.lastLocalDeviceId, 'device-1');
-    } finally {
-      await browser.close();
-    }
-  });
+      final browser = await manager.discover(budgetId);
+      try {
+        expect(discovery.lastDiscoveryToken, isNotNull);
+        expect(discovery.lastDiscoveryToken, isNot(contains(budgetId)));
+        expect(discovery.lastLocalDeviceId, 'device-1');
+      } finally {
+        await browser.close();
+      }
+    },
+  );
 }
 
 const _secret = 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=';
@@ -107,11 +115,7 @@ LanPeerSessionManager _manager({
   final identities = FakeIdentityRepository(
     publicKeysByUser: {userId: 'ed25519:$userId'},
     devicesById: {
-      deviceId: LocalDevice(
-        id: deviceId,
-        userId: userId,
-        revokedAt: null,
-      ),
+      deviceId: LocalDevice(id: deviceId, userId: userId, revokedAt: null),
     },
   );
   final keys = FakeIdentityKeyStore()
@@ -146,10 +150,7 @@ LanPeerSessionManager _manager({
   );
 
   return LanPeerSessionManager(
-    authorization: FakeBudgetAuthorizationGuard(
-      userId: userId,
-      role: role,
-    ),
+    authorization: FakeBudgetAuthorizationGuard(userId: userId, role: role),
     getPublicIdentity: getPublicIdentity,
     discovery: discovery,
     transport: const TcpLanTransportGateway(),

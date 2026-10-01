@@ -1,8 +1,4 @@
-enum SyncMutationType {
-  create,
-  patch,
-  delete,
-}
+enum SyncMutationType { create, patch, delete }
 
 final class SyncMutationSpec {
   const SyncMutationSpec({

@@ -126,12 +126,7 @@ void main() {
     }
 
     final result = await service.synchronize(
-      availableDeviceIds: [
-        'device-a',
-        'device-b',
-        'device-c',
-        'device-d',
-      ],
+      availableDeviceIds: ['device-a', 'device-b', 'device-c', 'device-d'],
       synchronizePair: pair,
     );
 

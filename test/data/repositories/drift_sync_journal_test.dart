@@ -36,10 +36,7 @@ void main() {
     await source.add(_operation('b-1', device: 'device-b', clock: 1));
 
     final vector = await source.journal.stateVector('budget-1');
-    expect(vector.clocks, {
-      'device-a': BigInt.from(2),
-      'device-b': BigInt.one,
-    });
+    expect(vector.clocks, {'device-a': BigInt.from(2), 'device-b': BigInt.one});
 
     final page = await source.journal.missingOperations(
       budgetId: 'budget-1',
@@ -49,10 +46,7 @@ void main() {
       }),
       limit: 10,
     );
-    expect(
-      page.operations.map((item) => item.operation.operationId),
-      ['a-2'],
-    );
+    expect(page.operations.map((item) => item.operation.operationId), ['a-2']);
     expect(page.hasMore, isFalse);
 
     final limited = await source.journal.missingOperations(
@@ -71,8 +65,7 @@ void main() {
       entityType: 'category',
       entityId: 'category-remote',
       type: SyncMutationType.create,
-      patchJson:
-          '{"is_archived":false,"kind":"EXPENSE","name":"Remote food"}',
+      patchJson: '{"is_archived":false,"kind":"EXPENSE","name":"Remote food"}',
       authorId: 'user-a',
       deviceId: 'device-a',
       logicalClock: BigInt.one,
@@ -84,64 +77,63 @@ void main() {
       operations: [await source.wire(operation)],
     );
 
-    final category =
-        await (target.database.select(target.database.categories)
-              ..where((row) => row.id.equals('category-remote')))
-            .getSingleOrNull();
+    final category = await (target.database.select(
+      target.database.categories,
+    )..where((row) => row.id.equals('category-remote'))).getSingleOrNull();
 
     expect(category, isNotNull);
     expect(category!.name, 'Remote food');
     expect(category.kind, 'EXPENSE');
   });
 
-  test('verified ingest is idempotent and rejects conflicting replay', () async {
-    final operation = _operation('a-1', device: 'device-a', clock: 1);
-    final wire = await source.wire(operation);
+  test(
+    'verified ingest is idempotent and rejects conflicting replay',
+    () async {
+      final operation = _operation('a-1', device: 'device-a', clock: 1);
+      final wire = await source.wire(operation);
 
-    final first = await target.journal.ingest(
-      budgetId: 'budget-1',
-      operations: [wire],
-    );
-    expect(first.inserted, 1);
-    expect(first.duplicates, 0);
-
-    final duplicate = await target.journal.ingest(
-      budgetId: 'budget-1',
-      operations: [wire],
-    );
-    expect(duplicate.inserted, 0);
-    expect(duplicate.duplicates, 1);
-
-    final conflicting = SyncWireOperation(
-      operation: SignedSyncOperation(
-        operationId: operation.operationId,
-        budgetId: operation.budgetId,
-        entityType: operation.entityType,
-        entityId: operation.entityId,
-        type: operation.type,
-        patchJson: '{"name":"tampered"}',
-        authorId: operation.authorId,
-        deviceId: operation.deviceId,
-        logicalClock: operation.logicalClock,
-        createdAt: operation.createdAt,
-      ),
-      signature: wire.signature,
-    );
-
-    await expectLater(
-      target.journal.ingest(
+      final first = await target.journal.ingest(
         budgetId: 'budget-1',
-        operations: [conflicting],
-      ),
-      throwsA(
-        isA<SyncProtocolError>().having(
-          (error) => error.code,
-          'code',
-          SyncProtocolErrorCode.operationCollision,
+        operations: [wire],
+      );
+      expect(first.inserted, 1);
+      expect(first.duplicates, 0);
+
+      final duplicate = await target.journal.ingest(
+        budgetId: 'budget-1',
+        operations: [wire],
+      );
+      expect(duplicate.inserted, 0);
+      expect(duplicate.duplicates, 1);
+
+      final conflicting = SyncWireOperation(
+        operation: SignedSyncOperation(
+          operationId: operation.operationId,
+          budgetId: operation.budgetId,
+          entityType: operation.entityType,
+          entityId: operation.entityId,
+          type: operation.type,
+          patchJson: '{"name":"tampered"}',
+          authorId: operation.authorId,
+          deviceId: operation.deviceId,
+          logicalClock: operation.logicalClock,
+          createdAt: operation.createdAt,
         ),
-      ),
-    );
-  });
+        signature: wire.signature,
+      );
+
+      await expectLater(
+        target.journal.ingest(budgetId: 'budget-1', operations: [conflicting]),
+        throwsA(
+          isA<SyncProtocolError>().having(
+            (error) => error.code,
+            'code',
+            SyncProtocolErrorCode.operationCollision,
+          ),
+        ),
+      );
+    },
+  );
 
   test('invalid remote signature rolls back batch', () async {
     final valid = await source.wire(
@@ -154,10 +146,7 @@ void main() {
     );
 
     await expectLater(
-      target.journal.ingest(
-        budgetId: 'budget-1',
-        operations: [valid, invalid],
-      ),
+      target.journal.ingest(budgetId: 'budget-1', operations: [valid, invalid]),
       throwsA(
         isA<SyncProtocolError>().having(
           (error) => error.code,
@@ -221,12 +210,14 @@ final class _Fixture {
           publicKey: 'ed25519:user-$suffix',
         ),
       );
-      await database.into(database.devices).insert(
-        DevicesCompanion.insert(
-          id: 'device-$suffix',
-          userId: 'user-$suffix',
-        ),
-      );
+      await database
+          .into(database.devices)
+          .insert(
+            DevicesCompanion.insert(
+              id: 'device-$suffix',
+              userId: 'user-$suffix',
+            ),
+          );
     }
     await userBudgetDao.upsertBudget(
       BudgetsCompanion.insert(
