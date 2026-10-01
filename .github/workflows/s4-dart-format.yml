@@ -1,0 +1,44 @@
+name: One-shot S4 Dart format
+
+on:
+  push:
+    branches:
+      - chore/s4-dart-format
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: chore/s4-dart-format
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Format Dart sources
+        run: dart format lib test
+
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/s4-dart-format.yml
+
+      - name: Commit formatted sources
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib test .github/workflows/s4-dart-format.yml
+          if git diff --cached --quiet; then
+            echo "No formatting changes."
+            exit 0
+          fi
+          git commit -m "chore: format S4 Dart sources"
+          git push origin HEAD:chore/s4-dart-format
