@@ -1,8 +1,5 @@
 final class SyncVersion implements Comparable<SyncVersion> {
-  const SyncVersion({
-    required this.logicalClock,
-    required this.deviceId,
-  });
+  const SyncVersion({required this.logicalClock, required this.deviceId});
 
   final BigInt logicalClock;
   final String deviceId;
@@ -14,8 +11,7 @@ final class SyncVersion implements Comparable<SyncVersion> {
     return deviceId.compareTo(other.deviceId);
   }
 
-  bool isNewerThan(SyncVersion? other) =>
-      other == null || compareTo(other) > 0;
+  bool isNewerThan(SyncVersion? other) => other == null || compareTo(other) > 0;
 
   bool isAtLeastAsNewAs(SyncVersion? other) =>
       other == null || compareTo(other) >= 0;

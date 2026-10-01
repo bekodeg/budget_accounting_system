@@ -10,9 +10,6 @@ final class ApplyBudgetSnapshot {
     required String budgetId,
     required BudgetSnapshotPackage snapshot,
   }) {
-    return _repository.apply(
-      expectedBudgetId: budgetId,
-      snapshot: snapshot,
-    );
+    return _repository.apply(expectedBudgetId: budgetId, snapshot: snapshot);
   }
 }

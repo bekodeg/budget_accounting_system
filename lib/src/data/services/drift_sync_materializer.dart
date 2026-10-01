@@ -98,39 +98,38 @@ final class DriftSyncMaterializer {
   }) async {
     if (deleted) return;
 
-    final existing = await (_database.select(_database.categories)
-          ..where(
-            (row) =>
-                row.id.equals(entityId) & row.budgetId.equals(budgetId),
-          ))
-        .getSingleOrNull();
+    final existing =
+        await (_database.select(_database.categories)..where(
+              (row) => row.id.equals(entityId) & row.budgetId.equals(budgetId),
+            ))
+            .getSingleOrNull();
 
     if (existing == null) {
       final name = values['name'];
       final kind = values['kind'];
       if (name is! String || kind is! String) return;
 
-      await _database.into(_database.categories).insert(
-        CategoriesCompanion.insert(
-          id: entityId,
-          budgetId: budgetId,
-          name: name,
-          kind: kind,
-          isArchived: Value(
-            values['is_archived'] is bool
-                ? values['is_archived']! as bool
-                : false,
-          ),
-        ),
-      );
+      await _database
+          .into(_database.categories)
+          .insert(
+            CategoriesCompanion.insert(
+              id: entityId,
+              budgetId: budgetId,
+              name: name,
+              kind: kind,
+              isArchived: Value(
+                values['is_archived'] is bool
+                    ? values['is_archived']! as bool
+                    : false,
+              ),
+            ),
+          );
       return;
     }
 
-    await (_database.update(_database.categories)
-          ..where(
-            (row) =>
-                row.id.equals(entityId) & row.budgetId.equals(budgetId),
-          ))
+    await (_database.update(_database.categories)..where(
+          (row) => row.id.equals(entityId) & row.budgetId.equals(budgetId),
+        ))
         .write(
           CategoriesCompanion(
             name: _stringValue(values['name']),
@@ -148,12 +147,11 @@ final class DriftSyncMaterializer {
   }) async {
     if (deleted) return;
 
-    final existing = await (_database.select(_database.accounts)
-          ..where(
-            (row) =>
-                row.id.equals(entityId) & row.budgetId.equals(budgetId),
-          ))
-        .getSingleOrNull();
+    final existing =
+        await (_database.select(_database.accounts)..where(
+              (row) => row.id.equals(entityId) & row.budgetId.equals(budgetId),
+            ))
+            .getSingleOrNull();
 
     if (existing == null) {
       final name = values['name'];
@@ -161,28 +159,28 @@ final class DriftSyncMaterializer {
       final opening = _bigInt(values['opening_balance_minor']);
       if (name is! String || currency is! String || opening == null) return;
 
-      await _database.into(_database.accounts).insert(
-        AccountsCompanion.insert(
-          id: entityId,
-          budgetId: budgetId,
-          name: name,
-          currency: currency,
-          openingBalanceMinor: Value(opening),
-          isArchived: Value(
-            values['is_archived'] is bool
-                ? values['is_archived']! as bool
-                : false,
-          ),
-        ),
-      );
+      await _database
+          .into(_database.accounts)
+          .insert(
+            AccountsCompanion.insert(
+              id: entityId,
+              budgetId: budgetId,
+              name: name,
+              currency: currency,
+              openingBalanceMinor: Value(opening),
+              isArchived: Value(
+                values['is_archived'] is bool
+                    ? values['is_archived']! as bool
+                    : false,
+              ),
+            ),
+          );
       return;
     }
 
-    await (_database.update(_database.accounts)
-          ..where(
-            (row) =>
-                row.id.equals(entityId) & row.budgetId.equals(budgetId),
-          ))
+    await (_database.update(_database.accounts)..where(
+          (row) => row.id.equals(entityId) & row.budgetId.equals(budgetId),
+        ))
         .write(
           AccountsCompanion(
             name: _stringValue(values['name']),
@@ -200,21 +198,18 @@ final class DriftSyncMaterializer {
     required List<SyncOperation> rows,
     required bool deleted,
   }) async {
-    final existing = await (_database.select(_database.budgetTransactions)
-          ..where(
-            (row) =>
-                row.id.equals(entityId) & row.budgetId.equals(budgetId),
-          ))
-        .getSingleOrNull();
+    final existing =
+        await (_database.select(_database.budgetTransactions)..where(
+              (row) => row.id.equals(entityId) & row.budgetId.equals(budgetId),
+            ))
+            .getSingleOrNull();
 
     if (deleted) {
       if (existing == null) return;
       final deletedAt = _winningDeleteTime(rows);
-      await (_database.update(_database.budgetTransactions)
-            ..where(
-              (row) =>
-                  row.id.equals(entityId) & row.budgetId.equals(budgetId),
-            ))
+      await (_database.update(_database.budgetTransactions)..where(
+            (row) => row.id.equals(entityId) & row.budgetId.equals(budgetId),
+          ))
           .write(
             BudgetTransactionsCompanion(
               deletedAt: Value(deletedAt),
@@ -244,33 +239,33 @@ final class DriftSyncMaterializer {
         return;
       }
 
-      await _database.into(_database.budgetTransactions).insert(
-        BudgetTransactionsCompanion.insert(
-          id: entityId,
-          budgetId: budgetId,
-          occurredAt: occurredAt,
-          amountMinor: amountMinor,
-          currency: currency,
-          type: type,
-          authorId: authorId,
-          accountId: accountId,
-          destinationAccountId: Value(
-            values['destination_account_id'] as String?,
-          ),
-          categoryId: Value(values['category_id'] as String?),
-          description: Value(values['description'] as String?),
-          createdAt: Value(createdAt),
-          updatedAt: Value(updatedAt),
-        ),
-      );
+      await _database
+          .into(_database.budgetTransactions)
+          .insert(
+            BudgetTransactionsCompanion.insert(
+              id: entityId,
+              budgetId: budgetId,
+              occurredAt: occurredAt,
+              amountMinor: amountMinor,
+              currency: currency,
+              type: type,
+              authorId: authorId,
+              accountId: accountId,
+              destinationAccountId: Value(
+                values['destination_account_id'] as String?,
+              ),
+              categoryId: Value(values['category_id'] as String?),
+              description: Value(values['description'] as String?),
+              createdAt: Value(createdAt),
+              updatedAt: Value(updatedAt),
+            ),
+          );
       return;
     }
 
-    await (_database.update(_database.budgetTransactions)
-          ..where(
-            (row) =>
-                row.id.equals(entityId) & row.budgetId.equals(budgetId),
-          ))
+    await (_database.update(_database.budgetTransactions)..where(
+          (row) => row.id.equals(entityId) & row.budgetId.equals(budgetId),
+        ))
         .write(
           BudgetTransactionsCompanion(
             occurredAt: _dateTimeValue(values['occurred_at']),
@@ -305,13 +300,12 @@ final class DriftSyncMaterializer {
     if (month == null || categoryId is! String) return;
 
     if (deleted) {
-      await (_database.delete(_database.plans)
-            ..where(
-              (row) =>
-                  row.budgetId.equals(budgetId) &
-                  row.month.equals(month) &
-                  row.categoryId.equals(categoryId),
-            ))
+      await (_database.delete(_database.plans)..where(
+            (row) =>
+                row.budgetId.equals(budgetId) &
+                row.month.equals(month) &
+                row.categoryId.equals(categoryId),
+          ))
           .go();
       return;
     }
@@ -320,37 +314,39 @@ final class DriftSyncMaterializer {
     final updatedAt = _dateTime(values['updated_at']);
     if (amount == null || updatedAt == null) return;
 
-    final existing = await (_database.select(_database.plans)
-          ..where(
-            (row) =>
-                row.budgetId.equals(budgetId) &
-                row.month.equals(month) &
-                row.categoryId.equals(categoryId),
-          ))
-        .getSingleOrNull();
+    final existing =
+        await (_database.select(_database.plans)..where(
+              (row) =>
+                  row.budgetId.equals(budgetId) &
+                  row.month.equals(month) &
+                  row.categoryId.equals(categoryId),
+            ))
+            .getSingleOrNull();
 
     if (existing == null) {
-      await _database.into(_database.plans).insert(
-        PlansCompanion.insert(
-          id: entityId,
-          budgetId: budgetId,
-          month: month,
-          categoryId: categoryId,
-          plannedAmountMinor: amount,
-          updatedAt: Value(updatedAt),
-        ),
-      );
+      await _database
+          .into(_database.plans)
+          .insert(
+            PlansCompanion.insert(
+              id: entityId,
+              budgetId: budgetId,
+              month: month,
+              categoryId: categoryId,
+              plannedAmountMinor: amount,
+              updatedAt: Value(updatedAt),
+            ),
+          );
       return;
     }
 
-    await (_database.update(_database.plans)
-          ..where((row) => row.id.equals(existing.id)))
-        .write(
-          PlansCompanion(
-            plannedAmountMinor: Value(amount),
-            updatedAt: Value(updatedAt),
-          ),
-        );
+    await (_database.update(
+      _database.plans,
+    )..where((row) => row.id.equals(existing.id))).write(
+      PlansCompanion(
+        plannedAmountMinor: Value(amount),
+        updatedAt: Value(updatedAt),
+      ),
+    );
   }
 
   Future<void> _materializeMember({
@@ -363,11 +359,9 @@ final class DriftSyncMaterializer {
     final role = values['role'];
     if (role is! String) return;
 
-    await (_database.update(_database.budgetMembers)
-          ..where(
-            (row) =>
-                row.budgetId.equals(budgetId) & row.userId.equals(userId),
-          ))
+    await (_database.update(_database.budgetMembers)..where(
+          (row) => row.budgetId.equals(budgetId) & row.userId.equals(userId),
+        ))
         .write(BudgetMembersCompanion(role: Value(role)));
   }
 

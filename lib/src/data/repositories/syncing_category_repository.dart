@@ -22,21 +22,21 @@ final class SyncingCategoryRepository implements CategoryRepository {
   Stream<List<BudgetCategory>> watchCategories(
     String budgetId, {
     required bool includeArchived,
-  }) =>
-      _delegate.watchCategories(budgetId, includeArchived: includeArchived);
+  }) => _delegate.watchCategories(budgetId, includeArchived: includeArchived);
 
   @override
   Future<BudgetCategory?> findCategory({
     required String budgetId,
     required String categoryId,
-  }) =>
-      _delegate.findCategory(budgetId: budgetId, categoryId: categoryId);
+  }) => _delegate.findCategory(budgetId: budgetId, categoryId: categoryId);
 
   @override
   Future<List<CategoryTemplate>> getTemplates() => _delegate.getTemplates();
 
   @override
-  Future<void> insertCategoriesIfMissing(List<BudgetCategory> categories) async {
+  Future<void> insertCategoriesIfMissing(
+    List<BudgetCategory> categories,
+  ) async {
     for (final category in categories) {
       final existing = await _delegate.findCategory(
         budgetId: category.budgetId,

@@ -9,9 +9,8 @@ typedef PairSync = Future<void> Function({
 });
 
 final class SyncCoordinatorService {
-  const SyncCoordinatorService({
-    this.maxConcurrentConnections = 4,
-  }) : assert(maxConcurrentConnections > 0);
+  const SyncCoordinatorService({this.maxConcurrentConnections = 4})
+    : assert(maxConcurrentConnections > 0);
 
   final int maxConcurrentConnections;
 
@@ -107,9 +106,11 @@ final class SyncCoordinatorService {
   }) async {
     var completed = 0;
 
-    for (var offset = 0;
-        offset < peerDeviceIds.length;
-        offset += maxConcurrentConnections) {
+    for (
+      var offset = 0;
+      offset < peerDeviceIds.length;
+      offset += maxConcurrentConnections
+    ) {
       final group = peerDeviceIds
           .skip(offset)
           .take(maxConcurrentConnections)

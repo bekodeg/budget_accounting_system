@@ -22,33 +22,15 @@ void main() {
       ),
     ]);
 
-    expect(result.values, {
-      'name': 'Groceries',
-      'kind': 'EXPENSE',
-    });
+    expect(result.values, {'name': 'Groceries', 'kind': 'EXPENSE'});
     expect(result.isDeleted, isFalse);
   });
 
   test('same field uses logical clock then device id as deterministic LWW', () {
     final result = engine.merge([
-      _op(
-        id: 'op-a',
-        clock: 4,
-        device: 'device-a',
-        patch: '{"name":"A"}',
-      ),
-      _op(
-        id: 'op-b',
-        clock: 4,
-        device: 'device-b',
-        patch: '{"name":"B"}',
-      ),
-      _op(
-        id: 'op-old',
-        clock: 3,
-        device: 'device-z',
-        patch: '{"name":"Old"}',
-      ),
+      _op(id: 'op-a', clock: 4, device: 'device-a', patch: '{"name":"A"}'),
+      _op(id: 'op-b', clock: 4, device: 'device-b', patch: '{"name":"B"}'),
+      _op(id: 'op-old', clock: 3, device: 'device-z', patch: '{"name":"Old"}'),
     ]);
 
     expect(result.values['name'], 'B');
@@ -105,12 +87,7 @@ void main() {
   test('conflicting payload for the same op id is rejected', () {
     expect(
       () => engine.merge([
-        _op(
-          id: 'op-1',
-          clock: 1,
-          device: 'device-a',
-          patch: '{"name":"Food"}',
-        ),
+        _op(id: 'op-1', clock: 1, device: 'device-a', patch: '{"name":"Food"}'),
         _op(
           id: 'op-1',
           clock: 1,
@@ -200,31 +177,34 @@ void main() {
     );
   });
 
-  test('same device and Lamport clock cannot identify different operations', () {
-    expect(
-      () => engine.merge([
-        _op(
-          id: 'op-name',
-          clock: 7,
-          device: 'device-a',
-          patch: '{"name":"Food"}',
+  test(
+    'same device and Lamport clock cannot identify different operations',
+    () {
+      expect(
+        () => engine.merge([
+          _op(
+            id: 'op-name',
+            clock: 7,
+            device: 'device-a',
+            patch: '{"name":"Food"}',
+          ),
+          _op(
+            id: 'op-kind',
+            clock: 7,
+            device: 'device-a',
+            patch: '{"kind":"EXPENSE"}',
+          ),
+        ]),
+        throwsA(
+          isA<SyncMergeError>().having(
+            (error) => error.code,
+            'code',
+            SyncMergeErrorCode.versionCollision,
+          ),
         ),
-        _op(
-          id: 'op-kind',
-          clock: 7,
-          device: 'device-a',
-          patch: '{"kind":"EXPENSE"}',
-        ),
-      ]),
-      throwsA(
-        isA<SyncMergeError>().having(
-          (error) => error.code,
-          'code',
-          SyncMergeErrorCode.versionCollision,
-        ),
-      ),
-    );
-  });
+      );
+    },
+  );
 
   test('delete and update with the same device version are rejected', () {
     expect(
@@ -253,43 +233,36 @@ void main() {
     );
   });
 
-  test('delete/update tie is resolved by device id in every delivery order', () {
-    final update = _op(
-      id: 'op-update',
-      clock: 5,
-      device: 'device-a',
-      patch: '{"name":"Candidate"}',
-    );
-    final deletion = _op(
-      id: 'op-delete',
-      clock: 5,
-      device: 'device-b',
-      type: SyncMutationType.delete,
-      patch: '{}',
-    );
+  test(
+    'delete/update tie is resolved by device id in every delivery order',
+    () {
+      final update = _op(
+        id: 'op-update',
+        clock: 5,
+        device: 'device-a',
+        patch: '{"name":"Candidate"}',
+      );
+      final deletion = _op(
+        id: 'op-delete',
+        clock: 5,
+        device: 'device-b',
+        type: SyncMutationType.delete,
+        patch: '{}',
+      );
 
-    for (final order in _permutations([update, deletion])) {
-      final state = engine.merge(order);
-      expect(state.isDeleted, isTrue);
-      expect(state.tombstoneVersion?.deviceId, 'device-b');
-    }
-  });
+      for (final order in _permutations([update, deletion])) {
+        final state = engine.merge(order);
+        expect(state.isDeleted, isTrue);
+        expect(state.tombstoneVersion?.deviceId, 'device-b');
+      }
+    },
+  );
 
   test('equal field version with different values is rejected', () {
     expect(
       () => engine.merge([
-        _op(
-          id: 'op-1',
-          clock: 2,
-          device: 'device-a',
-          patch: '{"name":"One"}',
-        ),
-        _op(
-          id: 'op-2',
-          clock: 2,
-          device: 'device-a',
-          patch: '{"name":"Two"}',
-        ),
+        _op(id: 'op-1', clock: 2, device: 'device-a', patch: '{"name":"One"}'),
+        _op(id: 'op-2', clock: 2, device: 'device-a', patch: '{"name":"Two"}'),
       ]),
       throwsA(
         isA<SyncMergeError>().having(
@@ -332,10 +305,7 @@ List<List<T>> _permutations<T>(List<T> values) {
   final result = <List<T>>[];
   for (var index = 0; index < values.length; index++) {
     final head = values[index];
-    final tail = [
-      ...values.take(index),
-      ...values.skip(index + 1),
-    ];
+    final tail = [...values.take(index), ...values.skip(index + 1)];
     for (final permutation in _permutations(tail)) {
       result.add([head, ...permutation]);
     }

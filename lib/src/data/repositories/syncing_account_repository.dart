@@ -22,22 +22,19 @@ final class SyncingAccountRepository implements AccountRepository {
   Stream<List<BudgetAccount>> watchAccounts(
     String budgetId, {
     required bool includeArchived,
-  }) =>
-      _delegate.watchAccounts(budgetId, includeArchived: includeArchived);
+  }) => _delegate.watchAccounts(budgetId, includeArchived: includeArchived);
 
   @override
   Future<BudgetAccount?> findAccount({
     required String budgetId,
     required String accountId,
-  }) =>
-      _delegate.findAccount(budgetId: budgetId, accountId: accountId);
+  }) => _delegate.findAccount(budgetId: budgetId, accountId: accountId);
 
   @override
   Future<bool> hasTransactions({
     required String budgetId,
     required String accountId,
-  }) =>
-      _delegate.hasTransactions(budgetId: budgetId, accountId: accountId);
+  }) => _delegate.hasTransactions(budgetId: budgetId, accountId: accountId);
 
   @override
   Future<void> createAccount(BudgetAccount account) async {
@@ -111,24 +108,22 @@ final class SyncingAccountRepository implements AccountRepository {
     required String budgetId,
     required String accountId,
     DateTime? atInclusive,
-  }) =>
-      _delegate.getBalance(
-        budgetId: budgetId,
-        accountId: accountId,
-        atInclusive: atInclusive,
-      );
+  }) => _delegate.getBalance(
+    budgetId: budgetId,
+    accountId: accountId,
+    atInclusive: atInclusive,
+  );
 
   @override
   Future<List<AccountBalance>> getBalances({
     required String budgetId,
     required bool includeArchived,
     DateTime? atInclusive,
-  }) =>
-      _delegate.getBalances(
-        budgetId: budgetId,
-        includeArchived: includeArchived,
-        atInclusive: atInclusive,
-      );
+  }) => _delegate.getBalances(
+    budgetId: budgetId,
+    includeArchived: includeArchived,
+    atInclusive: atInclusive,
+  );
 }
 
 Map<String, Object?> _accountPatch(BudgetAccount value) => {

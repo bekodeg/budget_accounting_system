@@ -87,14 +87,8 @@ void main() {
     final foreignManager = await _manager(
       base64Url.encode(List<int>.filled(32, 99)),
     );
-    final trusted = _handshake(
-      manager: trustedManager,
-      nonce: 'trusted-nonce',
-    );
-    final foreign = _handshake(
-      manager: foreignManager,
-      nonce: 'foreign-nonce',
-    );
+    final trusted = _handshake(manager: trustedManager, nonce: 'trusted-nonce');
+    final foreign = _handshake(manager: foreignManager, nonce: 'foreign-nonce');
 
     final hello = await foreign.create(
       budgetId: budgetId,
@@ -156,10 +150,7 @@ final class _MemorySecretStore implements BudgetTransportSecretStore {
   Future<String?> load(String budgetId) async => _values[budgetId];
 
   @override
-  Future<void> save({
-    required String budgetId,
-    required String secret,
-  }) async {
+  Future<void> save({required String budgetId, required String secret}) async {
     _values[budgetId] = secret;
   }
 

@@ -32,10 +32,7 @@ void main() {
         ),
       },
     );
-    final trusted = _handshake(
-      secret: secret,
-      identityRepository: identities,
-    );
+    final trusted = _handshake(secret: secret, identityRepository: identities);
 
     await expectLater(
       trusted.verify(expectedBudgetId: budgetId, hello: hello),
