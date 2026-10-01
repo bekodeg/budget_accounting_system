@@ -77,10 +77,7 @@ WHERE budget_id = ?
 ORDER BY logical_clock, op_id
 LIMIT 100
 ''',
-      [
-        Variable.withString('budget-1'),
-        Variable.withString('device-1'),
-      ],
+      [Variable.withString('budget-1'), Variable.withString('device-1')],
     );
 
     expect(plan, contains('idx_sync_operations_budget_device_clock'));
