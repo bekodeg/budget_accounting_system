@@ -3,6 +3,7 @@ import '../../domain/repositories/invitation_repository.dart';
 import '../errors/invite_error.dart';
 import '../ports/invite_consumption_store.dart';
 import '../ports/session_store.dart';
+import '../services/budget_transport_secret_manager.dart';
 import 'get_public_identity.dart';
 import 'inspect_budget_invite.dart';
 
@@ -13,17 +14,20 @@ final class AcceptBudgetInvite {
     required InviteConsumptionStore consumptionStore,
     required SessionStore sessionStore,
     required GetPublicIdentity getPublicIdentity,
+    required BudgetTransportSecretManager transportSecretManager,
   }) : _inspectInvite = inspectInvite,
        _invitationRepository = invitationRepository,
        _consumptionStore = consumptionStore,
        _sessionStore = sessionStore,
-       _getPublicIdentity = getPublicIdentity;
+       _getPublicIdentity = getPublicIdentity,
+       _transportSecretManager = transportSecretManager;
 
   final InspectBudgetInvite _inspectInvite;
   final InvitationRepository _invitationRepository;
   final InviteConsumptionStore _consumptionStore;
   final SessionStore _sessionStore;
   final GetPublicIdentity _getPublicIdentity;
+  final BudgetTransportSecretManager _transportSecretManager;
 
   Future<BudgetInvitePreview> call(String rawPayload) async {
     final preview = await _inspectInvite(rawPayload);
@@ -43,15 +47,26 @@ final class AcceptBudgetInvite {
     final joiningIdentity = await _getPublicIdentity(userId);
 
     await _consumptionStore.markConsumed(invite.inviteId);
+    var importedTransportSecret = false;
     try {
+      importedTransportSecret = await _transportSecretManager.import(
+        budgetId: invite.budgetId,
+        secret: invite.crypto.bootstrapSecret,
+      );
       await _invitationRepository.acceptInvite(
         invite: invite,
         joiningIdentity: joiningIdentity,
       );
     } on StateError catch (error) {
+      if (importedTransportSecret) {
+        await _transportSecretManager.remove(invite.budgetId);
+      }
       await _consumptionStore.unmarkConsumed(invite.inviteId);
       throw InviteError(InviteErrorCode.budgetConflict, error.message);
     } on Object {
+      if (importedTransportSecret) {
+        await _transportSecretManager.remove(invite.budgetId);
+      }
       await _consumptionStore.unmarkConsumed(invite.inviteId);
       rethrow;
     }

@@ -8,6 +8,7 @@ import '../ports/id_generator.dart';
 import '../ports/identity_signature_service.dart';
 import '../ports/secure_token_generator.dart';
 import '../services/budget_invite_codec.dart';
+import '../services/budget_transport_secret_manager.dart';
 import 'get_public_identity.dart';
 
 final class CreateBudgetInvite {
@@ -17,6 +18,7 @@ final class CreateBudgetInvite {
     required GetPublicIdentity getPublicIdentity,
     required IdentitySignatureService signatureService,
     required SecureTokenGenerator tokenGenerator,
+    required BudgetTransportSecretManager transportSecretManager,
     required IdGenerator idGenerator,
     BudgetInviteCodec codec = const BudgetInviteCodec(),
     DateTime Function()? now,
@@ -25,6 +27,7 @@ final class CreateBudgetInvite {
        _getPublicIdentity = getPublicIdentity,
        _signatureService = signatureService,
        _tokenGenerator = tokenGenerator,
+       _transportSecretManager = transportSecretManager,
        _idGenerator = idGenerator,
        _codec = codec,
        _now = now ?? _utcNow;
@@ -34,6 +37,7 @@ final class CreateBudgetInvite {
   final GetPublicIdentity _getPublicIdentity;
   final IdentitySignatureService _signatureService;
   final SecureTokenGenerator _tokenGenerator;
+  final BudgetTransportSecretManager _transportSecretManager;
   final IdGenerator _idGenerator;
   final BudgetInviteCodec _codec;
   final DateTime Function() _now;
@@ -62,6 +66,7 @@ final class CreateBudgetInvite {
       throw StateError('Budget not found: $budgetId');
     }
     final identity = await _getPublicIdentity(owner.userId);
+    final transportSecret = await _transportSecretManager.getOrCreate(budgetId);
     final issuedAt = _now().toUtc();
 
     final invite = BudgetInvite(
@@ -83,7 +88,7 @@ final class CreateBudgetInvite {
         kdf: 'hkdf-sha256',
         transportCipher: 'chacha20-poly1305',
         salt: _tokenGenerator.nextToken(bytes: 16),
-        bootstrapSecret: _tokenGenerator.nextToken(bytes: 32),
+        bootstrapSecret: transportSecret,
       ),
       signature: '',
     );

@@ -1,5 +1,6 @@
 import 'package:budget_accounting_system/src/application/errors/invite_error.dart';
 import 'package:budget_accounting_system/src/application/services/budget_invite_codec.dart';
+import 'package:budget_accounting_system/src/application/services/budget_transport_secret_manager.dart';
 import 'package:budget_accounting_system/src/application/use_cases/accept_budget_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_budget_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/ensure_local_identity.dart';
@@ -57,6 +58,11 @@ void main() {
       final signatures = FakeIdentitySignatureService();
       final consumed = FakeInviteConsumptionStore();
       final invitations = FakeInvitationRepository();
+      final transportSecrets = FakeBudgetTransportSecretStore();
+      final transportSecretManager = BudgetTransportSecretManager(
+        store: transportSecrets,
+        tokenGenerator: FakeSecureTokenGenerator(),
+      );
       final create = CreateBudgetInvite(
         invitationRepository: invitations,
         authorization: FakeBudgetAuthorizationGuard(
@@ -66,6 +72,7 @@ void main() {
         getPublicIdentity: getOwnerIdentity,
         signatureService: signatures,
         tokenGenerator: FakeSecureTokenGenerator(),
+        transportSecretManager: transportSecretManager,
         idGenerator: FakeIdGenerator(['invite-1']),
         now: () => fixedNow,
       );
@@ -89,6 +96,10 @@ void main() {
       expect(preview.invite.crypto.signatureAlgorithm, 'ed25519');
       expect(preview.invite.crypto.kdf, 'hkdf-sha256');
       expect(preview.invite.crypto.transportCipher, 'chacha20-poly1305');
+      expect(
+        await transportSecrets.load('budget-1'),
+        preview.invite.crypto.bootstrapSecret,
+      );
       expect(preview.invite.expiresAt, fixedNow.add(const Duration(hours: 24)));
     },
   );
@@ -99,6 +110,11 @@ void main() {
     final keys = FakeIdentityKeyStore();
     final signatures = FakeIdentitySignatureService();
     final consumed = FakeInviteConsumptionStore();
+    final transportSecrets = FakeBudgetTransportSecretStore();
+    final transportSecretManager = BudgetTransportSecretManager(
+      store: transportSecrets,
+      tokenGenerator: FakeSecureTokenGenerator(),
+    );
     final create = CreateBudgetInvite(
       invitationRepository: FakeInvitationRepository(),
       authorization: FakeBudgetAuthorizationGuard(
@@ -114,6 +130,7 @@ void main() {
       ),
       signatureService: signatures,
       tokenGenerator: FakeSecureTokenGenerator(),
+      transportSecretManager: transportSecretManager,
       idGenerator: FakeIdGenerator(['invite-1']),
       now: () => fixedNow,
     );
@@ -163,6 +180,11 @@ void main() {
     final signatures = FakeIdentitySignatureService();
     final consumed = FakeInviteConsumptionStore();
     final invitations = FakeInvitationRepository();
+    final ownerTransportSecrets = FakeBudgetTransportSecretStore();
+    final ownerTransportSecretManager = BudgetTransportSecretManager(
+      store: ownerTransportSecrets,
+      tokenGenerator: FakeSecureTokenGenerator(),
+    );
     final create = CreateBudgetInvite(
       invitationRepository: invitations,
       authorization: FakeBudgetAuthorizationGuard(
@@ -178,6 +200,7 @@ void main() {
       ),
       signatureService: signatures,
       tokenGenerator: FakeSecureTokenGenerator(),
+      transportSecretManager: ownerTransportSecretManager,
       idGenerator: FakeIdGenerator(['invite-1']),
       now: () => fixedNow,
     );
@@ -201,12 +224,18 @@ void main() {
       now: () => fixedNow.add(const Duration(minutes: 1)),
     );
     final session = FakeSessionStore(currentUserId: 'user-2');
+    final joiningTransportSecrets = FakeBudgetTransportSecretStore();
+    final joiningTransportSecretManager = BudgetTransportSecretManager(
+      store: joiningTransportSecrets,
+      tokenGenerator: FakeSecureTokenGenerator(),
+    );
     final accept = AcceptBudgetInvite(
       inspectInvite: inspect,
       invitationRepository: invitations,
       consumptionStore: consumed,
       sessionStore: session,
       getPublicIdentity: getJoiningIdentity,
+      transportSecretManager: joiningTransportSecretManager,
     );
 
     final accepted = await accept(generated.rawPayload);
@@ -215,6 +244,10 @@ void main() {
     expect(invitations.accepted, hasLength(1));
     expect(invitations.accepted.single.joiningIdentity.userId, 'user-2');
     expect(await session.loadCurrentBudgetId(), 'budget-1');
+    expect(
+      await joiningTransportSecrets.load('budget-1'),
+      generated.invite.crypto.bootstrapSecret,
+    );
 
     await expectLater(
       accept(generated.rawPayload),
