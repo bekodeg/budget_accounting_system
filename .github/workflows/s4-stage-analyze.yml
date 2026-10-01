@@ -52,6 +52,16 @@ jobs:
             sed -i "s#import 'package:drift/drift.dart';#import 'package:drift/drift.dart' hide isNull, isNotNull;#" "$file"
           done
 
+      - name: Remove imports made redundant by Drift hide
+        shell: bash
+        run: |
+          for file in \
+            test/data/repositories/drift_budget_snapshot_repository_test.dart \
+            test/data/repositories/drift_sync_journal_test.dart \
+            test/data/services/drift_sync_mutation_executor_test.dart; do
+            sed -i "/import 'dart:typed_data';/d" "$file"
+          done
+
       - name: Format Dart sources
         run: dart format lib test
 
