@@ -21,12 +21,13 @@ final class DriftReceiptRepository implements ReceiptRepository {
   }
 
   @override
-  Future<void> saveQrReceipt(ReceiptQrDraft receipt) {
+  Future<void> saveReceipt(ReceiptQrDraft receipt) {
     return _dao.upsertReceipt(
       ReceiptsCompanion.insert(
         id: receipt.receiptId,
         budgetId: receipt.budgetId,
-        rawQr: Value(receipt.rawQr),
+        rawQr: Value(receipt.rawQr.isEmpty ? null : receipt.rawQr),
+        imagePath: Value(receipt.imagePath),
         merchant: Value(receipt.description),
         receiptTime: Value(receipt.occurredAt),
         totalMinor: Value(receipt.totalMinor),
@@ -47,6 +48,7 @@ final class DriftReceiptRepository implements ReceiptRepository {
       parsedPayloadJson: row.parsedPayload ?? '{}',
       parseStatus: row.parseStatus,
       isDuplicate: isDuplicate,
+      imagePath: row.imagePath,
     );
   }
 }

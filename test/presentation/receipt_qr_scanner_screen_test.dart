@@ -126,7 +126,7 @@ final class _ReceiptRepository implements ReceiptRepository {
   }
 
   @override
-  Future<void> saveQrReceipt(ReceiptQrDraft receipt) async {
+  Future<void> saveReceipt(ReceiptQrDraft receipt) async {
     saved.add(receipt);
   }
 }

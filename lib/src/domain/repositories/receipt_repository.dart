@@ -6,5 +6,5 @@ abstract interface class ReceiptRepository {
     required String rawQr,
   });
 
-  Future<void> saveQrReceipt(ReceiptQrDraft receipt);
+  Future<void> saveReceipt(ReceiptQrDraft receipt);
 }
