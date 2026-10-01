@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../domain/models/receipt_qr_draft.dart';
 import '../../domain/repositories/receipt_repository.dart';
 import '../authorization/budget_action.dart';
@@ -6,6 +8,7 @@ import '../ports/id_generator.dart';
 import '../ports/receipt_image_store.dart';
 import '../ports/receipt_photo_analyzer.dart';
 import '../services/fiscal_receipt_qr_parser.dart';
+import '../services/receipt_enrichment_coordinator.dart';
 import '../services/receipt_ocr_parser.dart';
 
 final class ImportReceiptPhoto {
@@ -17,13 +20,15 @@ final class ImportReceiptPhoto {
     required ReceiptOcrParser ocrParser,
     required IdGenerator idGenerator,
     required BudgetAuthorizationGuard authorization,
+    ReceiptEnrichmentCoordinator? enrichmentCoordinator,
   }) : _receiptRepository = receiptRepository,
        _imageStore = imageStore,
        _analyzer = analyzer,
        _qrParser = qrParser,
        _ocrParser = ocrParser,
        _idGenerator = idGenerator,
-       _authorization = authorization;
+       _authorization = authorization,
+       _enrichmentCoordinator = enrichmentCoordinator;
 
   final ReceiptRepository _receiptRepository;
   final ReceiptImageStore _imageStore;
@@ -32,6 +37,7 @@ final class ImportReceiptPhoto {
   final ReceiptOcrParser _ocrParser;
   final IdGenerator _idGenerator;
   final BudgetAuthorizationGuard _authorization;
+  final ReceiptEnrichmentCoordinator? _enrichmentCoordinator;
 
   Future<ReceiptQrDraft> call({
     required String budgetId,
@@ -70,6 +76,7 @@ final class ImportReceiptPhoto {
             imagePath: imagePath,
           );
           await _receiptRepository.saveReceipt(updated);
+          _scheduleEnrichment(updated);
           return updated;
         }
 
@@ -87,6 +94,7 @@ final class ImportReceiptPhoto {
           imagePath: imagePath,
         );
         await _receiptRepository.saveReceipt(draft);
+        _scheduleEnrichment(draft);
         return draft;
       }
 
@@ -104,6 +112,7 @@ final class ImportReceiptPhoto {
         imagePath: imagePath,
       );
       await _receiptRepository.saveReceipt(draft);
+      _scheduleEnrichment(draft);
       return draft;
     } on Object {
       final failed = ReceiptQrDraft(
@@ -120,6 +129,13 @@ final class ImportReceiptPhoto {
       );
       await _receiptRepository.saveReceipt(failed);
       return failed;
+    }
+  }
+
+  void _scheduleEnrichment(ReceiptQrDraft draft) {
+    final enrichment = _enrichmentCoordinator;
+    if (enrichment != null) {
+      unawaited(enrichment.enrichInBackground(draft));
     }
   }
 }
