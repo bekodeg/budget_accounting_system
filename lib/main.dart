@@ -3,17 +3,20 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import 'src/app.dart';
 import 'src/application/ports/diagnostic_log_store.dart';
 import 'src/bootstrap/app_composition_root.dart';
 import 'src/bootstrap/database_encryption_bootstrap.dart';
+import 'src/bootstrap/runtime_bootstrap_app.dart';
 import 'src/data/database/app_database.dart';
 import 'src/data/security/flutter_secure_database_key_store.dart';
 import 'src/data/services/random_secure_token_generator.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(RuntimeBootstrapApp(loadRuntime: _loadRuntime));
+}
 
+Future<AppRuntime> _loadRuntime() async {
   final encryption = await DatabaseEncryptionBootstrap(
     keyStore: FlutterSecureDatabaseKeyStore(),
     tokenGenerator: RandomSecureTokenGenerator(),
@@ -24,12 +27,9 @@ Future<void> main() async {
   );
   final compositionRoot = AppCompositionRoot.defaults(database: database);
   _installSafeErrorCapture(compositionRoot.services.diagnosticLogStore);
-
-  runApp(
-    BudgetAccountingApp(
-      services: compositionRoot.services,
-      onDispose: compositionRoot.close,
-    ),
+  return AppRuntime(
+    services: compositionRoot.services,
+    onDispose: compositionRoot.close,
   );
 }
 
