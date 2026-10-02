@@ -203,9 +203,8 @@ final class _StartupFailure extends StatelessWidget {
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.of(
-                                dialogContext,
-                              ).pop(),
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
                               child: const Text('Закрыть'),
                             ),
                           ],
