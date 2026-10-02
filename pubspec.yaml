@@ -42,4 +42,4 @@ flutter:
 hooks:
   user_defines:
     sqlite3:
-      source: sqlite3mc
+      source: sqlcipher
