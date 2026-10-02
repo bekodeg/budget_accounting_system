@@ -140,7 +140,6 @@ final class _TokenGenerator implements SecureTokenGenerator {
   String nextToken({int bytes = 32}) => key;
 }
 
-
 final class _ThrowingKeyStore implements DatabaseKeyStore {
   @override
   Future<void> deleteKey() async {}

@@ -88,10 +88,7 @@ final class DatabaseEncryptionBootstrap {
       try {
         _guardSync(
           phase: 'database-plaintext-migration',
-          action: () => _encryptPlaintextDatabase(
-            path: path,
-            key: resolvedKey,
-          ),
+          action: () => _encryptPlaintextDatabase(path: path, key: resolvedKey),
         );
       } on Object {
         if (createdKey) {
@@ -126,17 +123,11 @@ final class DatabaseEncryptionBootstrap {
     } on StartupDiagnosticException {
       rethrow;
     } on Object catch (error) {
-      throw StartupDiagnosticException.fromError(
-        phase: phase,
-        error: error,
-      );
+      throw StartupDiagnosticException.fromError(phase: phase, error: error);
     }
   }
 
-  T _guardSync<T>({
-    required String phase,
-    required T Function() action,
-  }) {
+  T _guardSync<T>({required String phase, required T Function() action}) {
     try {
       return action();
     } on DatabaseKeyMissingException {
@@ -144,10 +135,7 @@ final class DatabaseEncryptionBootstrap {
     } on StartupDiagnosticException {
       rethrow;
     } on Object catch (error) {
-      throw StartupDiagnosticException.fromError(
-        phase: phase,
-        error: error,
-      );
+      throw StartupDiagnosticException.fromError(phase: phase, error: error);
     }
   }
 

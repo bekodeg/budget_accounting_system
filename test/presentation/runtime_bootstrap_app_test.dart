@@ -74,7 +74,9 @@ void main() {
     expect(find.text('Код ошибки: database-key-missing'), findsOneWidget);
   });
 
-  testWidgets('shows safe startup phase and platform error code', (tester) async {
+  testWidgets('shows safe startup phase and platform error code', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       RuntimeBootstrapApp(
         loadRuntime: () async {
@@ -147,10 +149,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.textContaining('Не удалось открыть GitHub'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Не удалось открыть GitHub'), findsOneWidget);
   });
 
   testWidgets('continues to normal app when runtime loads', (tester) async {
