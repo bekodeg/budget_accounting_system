@@ -37,8 +37,8 @@ Future<bool> reportStartupIssue(String diagnosticCode) async {
 ## Шаги воспроизведения
 
 1. Запустить приложение.
-2. 
-3. 
+2.
+3.
 
 ## Ожидаемое поведение
 
