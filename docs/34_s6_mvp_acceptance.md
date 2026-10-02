@@ -1,6 +1,6 @@
 # S6 MVP acceptance — FR-01…FR-16
 
-Issue: #38  
+Issue: #38
 Application version reviewed: `0.1.0+2`
 
 ## Decision
