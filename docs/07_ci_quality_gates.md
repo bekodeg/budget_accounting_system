@@ -47,32 +47,22 @@ feature/*, fix/*, chore/*
 
 Продвижение выполняется Pull Request-ом **только из `dev` в `stage`**. PR запускает дешевый `Stage promotion gate`, который проверяет источник ветки.
 
-После merge/push в `stage` workflow `.github/workflows/stage-ci.yml` выполняет полный quality gate:
+После merge/push в `stage` workflow `.github/workflows/stage-ci.yml` выполняет полный quality gate параллельными jobs:
 
-1. после checkout запускает Trivy filesystem scan для `vuln`, `secret` и `misconfig`;
-2. блокирует stage при исправляемых находках уровня `HIGH` или `CRITICAL`;
-3. устанавливает Flutter и зависимости;
-4. запускает `build_runner`;
-5. повторно запускает codegen и сравнивает SHA-256 generated files;
-6. генерирует Drift migrations и migration-test helper;
-7. проверяет, что versioned migration artifacts закоммичены;
-8. проверяет форматирование;
-9. запускает `flutter analyze`;
-10. запускает полный `flutter test --coverage`;
-11. публикует coverage summary и LCOV artifact;
-12. генерирует Android host project и добавляет LAN permissions для P2P discovery;
-13. восстанавливает постоянный Android release keystore из GitHub Actions Secrets;
-14. проверяет SHA-256 отпечаток сертификата подписи;
-15. собирает подписанный Android release APK;
-16. публикует APK для ручного тестирования.
+1. `Stage security` — один Trivy filesystem scan для `vuln`, `secret` и `misconfig`;
+2. `Stage generated code` — восстанавливает cache generated Dart по hash входных Drift/dependency файлов и запускает `build_runner` только при cache miss;
+3. тот же preparation job запускает Drift migration checks только при изменении database schema, `drift_schemas/` или dependency lockfiles;
+4. generated Dart упаковывается с SHA-256 manifest и передается downstream jobs как короткоживущий artifact;
+5. `Stage quality` и `Stage Android release` стартуют параллельно после preparation;
+6. quality job проверяет форматирование, `flutter analyze`, полный `flutter test --coverage` и coverage baseline;
+7. Android job восстанавливает Gradle cache, проверяет signing secrets/certificate и собирает подписанный release APK;
+8. финальный job `Stage validation` сохраняет прежнее имя итогового gate и проходит только если security, generated-code, quality и Android release jobs завершились успешно.
 
-Trivy запускается до Flutter setup и остальных дорогих шагов, чтобы security blocker
-останавливал Stage CI как можно раньше. Используется `aquasecurity/trivy-action`
-версии `v0.36.0`, закрепленный по commit SHA; база Trivy кешируется штатным
-механизмом action. На текущем этапе `ignore-unfixed: true`, поэтому gate не
-блокирует выпуск на уязвимости без доступного исправления.
+Trivy выполняется ровно один раз и стартует параллельно с подготовкой generated code. Используется `aquasecurity/trivy-action` версии `v0.36.0`, закрепленный по commit SHA; база Trivy кешируется штатным механизмом action. На текущем этапе `ignore-unfixed: true`, поэтому gate не блокирует выпуск на уязвимости без доступного исправления.
 
-Coverage хранится 7 дней. Stage APK хранится 3 дня, чтобы не расходовать artifact storage дольше необходимого.
+Android build использует отдельный Gradle cache (`~/.gradle/caches`, `~/.gradle/wrapper`) с ключом от generated Android Gradle configuration и `pubspec.lock`. Это особенно ускоряет повторные release builds, которые раньше доминировали во времени Stage CI.
+
+Coverage хранится 7 дней. Generated-code artifact хранится 1 день, Stage APK — 3 дня.
 
 Если Stage CI упал, изменения не продвигаются в `main`. Исправление делается в рабочей ветке, проходит через `dev` и повторно продвигается в `stage`.
 
@@ -129,17 +119,15 @@ flutter test
 
 `*.g.dart` и аналогичные generated Dart files не коммитятся.
 
-На `stage` воспроизводимость проверяется так:
+Stage CI не запускает `build_runner` дважды подряд. Вместо этого generated Dart кешируется по hash входов генератора (`lib/src/data/database/**`, `pubspec.yaml`, `pubspec.lock`). При cache miss выполняется один generation pass, затем результат упаковывается вместе с SHA-256 manifest. Downstream jobs проверяют manifest после восстановления artifact.
 
-```text
-build_runner
-  -> hash generated files
-  -> build_runner again
-  -> hash generated files again
-  -> hashes must match
-```
+Следствия:
 
-`drift_schemas/`, наоборот, является versioned history и должен находиться в Git.
+- изменения, не затрагивающие Drift schema/dependencies, обычно используют уже готовый generated-code cache;
+- изменение generator inputs автоматически создает новый cache key и выполняет один новый generation pass;
+- quality и Android jobs получают один и тот же проверенный generated artifact.
+
+`drift_schemas/`, наоборот, является versioned history и должен находиться в Git. Migration generation/check запускается только если текущий stage push изменяет database schema, `drift_schemas/` или dependency lockfiles; для manual `workflow_dispatch` проверка выполняется всегда.
 
 ## Branch protection / GitHub Rulesets
 
