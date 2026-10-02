@@ -182,6 +182,7 @@ jobs:
           name: stage-generated-dart-${{ github.sha }}
           path: .stage-cache/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 1
 
   quality:
