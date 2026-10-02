@@ -45,6 +45,11 @@ final class DatabaseEncryptionBootstrap {
   final DatabasePathResolver _databasePathResolver;
 
   Future<DatabaseEncryptionConfig> prepare() async {
+    _guardSync(
+      phase: 'sqlite-native-load',
+      action: _verifySqlCipherBackend,
+    );
+
     final path = await _guardAsync(
       phase: 'path-resolve',
       action: _databasePathResolver,
@@ -155,16 +160,80 @@ final class DatabaseEncryptionBootstrap {
     }
   }
 
+  void _verifySqlCipherBackend() {
+    final database = sqlite3.openInMemory();
+    try {
+      final version = database.select('PRAGMA cipher_version;');
+      if (version.isEmpty) {
+        throw StateError('SQLCipher backend is not available.');
+      }
+    } finally {
+      database.close();
+    }
+  }
+
   void _encryptPlaintextDatabase({required String path, required String key}) {
+    final encryptedPath = '$path.encrypted-migration';
+    final backupPath = '$path.plaintext-backup';
+    final encryptedFile = File(encryptedPath);
+    final backupFile = File(backupPath);
+
+    if (encryptedFile.existsSync()) {
+      encryptedFile.deleteSync();
+    }
+    if (backupFile.existsSync()) {
+      throw StateError(
+        'Plaintext migration backup already exists; refusing to overwrite it.',
+      );
+    }
+
     final database = sqlite3.open(path);
     try {
       database.execute('PRAGMA journal_mode = DELETE;');
-      database.execute("PRAGMA rekey = '$key';");
+      final userVersion =
+          database.select('PRAGMA user_version;').single['user_version'] as int;
+
+      database.execute(
+        "ATTACH DATABASE '${_sqlLiteral(encryptedPath)}' "
+        "AS encrypted KEY '${_sqlLiteral(key)}';",
+      );
+      try {
+        database.select("SELECT sqlcipher_export('encrypted');");
+        database.execute('PRAGMA encrypted.user_version = $userVersion;');
+      } finally {
+        database.execute('DETACH DATABASE encrypted;');
+      }
+    } finally {
+      database.close();
+    }
+
+    _verifyEncryptedDatabase(path: encryptedPath, key: key);
+
+    final sourceFile = File(path);
+    sourceFile.renameSync(backupPath);
+    try {
+      encryptedFile.renameSync(path);
+    } on Object {
+      backupFile.renameSync(path);
+      rethrow;
+    }
+    backupFile.deleteSync();
+  }
+
+  void _verifyEncryptedDatabase({
+    required String path,
+    required String key,
+  }) {
+    final database = sqlite3.open(path);
+    try {
+      database.execute("PRAGMA key = '${_sqlLiteral(key)}';");
       database.select('SELECT count(*) FROM sqlite_master;');
     } finally {
       database.close();
     }
   }
+
+  String _sqlLiteral(String value) => value.replaceAll("'", "''");
 
   void _validateKey(String key) {
     if (key.length < 32 || !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(key)) {
