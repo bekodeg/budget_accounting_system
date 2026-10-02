@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:budget_accounting_system/src/bootstrap/database_encryption_bootstrap.dart';
 import 'package:budget_accounting_system/src/bootstrap/runtime_bootstrap_app.dart';
+import 'package:budget_accounting_system/src/bootstrap/startup_diagnostic_exception.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -49,6 +50,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Не удалось запустить приложение'), findsOneWidget);
+    expect(find.text('Код ошибки: runtime:stateerror'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('runtime-bootstrap-retry')));
     await tester.pumpAndSettle();
@@ -69,6 +71,29 @@ void main() {
 
     expect(find.text('Не удалось открыть локальные данные'), findsOneWidget);
     expect(find.textContaining('не удаляйте приложение'), findsOneWidget);
+    expect(find.text('Код ошибки: database-key-missing'), findsOneWidget);
+  });
+
+  testWidgets('shows safe startup phase and platform error code', (tester) async {
+    await tester.pumpWidget(
+      RuntimeBootstrapApp(
+        loadRuntime: () async {
+          throw const StartupDiagnosticException(
+            phase: 'secure-key-read',
+            causeType: 'platformexception',
+            platformCode: 'keystore-unavailable',
+          );
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Код ошибки: secure-key-read:platformexception:keystore-unavailable',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('continues to normal app when runtime loads', (tester) async {
