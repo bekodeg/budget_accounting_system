@@ -131,4 +131,43 @@ void main() {
     expect(result.failedPeerDeviceIds, {'device-c'});
     expect(result.coordinatorDeviceId, 'device-a');
   });
+  test('five peers converge after coordinator fan-in and fan-out', () async {
+    const service = SyncCoordinatorService(maxConcurrentConnections: 2);
+    final journals = <String, Set<String>>{
+      'device-a': {'a-1'},
+      'device-b': {'b-1'},
+      'device-c': {'c-1'},
+      'device-d': {'d-1'},
+      'device-e': {'e-1'},
+    };
+
+    Future<void> pair({
+      required String coordinatorDeviceId,
+      required String peerDeviceId,
+    }) async {
+      final union = <String>{
+        ...journals[coordinatorDeviceId]!,
+        ...journals[peerDeviceId]!,
+      };
+      journals[coordinatorDeviceId]!
+        ..clear()
+        ..addAll(union);
+      journals[peerDeviceId]!
+        ..clear()
+        ..addAll(union);
+    }
+
+    final result = await service.synchronize(
+      availableDeviceIds: journals.keys,
+      synchronizePair: pair,
+    );
+
+    expect(result.coordinatorDeviceId, 'device-a');
+    expect(result.failedPeerDeviceIds, isEmpty);
+    expect(result.failovers, 0);
+    expect(result.completedPairSessions, 8);
+    for (final journal in journals.values) {
+      expect(journal, {'a-1', 'b-1', 'c-1', 'd-1', 'e-1'});
+    }
+  });
 }

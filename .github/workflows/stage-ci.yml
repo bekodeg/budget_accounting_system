@@ -121,13 +121,21 @@ jobs:
           fi
 
       - name: Verify source formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+        shell: bash
+        run: |
+          dart format lib test
+          git diff --exit-code -- lib test
 
       - name: Analyze
         run: flutter analyze
 
       - name: Run tests with coverage
         run: flutter test --coverage
+
+      - name: Enforce coverage baseline
+        env:
+          COVERAGE_BASELINE_PERCENT: "35.00"
+        run: bash tool/check_coverage.sh coverage/lcov.info
 
       - name: Publish coverage summary
         if: always() && hashFiles('coverage/lcov.info') != ''

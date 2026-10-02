@@ -273,6 +273,92 @@ void main() {
       ),
     );
   });
+  test(
+    'concurrent create update and delete converge for every delivery order',
+    () {
+      final operations = [
+        _op(
+          id: 'op-create',
+          clock: 1,
+          device: 'device-a',
+          type: SyncMutationType.create,
+          patch: '{"name":"Food","kind":"EXPENSE","archived":false}',
+        ),
+        _op(
+          id: 'op-rename',
+          clock: 2,
+          device: 'device-b',
+          patch: '{"name":"Groceries"}',
+        ),
+        _op(
+          id: 'op-delete',
+          clock: 2,
+          device: 'device-c',
+          type: SyncMutationType.delete,
+          patch: '{}',
+        ),
+      ];
+
+      final states = _permutations(
+        operations,
+      ).map(engine.merge).toList(growable: false);
+
+      for (final state in states) {
+        expect(state.values, states.first.values);
+        expect(state.isDeleted, states.first.isDeleted);
+        expect(state.appliedOperationIds, states.first.appliedOperationIds);
+      }
+
+      expect(states.first.values['name'], 'Groceries');
+      expect(states.first.isDeleted, isTrue);
+      expect(states.first.tombstoneVersion?.deviceId, 'device-c');
+    },
+  );
+
+  test('concurrent writes to different entities remain independent', () {
+    final first = engine.merge([
+      _op(
+        id: 'category-create',
+        clock: 1,
+        device: 'device-a',
+        type: SyncMutationType.create,
+        patch: '{"name":"Food"}',
+        entityId: 'category-1',
+      ),
+      _op(
+        id: 'category-update',
+        clock: 2,
+        device: 'device-b',
+        patch: '{"name":"Groceries"}',
+        entityId: 'category-1',
+      ),
+    ]);
+
+    final second = engine.merge([
+      _op(
+        id: 'account-create',
+        clock: 1,
+        device: 'device-c',
+        type: SyncMutationType.create,
+        patch: '{"name":"Card"}',
+        entityType: 'account',
+        entityId: 'account-1',
+      ),
+      _op(
+        id: 'account-update',
+        clock: 2,
+        device: 'device-d',
+        patch: '{"name":"Main card"}',
+        entityType: 'account',
+        entityId: 'account-1',
+      ),
+    ]);
+
+    expect(first.values['name'], 'Groceries');
+    expect(first.isDeleted, isFalse);
+    expect(second.values['name'], 'Main card');
+    expect(second.isDeleted, isFalse);
+  });
 }
 
 SignedSyncOperation _op({

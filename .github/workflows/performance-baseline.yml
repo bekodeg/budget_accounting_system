@@ -1,0 +1,65 @@
+name: Performance Baseline
+
+on:
+  push:
+    branches:
+      - stage
+  workflow_dispatch:
+    inputs:
+      transaction_count:
+        description: Transactions in the deterministic local-history dataset
+        required: false
+        default: '50000'
+      sync_operation_count:
+        description: Sync operations in the deterministic local-history dataset
+        required: false
+        default: '50000'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: performance-baseline
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Large local history benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Drift code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run deterministic performance baseline
+        env:
+          PERF_TRANSACTION_COUNT: ${{ inputs.transaction_count }}
+          PERF_SYNC_OPERATION_COUNT: ${{ inputs.sync_operation_count }}
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter test benchmark/large_history_benchmark_test.dart --reporter expanded \
+            | tee performance-baseline.log
+
+      - name: Upload performance log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: performance-baseline
+          path: performance-baseline.log
+          if-no-files-found: error
+          retention-days: 14

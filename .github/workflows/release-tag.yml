@@ -1,0 +1,168 @@
+name: Tagged Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tagged-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  android:
+    name: Signed Android release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag points to main history
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          git fetch origin main --depth=1
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Release tag must point to a commit contained in main."
+            exit 1
+          fi
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Drift code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Generate Android host project
+        run: >-
+          flutter create
+          --platforms=android
+          --project-name budget_accounting_system
+          --org com.bekodeg
+          --no-pub
+          .
+
+      - name: Configure Android platform dependencies
+        shell: bash
+        run: |
+          python3 tool/configure_lan_platform_permissions.py
+          python3 tool/configure_mlkit_android_dependencies.py
+
+      - name: Validate Android signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        shell: bash
+        run: |
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD ANDROID_CERT_SHA256; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: $name"
+              exit 1
+            fi
+          done
+
+      - name: Restore Android release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          keystore_path="$RUNNER_TEMP/budget-accounting-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$keystore_path"
+          chmod 600 "$keystore_path"
+          echo "ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+
+      - name: Verify Android signing certificate
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
+        shell: bash
+        run: |
+          actual="$(keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
+          expected="$(printf '%s' "$ANDROID_CERT_SHA256" | sed -E 's/^[[:space:]]*SHA256[[:space:]]*:[[:space:]]*//' | tr -d ':[:space:]' | tr '[:lower:]' '[:upper:]')"
+          test -n "$actual"
+          test "$actual" = "$expected"
+
+      - name: Configure Android signing
+        run: python3 tool/configure_android_release_signing.py
+
+      - name: Build signed APK and AAB
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          flutter build apk --release
+          flutter build appbundle --release
+
+      - name: Prepare checksums
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          cp build/app/outputs/flutter-apk/app-release.apk release-artifacts/
+          cp build/app/outputs/bundle/release/app-release.aab release-artifacts/
+          (cd release-artifacts && sha256sum app-release.apk app-release.aab > SHA256SUMS.txt)
+
+      - name: Upload Android release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: tagged-android-release
+          path: release-artifacts/
+          if-no-files-found: error
+          retention-days: 30
+
+  ios:
+    name: iOS release archive preparation
+    if: vars.ENABLE_IOS_RELEASE == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate Drift code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build iOS release without codesign
+        run: flutter build ios --release --no-codesign
+
+      - name: Archive unsigned iOS build
+        uses: actions/upload-artifact@v7
+        with:
+          name: tagged-ios-unsigned-release
+          path: build/ios/iphoneos/Runner.app
+          if-no-files-found: error
+          retention-days: 14
