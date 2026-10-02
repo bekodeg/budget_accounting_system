@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: stage-ci-\${{ github.workflow }}-\${{ github.ref }}
+  group: stage-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -27,9 +27,9 @@ jobs:
       - name: Require dev as source branch
         shell: bash
         run: |
-          if [ "\${{ github.head_ref }}" != "dev" ]; then
+          if [ "${{ github.head_ref }}" != "dev" ]; then
             echo "stage accepts promotion only from dev."
-            echo "Current source: \${{ github.head_ref }}"
+            echo "Current source: ${{ github.head_ref }}"
             exit 1
           fi
 
@@ -78,7 +78,7 @@ jobs:
             exit 0
           fi
 
-          before="\${{ github.event.before }}"
+          before="${{ github.event.before }}"
           if [ -z "$before" ] || printf '%s' "$before" | grep -Eq '^0+$'; then
             changed="$(git show --pretty='' --name-only "$GITHUB_SHA")"
           else
@@ -99,9 +99,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .stage-cache
-          key: >-
-            stage-codegen-\${{ runner.os }}-
-            \${{ hashFiles('lib/src/data/database/**/*.dart', 'pubspec.yaml', 'pubspec.lock') }}
+          key: ${{ format('stage-codegen-{0}-{1}', runner.os, hashFiles('lib/src/data/database/*.dart', 'lib/src/data/database/**/*.dart', 'pubspec.yaml', 'pubspec.lock')) }}
 
       - name: Set up Flutter for cache miss or migration verification
         if: steps.codegen-cache.outputs.cache-hit != 'true' || steps.changes.outputs.migrations == 'true'
@@ -181,7 +179,7 @@ jobs:
       - name: Upload generated Dart
         uses: actions/upload-artifact@v7
         with:
-          name: stage-generated-dart-\${{ github.sha }}
+          name: stage-generated-dart-${{ github.sha }}
           path: .stage-cache/
           if-no-files-found: error
           retention-days: 1
@@ -200,7 +198,7 @@ jobs:
       - name: Download generated Dart
         uses: actions/download-artifact@v8
         with:
-          name: stage-generated-dart-\${{ github.sha }}
+          name: stage-generated-dart-${{ github.sha }}
           path: .stage-generated
 
       - name: Restore generated Dart
@@ -278,7 +276,7 @@ jobs:
       - name: Download generated Dart
         uses: actions/download-artifact@v8
         with:
-          name: stage-generated-dart-\${{ github.sha }}
+          name: stage-generated-dart-${{ github.sha }}
           path: .stage-generated
 
       - name: Restore generated Dart
@@ -323,19 +321,17 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: >-
-            stage-gradle-\${{ runner.os }}-
-            \${{ hashFiles('pubspec.lock', 'android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          key: ${{ format('stage-gradle-{0}-{1}', runner.os, hashFiles('pubspec.lock', 'android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties')) }}
           restore-keys: |
-            stage-gradle-\${{ runner.os }}-
+            stage-gradle-${{ runner.os }}-
 
       - name: Validate Android signing secrets
         env:
-          ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
-          ANDROID_CERT_SHA256: \${{ secrets.ANDROID_CERT_SHA256 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
         shell: bash
         run: |
           for name in \
@@ -352,7 +348,7 @@ jobs:
 
       - name: Restore Android release keystore
         env:
-          ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         shell: bash
         run: |
           keystore_path="$RUNNER_TEMP/budget-accounting-release.jks"
@@ -363,9 +359,9 @@ jobs:
 
       - name: Verify Android signing certificate
         env:
-          ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_CERT_SHA256: \${{ secrets.ANDROID_CERT_SHA256 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
         shell: bash
         run: |
           cert_output="$RUNNER_TEMP/android-signing-certificate.txt"
@@ -417,9 +413,9 @@ jobs:
 
       - name: Build signed Android release APK
         env:
-          ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release --no-pub
 
       - name: Verify release APK exists
@@ -448,10 +444,10 @@ jobs:
     steps:
       - name: Require all stage gates
         env:
-          SECURITY_RESULT: \${{ needs.security.result }}
-          PREPARE_RESULT: \${{ needs.prepare.result }}
-          QUALITY_RESULT: \${{ needs.quality.result }}
-          ANDROID_RESULT: \${{ needs.android-release.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          ANDROID_RESULT: ${{ needs['android-release'].result }}
         shell: bash
         run: |
           printf '%-18s %s\n' \
