@@ -64,7 +64,14 @@ jobs:
         shell: bash
         run: |
           python3 tool/configure_lan_platform_permissions.py
+          python3 tool/configure_android_native_library_loading.py
           python3 tool/configure_mlkit_android_dependencies.py
+
+      - name: Verify Android native library compatibility settings
+        shell: bash
+        run: |
+          grep -F 'android:extractNativeLibs="true"' android/app/src/main/AndroidManifest.xml
+          grep -F 'useLegacyPackaging = true' android/app/build.gradle.kts
 
       - name: Validate Android signing secrets
         env:
@@ -116,6 +123,9 @@ jobs:
         run: |
           flutter build apk --release
           flutter build appbundle --release
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/arm64-v8a/libsqlite3mc.so'
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/armeabi-v7a/libsqlite3mc.so'
+          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/x86_64/libsqlite3mc.so'
 
       - name: Prepare checksums
         shell: bash
