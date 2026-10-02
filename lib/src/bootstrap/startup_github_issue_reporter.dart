@@ -4,9 +4,24 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-typedef StartupIssueReporter = Future<bool> Function(String diagnosticCode);
+typedef StartupIssueReporter =
+    Future<StartupIssueReportResult> Function(String diagnosticCode);
 
-Future<bool> reportStartupIssue(String diagnosticCode) async {
+final class StartupIssueReportResult {
+  const StartupIssueReportResult({
+    required this.opened,
+    required this.copiedToClipboard,
+    required this.issueUrl,
+  });
+
+  final bool opened;
+  final bool copiedToClipboard;
+  final String issueUrl;
+}
+
+Future<StartupIssueReportResult> reportStartupIssue(
+  String diagnosticCode,
+) async {
   final packageInfo = await PackageInfo.fromPlatform();
   final safeCode = _singleLine(diagnosticCode, maxLength: 160);
   final platform = _singleLine(Platform.operatingSystem, maxLength: 40);
@@ -63,13 +78,34 @@ Startup bootstrap завершился ошибкой `$safeCode`.
       'labels': 'bug',
     },
   );
+  final issueUrl = uri.toString();
+  final copied = await copyIssueUrlToClipboard(issueUrl);
 
-  await Clipboard.setData(ClipboardData(text: uri.toString()));
-
-  if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-    return true;
+  var opened = false;
+  try {
+    opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened) {
+      opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
+    }
+  } on Object {
+    opened = false;
   }
-  return launchUrl(uri, mode: LaunchMode.platformDefault);
+
+  return StartupIssueReportResult(
+    opened: opened,
+    copiedToClipboard: copied,
+    issueUrl: issueUrl,
+  );
+}
+
+Future<bool> copyIssueUrlToClipboard(String issueUrl) async {
+  try {
+    await Clipboard.setData(ClipboardData(text: issueUrl));
+    final readback = await Clipboard.getData(Clipboard.kTextPlain);
+    return readback?.text == issueUrl;
+  } on Object {
+    return false;
+  }
 }
 
 String _singleLine(String value, {required int maxLength}) {
