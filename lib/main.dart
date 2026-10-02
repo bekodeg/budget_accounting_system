@@ -3,79 +3,20 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import 'src/app.dart';
 import 'src/application/ports/diagnostic_log_store.dart';
 import 'src/bootstrap/app_composition_root.dart';
 import 'src/bootstrap/database_encryption_bootstrap.dart';
+import 'src/bootstrap/runtime_bootstrap_app.dart';
 import 'src/data/database/app_database.dart';
 import 'src/data/security/flutter_secure_database_key_store.dart';
 import 'src/data/services/random_secure_token_generator.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const _StartupHost());
+  runApp(RuntimeBootstrapApp(loadRuntime: _loadRuntime));
 }
 
-final class _StartupHost extends StatefulWidget {
-  const _StartupHost();
-
-  @override
-  State<_StartupHost> createState() => _StartupHostState();
-}
-
-final class _StartupHostState extends State<_StartupHost> {
-  late Future<AppCompositionRoot> _startup;
-
-  @override
-  void initState() {
-    super.initState();
-    _startup = _createCompositionRoot();
-  }
-
-  void _retry() {
-    setState(() {
-      _startup = _createCompositionRoot();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Budget Accounting',
-      theme: ThemeData(useMaterial3: true, brightness: Brightness.light),
-      darkTheme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
-      themeMode: ThemeMode.system,
-      home: FutureBuilder<AppCompositionRoot>(
-        future: _startup,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return _StartupFailure(
-              error: snapshot.error,
-              onRetry: _retry,
-            );
-          }
-
-          final compositionRoot = snapshot.requireData;
-          _installSafeErrorCapture(
-            compositionRoot.services.diagnosticLogStore,
-          );
-          return BudgetAccountingApp(
-            services: compositionRoot.services,
-            onDispose: compositionRoot.close,
-          );
-        },
-      ),
-    );
-  }
-}
-
-Future<AppCompositionRoot> _createCompositionRoot() async {
+Future<AppRuntime> _loadRuntime() async {
   final encryption = await DatabaseEncryptionBootstrap(
     keyStore: FlutterSecureDatabaseKeyStore(),
     tokenGenerator: RandomSecureTokenGenerator(),
@@ -84,62 +25,12 @@ Future<AppCompositionRoot> _createCompositionRoot() async {
     key: encryption.key,
     databasePath: encryption.databasePath,
   );
-  return AppCompositionRoot.defaults(database: database);
-}
-
-final class _StartupFailure extends StatelessWidget {
-  const _StartupFailure({required this.error, required this.onRetry});
-
-  final Object? error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final isMissingKey = error is DatabaseKeyMissingException;
-
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    isMissingKey
-                        ? 'Не удалось открыть локальные данные'
-                        : 'Не удалось запустить приложение',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    isMissingKey
-                        ? 'Ключ локальной зашифрованной базы недоступен. '
-                              'Если данные важны, не удаляйте приложение и '
-                              'восстановите ключ или backup.'
-                        : 'Проверьте доступ к локальному хранилищу и '
-                              'попробуйте снова.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    key: const ValueKey('startup-bootstrap-retry'),
-                    onPressed: onRetry,
-                    child: const Text('Повторить'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  final compositionRoot = AppCompositionRoot.defaults(database: database);
+  _installSafeErrorCapture(compositionRoot.services.diagnosticLogStore);
+  return AppRuntime(
+    services: compositionRoot.services,
+    onDispose: compositionRoot.close,
+  );
 }
 
 void _installSafeErrorCapture(DiagnosticLogStore? logStore) {
