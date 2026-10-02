@@ -78,16 +78,20 @@ final class DatabaseEncryptionBootstrap {
       );
       createdKey = true;
     }
+    final resolvedKey = key;
     _guardSync(
       phase: 'secure-key-validate',
-      action: () => _validateKey(key!),
+      action: () => _validateKey(resolvedKey),
     );
 
     if (isPlaintext) {
       try {
         _guardSync(
           phase: 'database-plaintext-migration',
-          action: () => _encryptPlaintextDatabase(path: path, key: key!),
+          action: () => _encryptPlaintextDatabase(
+            path: path,
+            key: resolvedKey,
+          ),
         );
       } on Object {
         if (createdKey) {
@@ -106,7 +110,7 @@ final class DatabaseEncryptionBootstrap {
 
     return DatabaseEncryptionConfig(
       databasePath: path,
-      key: key,
+      key: resolvedKey,
       migratedPlaintextDatabase: isPlaintext,
     );
   }
