@@ -28,6 +28,7 @@ void main() {
     final plain = sqlite3.open(databasePath);
     plain.execute('CREATE TABLE sample (value TEXT NOT NULL);');
     plain.execute("INSERT INTO sample(value) VALUES ('kept');");
+    plain.execute('PRAGMA user_version = 7;');
     plain.close();
 
     final keyStore = _KeyStore();
@@ -53,6 +54,10 @@ void main() {
     encrypted.execute("PRAGMA key = '${config.key}';");
     final rows = encrypted.select('SELECT value FROM sample;');
     expect(rows.single['value'], 'kept');
+    expect(
+      encrypted.select('PRAGMA user_version;').single['user_version'],
+      7,
+    );
     encrypted.close();
   });
 
@@ -98,6 +103,15 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('uses the SQLCipher native backend', () async {
+    final database = sqlite3.openInMemory();
+    try {
+      expect(database.select('PRAGMA cipher_version;'), isNotEmpty);
+    } finally {
+      database.close();
+    }
   });
 
   test('creates and persists key for a new database', () async {
