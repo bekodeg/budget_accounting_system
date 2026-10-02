@@ -16,14 +16,14 @@ final class AppRuntime {
 }
 
 final class RuntimeBootstrapApp extends StatefulWidget {
-  RuntimeBootstrapApp({
+  const RuntimeBootstrapApp({
     required this.loadRuntime,
-    StartupIssueReporter? reportIssue,
+    this.reportIssue,
     super.key,
-  }) : reportIssue = reportIssue ?? reportStartupIssue;
+  });
 
   final RuntimeLoader loadRuntime;
-  final StartupIssueReporter reportIssue;
+  final StartupIssueReporter? reportIssue;
 
   @override
   State<RuntimeBootstrapApp> createState() => _RuntimeBootstrapAppState();
@@ -68,7 +68,7 @@ final class _RuntimeBootstrapAppState extends State<RuntimeBootstrapApp> {
             return _StartupFailure(
               error: snapshot.error,
               onRetry: _retry,
-              onReportIssue: widget.reportIssue,
+              onReportIssue: widget.reportIssue ?? reportStartupIssue,
             );
           }
 
