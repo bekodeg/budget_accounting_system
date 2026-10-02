@@ -431,14 +431,14 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release --no-pub
 
-      - name: Verify release APK and sqlite3mc native assets
+      - name: Verify release APK and SQLCipher native assets
         shell: bash
         run: |
           apk=build/app/outputs/flutter-apk/app-release.apk
           test -s "$apk"
-          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsqlite3mc.so'
-          unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsqlite3mc.so'
-          unzip -l "$apk" | grep -F 'lib/x86_64/libsqlite3mc.so'
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsqlcipher.so'
+          unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsqlcipher.so'
+          unzip -l "$apk" | grep -F 'lib/x86_64/libsqlcipher.so'
 
       - name: Upload signed stage APK
         uses: actions/upload-artifact@v7
