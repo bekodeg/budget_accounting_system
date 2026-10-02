@@ -26,11 +26,19 @@ void main() {
   testWidgets('shows retry UI when runtime bootstrap fails', (tester) async {
     var attempts = 0;
 
+    final services = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(),
+    );
+
     await tester.pumpWidget(
       RuntimeBootstrapApp(
         loadRuntime: () async {
           attempts += 1;
-          throw StateError('startup failed');
+          if (attempts == 1) {
+            throw StateError('startup failed');
+          }
+          return AppRuntime(services: services);
         },
       ),
     );
@@ -46,6 +54,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(attempts, 2);
+    expect(find.text('Первый бюджет'), findsOneWidget);
   });
 
   testWidgets('explains missing encrypted database key', (tester) async {
