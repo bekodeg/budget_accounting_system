@@ -4,6 +4,7 @@ import '../app.dart';
 import '../application/app_services.dart';
 import 'database_encryption_bootstrap.dart';
 import 'startup_diagnostic_exception.dart';
+import 'startup_github_issue_reporter.dart';
 
 typedef RuntimeLoader = Future<AppRuntime> Function();
 
@@ -15,9 +16,14 @@ final class AppRuntime {
 }
 
 final class RuntimeBootstrapApp extends StatefulWidget {
-  const RuntimeBootstrapApp({required this.loadRuntime, super.key});
+  RuntimeBootstrapApp({
+    required this.loadRuntime,
+    StartupIssueReporter? reportIssue,
+    super.key,
+  }) : reportIssue = reportIssue ?? reportStartupIssue;
 
   final RuntimeLoader loadRuntime;
+  final StartupIssueReporter reportIssue;
 
   @override
   State<RuntimeBootstrapApp> createState() => _RuntimeBootstrapAppState();
@@ -59,7 +65,11 @@ final class _RuntimeBootstrapAppState extends State<RuntimeBootstrapApp> {
           }
 
           if (snapshot.hasError) {
-            return _StartupFailure(error: snapshot.error, onRetry: _retry);
+            return _StartupFailure(
+              error: snapshot.error,
+              onRetry: _retry,
+              onReportIssue: widget.reportIssue,
+            );
           }
 
           final runtime = snapshot.requireData;
@@ -74,10 +84,15 @@ final class _RuntimeBootstrapAppState extends State<RuntimeBootstrapApp> {
 }
 
 final class _StartupFailure extends StatelessWidget {
-  const _StartupFailure({required this.error, required this.onRetry});
+  const _StartupFailure({
+    required this.error,
+    required this.onRetry,
+    required this.onReportIssue,
+  });
 
   final Object? error;
   final VoidCallback onRetry;
+  final StartupIssueReporter onReportIssue;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +141,29 @@ final class _StartupFailure extends StatelessWidget {
                     key: const ValueKey('runtime-bootstrap-retry'),
                     onPressed: onRetry,
                     child: const Text('Повторить'),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    key: const ValueKey('runtime-bootstrap-report-issue'),
+                    onPressed: () async {
+                      var opened = false;
+                      try {
+                        opened = await onReportIssue(diagnosticCode);
+                      } on Object {
+                        opened = false;
+                      }
+                      if (!context.mounted || opened) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Не удалось открыть GitHub. '
+                            'Скопируйте код ошибки и создайте issue вручную.',
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.bug_report_outlined),
+                    label: const Text('Сообщить об ошибке'),
                   ),
                 ],
               ),

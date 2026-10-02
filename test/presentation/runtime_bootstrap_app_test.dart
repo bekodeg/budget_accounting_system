@@ -96,6 +96,63 @@ void main() {
     );
   });
 
+  testWidgets('reports the startup diagnostic code through GitHub action', (
+    tester,
+  ) async {
+    String? reportedCode;
+
+    await tester.pumpWidget(
+      RuntimeBootstrapApp(
+        loadRuntime: () async {
+          throw const StartupDiagnosticException(
+            phase: 'secure-key-read',
+            causeType: 'platformexception',
+            platformCode: 'keystore-unavailable',
+          );
+        },
+        reportIssue: (code) async {
+          reportedCode = code;
+          return true;
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('runtime-bootstrap-report-issue')),
+    );
+    await tester.pump();
+
+    expect(
+      reportedCode,
+      'secure-key-read:platformexception:keystore-unavailable',
+    );
+  });
+
+  testWidgets('shows fallback message when GitHub cannot be opened', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      RuntimeBootstrapApp(
+        loadRuntime: () async {
+          throw StateError('startup failed');
+        },
+        reportIssue: (_) async => false,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('runtime-bootstrap-report-issue')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('Не удалось открыть GitHub'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('continues to normal app when runtime loads', (tester) async {
     final services = fakeAppServices(
       repository: FakeBudgetRepository(),
