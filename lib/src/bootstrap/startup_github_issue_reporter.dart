@@ -20,7 +20,8 @@ Future<bool> reportStartupIssue(String diagnosticCode) async {
   );
   final occurredAt = DateTime.now().toUtc().toIso8601String();
 
-  final body = '''
+  final body =
+      '''
 ## Автоматическая диагностика
 
 - Startup code: `$safeCode`

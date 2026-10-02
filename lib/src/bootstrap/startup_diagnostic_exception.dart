@@ -35,10 +35,10 @@ final class StartupDiagnosticException implements Exception {
   }
 
   static String _sanitize(String value, {String fallback = 'unknown'}) {
-    final normalized = value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9_.-]'), '-');
+    final normalized = value.trim().toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9_.-]'),
+      '-',
+    );
     if (normalized.isEmpty) return fallback;
     return normalized.length <= 80 ? normalized : normalized.substring(0, 80);
   }

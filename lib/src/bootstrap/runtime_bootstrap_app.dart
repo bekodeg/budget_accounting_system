@@ -175,7 +175,6 @@ final class _StartupFailure extends StatelessWidget {
   }
 }
 
-
 String _diagnosticCode(Object? error) {
   if (error is DatabaseKeyMissingException) {
     return 'database-key-missing';
