@@ -133,3 +133,5 @@ dart run drift_dev make-migrations
 - [Первичная синхронизация snapshot + tail](docs/23_snapshot_bootstrap.md)
 - [State vector sync protocol](docs/21_state_vector_sync.md)
 - [ADR-001: Local-first P2P](docs/adr/ADR-001-local-first-p2p.md)
+- [Руководство пользователя MVP](docs/35_user_guide.md)
+- [Release notes 0.1.0](docs/36_release_notes_0.1.0.md)
