@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -63,7 +64,12 @@ Startup bootstrap завершился ошибкой `$safeCode`.
     },
   );
 
-  return launchUrl(uri, mode: LaunchMode.externalApplication);
+  await Clipboard.setData(ClipboardData(text: uri.toString()));
+
+  if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+    return true;
+  }
+  return launchUrl(uri, mode: LaunchMode.platformDefault);
 }
 
 String _singleLine(String value, {required int maxLength}) {

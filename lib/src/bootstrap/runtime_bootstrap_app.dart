@@ -157,7 +157,7 @@ final class _StartupFailure extends StatelessWidget {
                         const SnackBar(
                           content: Text(
                             'Не удалось открыть GitHub. '
-                            'Скопируйте код ошибки и создайте issue вручную.',
+                            'Ссылка на готовый issue скопирована в буфер обмена.',
                           ),
                         ),
                       );

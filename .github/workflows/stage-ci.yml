@@ -311,6 +311,9 @@ jobs:
       - name: Configure LAN platform permissions
         run: python3 tool/configure_lan_platform_permissions.py
 
+      - name: Configure Android native library loading
+        run: python3 tool/configure_android_native_library_loading.py
+
       - name: Configure ML Kit Android dependencies
         run: |
           python3 tool/configure_mlkit_android_dependencies.py
@@ -415,6 +418,12 @@ jobs:
       - name: Configure Android release signing
         run: python3 tool/configure_android_release_signing.py
 
+      - name: Verify Android native library compatibility settings
+        shell: bash
+        run: |
+          grep -F 'android:extractNativeLibs="true"' android/app/src/main/AndroidManifest.xml
+          grep -F 'useLegacyPackaging = true' android/app/build.gradle.kts
+
       - name: Build signed Android release APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -422,9 +431,14 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release --no-pub
 
-      - name: Verify release APK exists
+      - name: Verify release APK and sqlite3mc native assets
         shell: bash
-        run: test -s build/app/outputs/flutter-apk/app-release.apk
+        run: |
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          test -s "$apk"
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsqlite3mc.so'
+          unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsqlite3mc.so'
+          unzip -l "$apk" | grep -F 'lib/x86_64/libsqlite3mc.so'
 
       - name: Upload signed stage APK
         uses: actions/upload-artifact@v7
