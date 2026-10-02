@@ -146,19 +146,69 @@ final class _StartupFailure extends StatelessWidget {
                   OutlinedButton.icon(
                     key: const ValueKey('runtime-bootstrap-report-issue'),
                     onPressed: () async {
-                      var opened = false;
+                      StartupIssueReportResult? result;
                       try {
-                        opened = await onReportIssue(diagnosticCode);
+                        result = await onReportIssue(diagnosticCode);
                       } on Object {
-                        opened = false;
+                        result = null;
                       }
-                      if (!context.mounted || opened) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Не удалось открыть GitHub. '
-                            'Ссылка на готовый issue скопирована в буфер обмена.',
+                      if (!context.mounted || result?.opened == true) return;
+
+                      if (result?.copiedToClipboard == true) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Не удалось открыть GitHub. '
+                              'Ссылка на готовый issue скопирована в буфер обмена.',
+                            ),
                           ),
+                        );
+                        return;
+                      }
+
+                      final issueUrl = result?.issueUrl;
+                      if (issueUrl == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Не удалось подготовить отчет об ошибке.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      await showDialog<void>(
+                        context: context,
+                        builder: (dialogContext) => AlertDialog(
+                          title: const Text('Не удалось открыть GitHub'),
+                          content: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Буфер обмена не подтвердил запись. '
+                                  'Скопируйте ссылку вручную:',
+                                ),
+                                const SizedBox(height: 12),
+                                SelectableText(
+                                  issueUrl,
+                                  key: const ValueKey(
+                                    'runtime-bootstrap-issue-url',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(
+                                dialogContext,
+                              ).pop(),
+                              child: const Text('Закрыть'),
+                            ),
+                          ],
                         ),
                       );
                     },

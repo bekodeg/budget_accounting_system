@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:budget_accounting_system/src/bootstrap/database_encryption_bootstrap.dart';
 import 'package:budget_accounting_system/src/bootstrap/runtime_bootstrap_app.dart';
 import 'package:budget_accounting_system/src/bootstrap/startup_diagnostic_exception.dart';
+import 'package:budget_accounting_system/src/bootstrap/startup_github_issue_reporter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -114,7 +115,11 @@ void main() {
         },
         reportIssue: (code) async {
           reportedCode = code;
-          return true;
+          return const StartupIssueReportResult(
+            opened: true,
+            copiedToClipboard: true,
+            issueUrl: 'https://github.com/example',
+          );
         },
       ),
     );
@@ -139,7 +144,11 @@ void main() {
         loadRuntime: () async {
           throw StateError('startup failed');
         },
-        reportIssue: (_) async => false,
+        reportIssue: (_) async => const StartupIssueReportResult(
+          opened: false,
+          copiedToClipboard: true,
+          issueUrl: 'https://github.com/example',
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -150,6 +159,39 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Не удалось открыть GitHub'), findsOneWidget);
+  });
+
+  testWidgets('shows selectable issue URL when clipboard is unverified', (
+    tester,
+  ) async {
+    const issueUrl =
+        'https://github.com/bekodeg/budget_accounting_system/issues/new';
+
+    await tester.pumpWidget(
+      RuntimeBootstrapApp(
+        loadRuntime: () async {
+          throw StateError('startup failed');
+        },
+        reportIssue: (_) async => const StartupIssueReportResult(
+          opened: false,
+          copiedToClipboard: false,
+          issueUrl: issueUrl,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('runtime-bootstrap-report-issue')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Не удалось открыть GitHub'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('runtime-bootstrap-issue-url')),
+      findsOneWidget,
+    );
+    expect(find.text(issueUrl), findsOneWidget);
   });
 
   testWidgets('continues to normal app when runtime loads', (tester) async {
