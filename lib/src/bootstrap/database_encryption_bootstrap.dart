@@ -6,6 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../application/ports/database_key_store.dart';
 import '../application/ports/secure_token_generator.dart';
+import 'startup_diagnostic_exception.dart';
 
 typedef DatabasePathResolver = Future<String> Function();
 
@@ -44,12 +45,26 @@ final class DatabaseEncryptionBootstrap {
   final DatabasePathResolver _databasePathResolver;
 
   Future<DatabaseEncryptionConfig> prepare() async {
-    final path = await _databasePathResolver();
+    final path = await _guardAsync(
+      phase: 'path-resolve',
+      action: _databasePathResolver,
+    );
     final file = File(path);
-    final exists = await file.exists();
-    final isPlaintext = exists && await _hasPlainSqliteHeader(file);
+    final exists = await _guardAsync(
+      phase: 'database-file-check',
+      action: file.exists,
+    );
+    final isPlaintext = exists
+        ? await _guardAsync(
+            phase: 'database-header-read',
+            action: () => _hasPlainSqliteHeader(file),
+          )
+        : false;
 
-    var key = await _keyStore.loadKey();
+    var key = await _guardAsync(
+      phase: 'secure-key-read',
+      action: _keyStore.loadKey,
+    );
     if (exists && !isPlaintext && key == null) {
       throw const DatabaseKeyMissingException();
     }
@@ -57,17 +72,37 @@ final class DatabaseEncryptionBootstrap {
     var createdKey = false;
     if (key == null) {
       key = _tokenGenerator.nextToken(bytes: 32);
-      await _keyStore.saveKey(key);
+      await _guardAsync(
+        phase: 'secure-key-write',
+        action: () => _keyStore.saveKey(key!),
+      );
       createdKey = true;
     }
-    _validateKey(key);
+    final resolvedKey = key;
+    _guardSync(
+      phase: 'secure-key-validate',
+      action: () => _validateKey(resolvedKey),
+    );
 
     if (isPlaintext) {
       try {
-        _encryptPlaintextDatabase(path: path, key: key);
+        _guardSync(
+          phase: 'database-plaintext-migration',
+          action: () => _encryptPlaintextDatabase(
+            path: path,
+            key: resolvedKey,
+          ),
+        );
       } on Object {
         if (createdKey) {
-          await _keyStore.deleteKey();
+          try {
+            await _guardAsync(
+              phase: 'secure-key-cleanup',
+              action: _keyStore.deleteKey,
+            );
+          } on Object {
+            // Preserve the migration failure: it is the reason startup failed.
+          }
         }
         rethrow;
       }
@@ -75,9 +110,45 @@ final class DatabaseEncryptionBootstrap {
 
     return DatabaseEncryptionConfig(
       databasePath: path,
-      key: key,
+      key: resolvedKey,
       migratedPlaintextDatabase: isPlaintext,
     );
+  }
+
+  Future<T> _guardAsync<T>({
+    required String phase,
+    required Future<T> Function() action,
+  }) async {
+    try {
+      return await action();
+    } on DatabaseKeyMissingException {
+      rethrow;
+    } on StartupDiagnosticException {
+      rethrow;
+    } on Object catch (error) {
+      throw StartupDiagnosticException.fromError(
+        phase: phase,
+        error: error,
+      );
+    }
+  }
+
+  T _guardSync<T>({
+    required String phase,
+    required T Function() action,
+  }) {
+    try {
+      return action();
+    } on DatabaseKeyMissingException {
+      rethrow;
+    } on StartupDiagnosticException {
+      rethrow;
+    } on Object catch (error) {
+      throw StartupDiagnosticException.fromError(
+        phase: phase,
+        error: error,
+      );
+    }
   }
 
   static Future<String> _defaultDatabasePathResolver() async {

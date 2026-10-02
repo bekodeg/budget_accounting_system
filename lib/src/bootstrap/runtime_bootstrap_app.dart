@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../application/app_services.dart';
 import 'database_encryption_bootstrap.dart';
+import 'startup_diagnostic_exception.dart';
 
 typedef RuntimeLoader = Future<AppRuntime> Function();
 
@@ -81,6 +82,7 @@ final class _StartupFailure extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMissingKey = error is DatabaseKeyMissingException;
+    final diagnosticCode = _diagnosticCode(error);
 
     return Scaffold(
       body: SafeArea(
@@ -112,6 +114,13 @@ final class _StartupFailure extends StatelessWidget {
                               'попробуйте снова.',
                     textAlign: TextAlign.center,
                   ),
+                  const SizedBox(height: 12),
+                  SelectableText(
+                    'Код ошибки: $diagnosticCode',
+                    key: const ValueKey('runtime-bootstrap-error-code'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 20),
                   FilledButton(
                     key: const ValueKey('runtime-bootstrap-retry'),
@@ -126,4 +135,21 @@ final class _StartupFailure extends StatelessWidget {
       ),
     );
   }
+}
+
+
+String _diagnosticCode(Object? error) {
+  if (error is DatabaseKeyMissingException) {
+    return 'database-key-missing';
+  }
+  if (error is StartupDiagnosticException) {
+    return error.diagnosticCode;
+  }
+  if (error == null) {
+    return 'runtime:unknown';
+  }
+  return StartupDiagnosticException.fromError(
+    phase: 'runtime',
+    error: error,
+  ).diagnosticCode;
 }
