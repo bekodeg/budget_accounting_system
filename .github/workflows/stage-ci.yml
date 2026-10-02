@@ -99,7 +99,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .stage-cache
-          key: ${{ format('stage-codegen-{0}-{1}', runner.os, hashFiles('lib/src/data/database/*.dart', 'lib/src/data/database/**/*.dart', 'pubspec.yaml', 'pubspec.lock')) }}
+          key: ${{ format('stage-codegen-v2-{0}-{1}', runner.os, hashFiles('lib/src/data/database/*.dart', 'lib/src/data/database/**/*.dart', 'drift_schemas/**/*.json', 'pubspec.yaml', 'pubspec.lock')) }}
 
       - name: Set up Flutter for cache miss or migration verification
         if: steps.codegen-cache.outputs.cache-hit != 'true' || steps.changes.outputs.migrations == 'true'
@@ -117,18 +117,47 @@ jobs:
         if: steps.codegen-cache.outputs.cache-hit != 'true'
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Generate Drift migrations
+        if: steps.changes.outputs.migrations == 'true'
+        run: dart run drift_dev make-migrations
+
+      - name: Verify Drift migration artifacts are committed
+        if: steps.changes.outputs.migrations == 'true'
+        shell: bash
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- drift_schemas lib/src/data/database test/drift |
+            grep -v 'test/drift/generated_migrations/' |
+            grep -vE '\.(g|freezed)\.dart$' || true)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "Drift migration artifacts are not committed."
+            exit 1
+          fi
+
+      - name: Generate Drift migration test helper
+        if: steps.codegen-cache.outputs.cache-hit != 'true'
+        run: >-
+          dart run drift_dev schema generate
+          --data-classes
+          --companions
+          drift_schemas/app_database/
+          test/drift/generated_migrations/
+
       - name: Package generated Dart
         if: steps.codegen-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           mkdir -p .stage-cache
 
-          find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0 \
-            | sort -z \
-            | xargs -0 -r sha256sum > .stage-cache/generated-code.sha256
+          {
+            find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0
+            find test/drift/generated_migrations -type f -print0
+          } |
+            sort -zu |
+            xargs -0 -r sha256sum > .stage-cache/generated-code.sha256
 
           if [ ! -s .stage-cache/generated-code.sha256 ]; then
-            echo "build_runner did not produce generated Dart files."
+            echo "Generated Dart manifest is empty."
             exit 1
           fi
 
@@ -149,32 +178,6 @@ jobs:
             cd /tmp/generated-code-check
             sha256sum -c "$GITHUB_WORKSPACE/.stage-cache/generated-code.sha256"
           )
-
-      - name: Generate Drift migrations
-        if: steps.changes.outputs.migrations == 'true'
-        run: dart run drift_dev make-migrations
-
-      - name: Generate Drift migration test helper
-        if: steps.changes.outputs.migrations == 'true'
-        run: >-
-          dart run drift_dev schema generate
-          --data-classes
-          --companions
-          drift_schemas/app_database/
-          test/drift/generated_migrations/
-
-      - name: Verify Drift migration artifacts are committed
-        if: steps.changes.outputs.migrations == 'true'
-        shell: bash
-        run: |
-          changes="$(git status --porcelain --untracked-files=all -- drift_schemas lib/src/data/database test/drift |
-            grep -v 'test/drift/generated_migrations/' |
-            grep -vE '\.(g|freezed)\.dart$' || true)"
-          if [ -n "$changes" ]; then
-            echo "$changes"
-            echo "Drift migration artifacts are not committed."
-            exit 1
-          fi
 
       - name: Upload generated Dart
         uses: actions/upload-artifact@v7
