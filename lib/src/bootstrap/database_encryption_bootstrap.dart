@@ -45,10 +45,7 @@ final class DatabaseEncryptionBootstrap {
   final DatabasePathResolver _databasePathResolver;
 
   Future<DatabaseEncryptionConfig> prepare() async {
-    _guardSync(
-      phase: 'sqlite-native-load',
-      action: _verifySqlCipherBackend,
-    );
+    _guardSync(phase: 'sqlite-native-load', action: _verifySqlCipherBackend);
 
     final path = await _guardAsync(
       phase: 'path-resolve',
@@ -220,10 +217,7 @@ final class DatabaseEncryptionBootstrap {
     backupFile.deleteSync();
   }
 
-  void _verifyEncryptedDatabase({
-    required String path,
-    required String key,
-  }) {
+  void _verifyEncryptedDatabase({required String path, required String key}) {
     final database = sqlite3.open(path);
     try {
       database.execute("PRAGMA key = '${_sqlLiteral(key)}';");

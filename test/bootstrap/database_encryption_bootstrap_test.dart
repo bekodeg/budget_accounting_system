@@ -54,10 +54,7 @@ void main() {
     encrypted.execute("PRAGMA key = '${config.key}';");
     final rows = encrypted.select('SELECT value FROM sample;');
     expect(rows.single['value'], 'kept');
-    expect(
-      encrypted.select('PRAGMA user_version;').single['user_version'],
-      7,
-    );
+    expect(encrypted.select('PRAGMA user_version;').single['user_version'], 7);
     encrypted.close();
   });
 
