@@ -196,7 +196,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Не удалось открыть GitHub'), findsOneWidget);
+    expect(find.text('Ссылка на GitHub issue'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('runtime-bootstrap-issue-url')),
       findsOneWidget,
@@ -227,7 +227,44 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Не удалось открыть GitHub'), findsOneWidget);
+    expect(find.text('Ссылка на GitHub issue'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('runtime-bootstrap-issue-url')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('github.com'), findsWidgets);
+  });
+
+  testWidgets('shows issue URL without invoking reporter plugins', (
+    tester,
+  ) async {
+    var reporterCalled = false;
+
+    await tester.pumpWidget(
+      RuntimeBootstrapApp(
+        buildInfo: const AppBuildInfo(
+          version: '0.1.0+42',
+          channel: 'stage',
+          commit: '0123456789abcdef',
+        ),
+        loadRuntime: () async {
+          throw StateError('startup failed');
+        },
+        reportIssue: (_) async {
+          reporterCalled = true;
+          throw StateError('reporter should not be called');
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(reporterCalled, isFalse);
+    expect(find.text('Ссылка на GitHub issue'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('runtime-bootstrap-issue-url')),
       findsOneWidget,
