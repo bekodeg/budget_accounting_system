@@ -424,12 +424,25 @@ jobs:
           grep -F 'android:extractNativeLibs="true"' android/app/src/main/AndroidManifest.xml
           grep -F 'useLegacyPackaging = true' android/app/build.gradle.kts
 
+      - name: Prepare app build identity
+        shell: bash
+        run: |
+          app_version="$(awk '$1 == "version:" {print $2; exit}' pubspec.yaml)"
+          test -n "$app_version"
+          echo "APP_VERSION=$app_version" >> "$GITHUB_ENV"
+          echo "APP_CHANNEL=stage" >> "$GITHUB_ENV"
+          echo "APP_COMMIT=${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
+
       - name: Build signed Android release APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: flutter build apk --release --no-pub
+        run: >-
+          flutter build apk --release --no-pub
+          --dart-define=APP_VERSION="$APP_VERSION"
+          --dart-define=APP_CHANNEL="$APP_CHANNEL"
+          --dart-define=APP_COMMIT="$APP_COMMIT"
 
       - name: Verify release APK and SQLCipher native assets
         shell: bash

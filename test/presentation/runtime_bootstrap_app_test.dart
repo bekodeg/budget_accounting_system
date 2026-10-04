@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:budget_accounting_system/src/bootstrap/app_build_info.dart';
 import 'package:budget_accounting_system/src/bootstrap/database_encryption_bootstrap.dart';
 import 'package:budget_accounting_system/src/bootstrap/runtime_bootstrap_app.dart';
 import 'package:budget_accounting_system/src/bootstrap/startup_diagnostic_exception.dart';
@@ -25,7 +26,9 @@ void main() {
     );
   });
 
-  testWidgets('shows retry UI when runtime bootstrap fails', (tester) async {
+  testWidgets('shows retry UI and build identity when runtime bootstrap fails', (
+    tester,
+  ) async {
     var attempts = 0;
 
     final services = fakeAppServices(
@@ -35,6 +38,11 @@ void main() {
 
     await tester.pumpWidget(
       RuntimeBootstrapApp(
+        buildInfo: const AppBuildInfo(
+          version: '0.1.0+42',
+          channel: 'stage',
+          commit: '0123456789abcdef',
+        ),
         loadRuntime: () async {
           attempts += 1;
           if (attempts == 1) {
@@ -52,6 +60,8 @@ void main() {
     );
     expect(find.text('Не удалось запустить приложение'), findsOneWidget);
     expect(find.text('Код ошибки: runtime:stateerror'), findsOneWidget);
+    expect(find.text('Версия: 0.1.0+42'), findsOneWidget);
+    expect(find.text('Сборка: stage · 0123456789ab'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('runtime-bootstrap-retry')));
     await tester.pumpAndSettle();
@@ -186,12 +196,80 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Не удалось открыть GitHub'), findsOneWidget);
+    expect(find.text('Ссылка на GitHub issue'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('runtime-bootstrap-issue-url')),
       findsOneWidget,
     );
     expect(find.text(issueUrl), findsOneWidget);
+  });
+
+  testWidgets('shows selectable URL even if reporter throws', (tester) async {
+    await tester.pumpWidget(
+      RuntimeBootstrapApp(
+        buildInfo: const AppBuildInfo(
+          version: '0.1.0+42',
+          channel: 'stage',
+          commit: '0123456789abcdef',
+        ),
+        loadRuntime: () async {
+          throw StateError('startup failed');
+        },
+        reportIssue: (_) async {
+          throw StateError('reporter failed');
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('runtime-bootstrap-report-issue')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ссылка на GitHub issue'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('runtime-bootstrap-issue-url')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('github.com'), findsWidgets);
+  });
+
+  testWidgets('shows issue URL without invoking reporter plugins', (
+    tester,
+  ) async {
+    var reporterCalled = false;
+
+    await tester.pumpWidget(
+      RuntimeBootstrapApp(
+        buildInfo: const AppBuildInfo(
+          version: '0.1.0+42',
+          channel: 'stage',
+          commit: '0123456789abcdef',
+        ),
+        loadRuntime: () async {
+          throw StateError('startup failed');
+        },
+        reportIssue: (_) async {
+          reporterCalled = true;
+          throw StateError('reporter should not be called');
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(reporterCalled, isFalse);
+    expect(find.text('Ссылка на GitHub issue'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('runtime-bootstrap-issue-url')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('github.com'), findsWidgets);
   });
 
   testWidgets('continues to normal app when runtime loads', (tester) async {
