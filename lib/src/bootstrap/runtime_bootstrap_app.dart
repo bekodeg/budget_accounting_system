@@ -192,41 +192,24 @@ final class _StartupFailure extends StatelessWidget {
                             buildInfo: buildInfo,
                           );
 
-                      await showDialog<void>(
+                      await _showIssueUrlDialog(
                         context: context,
-                        builder: (dialogContext) => AlertDialog(
-                          title: const Text('Не удалось открыть GitHub'),
-                          content: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Буфер обмена не подтвердил запись. '
-                                  'Скопируйте ссылку вручную:',
-                                ),
-                                const SizedBox(height: 12),
-                                SelectableText(
-                                  issueUrl,
-                                  key: const ValueKey(
-                                    'runtime-bootstrap-issue-url',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.of(dialogContext).pop(),
-                              child: const Text('Закрыть'),
-                            ),
-                          ],
-                        ),
+                        issueUrl: issueUrl,
                       );
                     },
                     icon: const Icon(Icons.bug_report_outlined),
                     label: const Text('Сообщить об ошибке'),
+                  ),
+                  TextButton(
+                    key: const ValueKey('runtime-bootstrap-show-issue-url'),
+                    onPressed: () => _showIssueUrlDialog(
+                      context: context,
+                      issueUrl: buildStartupIssueUrl(
+                        diagnosticCode,
+                        buildInfo: buildInfo,
+                      ),
+                    ),
+                    child: const Text('Показать ссылку issue'),
                   ),
                 ],
               ),
@@ -252,4 +235,40 @@ String _diagnosticCode(Object? error) {
     phase: 'runtime',
     error: error,
   ).diagnosticCode;
+}
+
+
+Future<void> _showIssueUrlDialog({
+  required BuildContext context,
+  required String issueUrl,
+}) {
+  return showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Ссылка на GitHub issue'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Если автоматическое открытие или буфер обмена не работают, '
+              'выделите ссылку ниже вручную:',
+            ),
+            const SizedBox(height: 12),
+            SelectableText(
+              issueUrl,
+              key: const ValueKey('runtime-bootstrap-issue-url'),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('Закрыть'),
+        ),
+      ],
+    ),
+  );
 }
