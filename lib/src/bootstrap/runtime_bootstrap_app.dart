@@ -237,7 +237,6 @@ String _diagnosticCode(Object? error) {
   ).diagnosticCode;
 }
 
-
 Future<void> _showIssueUrlDialog({
   required BuildContext context,
   required String issueUrl,

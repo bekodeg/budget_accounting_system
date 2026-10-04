@@ -16,16 +16,7 @@ final class AppBuildInfo {
 }
 
 const currentBuildInfo = AppBuildInfo(
-  version: String.fromEnvironment(
-    'APP_VERSION',
-    defaultValue: 'unknown',
-  ),
-  channel: String.fromEnvironment(
-    'APP_CHANNEL',
-    defaultValue: 'local',
-  ),
-  commit: String.fromEnvironment(
-    'APP_COMMIT',
-    defaultValue: 'unknown',
-  ),
+  version: String.fromEnvironment('APP_VERSION', defaultValue: 'unknown'),
+  channel: String.fromEnvironment('APP_CHANNEL', defaultValue: 'local'),
+  commit: String.fromEnvironment('APP_COMMIT', defaultValue: 'unknown'),
 );

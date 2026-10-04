@@ -26,49 +26,50 @@ void main() {
     );
   });
 
-  testWidgets('shows retry UI and build identity when runtime bootstrap fails', (
-    tester,
-  ) async {
-    var attempts = 0;
+  testWidgets(
+    'shows retry UI and build identity when runtime bootstrap fails',
+    (tester) async {
+      var attempts = 0;
 
-    final services = fakeAppServices(
-      repository: FakeBudgetRepository(),
-      sessionStore: FakeSessionStore(),
-    );
+      final services = fakeAppServices(
+        repository: FakeBudgetRepository(),
+        sessionStore: FakeSessionStore(),
+      );
 
-    await tester.pumpWidget(
-      RuntimeBootstrapApp(
-        buildInfo: const AppBuildInfo(
-          version: '0.1.0+42',
-          channel: 'stage',
-          commit: '0123456789abcdef',
+      await tester.pumpWidget(
+        RuntimeBootstrapApp(
+          buildInfo: const AppBuildInfo(
+            version: '0.1.0+42',
+            channel: 'stage',
+            commit: '0123456789abcdef',
+          ),
+          loadRuntime: () async {
+            attempts += 1;
+            if (attempts == 1) {
+              throw StateError('startup failed');
+            }
+            return AppRuntime(services: services);
+          },
         ),
-        loadRuntime: () async {
-          attempts += 1;
-          if (attempts == 1) {
-            throw StateError('startup failed');
-          }
-          return AppRuntime(services: services);
-        },
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(
-      find.byKey(const ValueKey('runtime-bootstrap-error')),
-      findsOneWidget,
-    );
-    expect(find.text('Не удалось запустить приложение'), findsOneWidget);
-    expect(find.text('Код ошибки: runtime:stateerror'), findsOneWidget);
-    expect(find.text('Версия: 0.1.0+42'), findsOneWidget);
-    expect(find.text('Сборка: stage · 0123456789ab'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('runtime-bootstrap-error')),
+        findsOneWidget,
+      );
+      expect(find.text('Не удалось запустить приложение'), findsOneWidget);
+      expect(find.text('Код ошибки: runtime:stateerror'), findsOneWidget);
+      expect(find.text('Версия: 0.1.0+42'), findsOneWidget);
+      expect(find.text('Сборка: stage · 0123456789ab'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('runtime-bootstrap-retry')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('runtime-bootstrap-retry')));
+      await tester.pumpAndSettle();
 
-    expect(attempts, 2);
-    expect(find.text('Первый бюджет'), findsOneWidget);
-  });
+      expect(attempts, 2);
+      expect(find.text('Первый бюджет'), findsOneWidget);
+    },
+  );
 
   testWidgets('explains missing encrypted database key', (tester) async {
     await tester.pumpWidget(

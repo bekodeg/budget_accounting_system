@@ -39,10 +39,7 @@ Future<StartupIssueReportResult> reportStartupIssue(
         '/bekodeg/budget_accounting_system/issues/new',
         <String, String>{'title': '[Bug][Startup] $diagnosticCode'},
       );
-      opened = await launchUrl(
-        shortIssueUri,
-        mode: LaunchMode.platformDefault,
-      );
+      opened = await launchUrl(shortIssueUri, mode: LaunchMode.platformDefault);
     }
   } on Object {
     opened = false;
