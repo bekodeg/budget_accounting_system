@@ -1,3 +1,4 @@
+import 'package:budget_accounting_system/src/bootstrap/app_build_info.dart';
 import 'package:budget_accounting_system/src/bootstrap/startup_github_issue_reporter.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,30 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, null);
+  });
+
+  test('builds issue URL from compile-time-safe build info', () {
+    const buildInfo = AppBuildInfo(
+      version: '0.1.0+42',
+      channel: 'stage',
+      commit: '0123456789abcdef',
+    );
+    final issueUrl = buildStartupIssueUrl(
+      'sqlite-native-load:dynamiclibraryloaderror',
+      buildInfo: buildInfo,
+      occurredAt: DateTime.utc(2026, 10, 4, 12, 30),
+    );
+    final uri = Uri.parse(issueUrl);
+    final body = uri.queryParameters['body'] ?? '';
+
+    expect(uri.host, 'github.com');
+    expect(body, contains('App version: `0.1.0+42`'));
+    expect(body, contains('Build channel: `stage`'));
+    expect(body, contains('Build commit: `0123456789abcdef`'));
+    expect(
+      body,
+      contains('Startup code: `sqlite-native-load:dynamiclibraryloaderror`'),
+    );
   });
 
   testWidgets('copies and verifies the exact issue URL', (tester) async {
