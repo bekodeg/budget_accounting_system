@@ -1,8 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import 'app_build_info.dart';
 
 typedef StartupIssueReporter =
     Future<StartupIssueReportResult> Function(String diagnosticCode);
@@ -22,7 +23,32 @@ final class StartupIssueReportResult {
 Future<StartupIssueReportResult> reportStartupIssue(
   String diagnosticCode,
 ) async {
-  final packageInfo = await PackageInfo.fromPlatform();
+  final issueUrl = buildStartupIssueUrl(diagnosticCode);
+  final uri = Uri.parse(issueUrl);
+  final copied = await copyIssueUrlToClipboard(issueUrl);
+
+  var opened = false;
+  try {
+    opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened) {
+      opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
+    }
+  } on Object {
+    opened = false;
+  }
+
+  return StartupIssueReportResult(
+    opened: opened,
+    copiedToClipboard: copied,
+    issueUrl: issueUrl,
+  );
+}
+
+String buildStartupIssueUrl(
+  String diagnosticCode, {
+  AppBuildInfo buildInfo = currentBuildInfo,
+  DateTime? occurredAt,
+}) {
   final safeCode = _singleLine(diagnosticCode, maxLength: 160);
   final platform = _singleLine(Platform.operatingSystem, maxLength: 40);
   final osVersion = _singleLine(
@@ -30,22 +56,20 @@ Future<StartupIssueReportResult> reportStartupIssue(
     maxLength: 240,
   );
   final dartVersion = _singleLine(Platform.version, maxLength: 160);
-  final appVersion = _singleLine(
-    '${packageInfo.version}+${packageInfo.buildNumber}',
-    maxLength: 80,
-  );
-  final occurredAt = DateTime.now().toUtc().toIso8601String();
+  final timestamp = (occurredAt ?? DateTime.now().toUtc()).toIso8601String();
 
   final body =
       '''
 ## Автоматическая диагностика
 
 - Startup code: `$safeCode`
-- App version: `$appVersion`
+- App version: `${buildInfo.version}`
+- Build channel: `${buildInfo.channel}`
+- Build commit: `${buildInfo.commit}`
 - Platform: `$platform`
 - OS: `$osVersion`
 - Dart: `$dartVersion`
-- UTC time: `$occurredAt`
+- UTC time: `$timestamp`
 
 ## Что произошло
 
@@ -69,7 +93,7 @@ Startup bootstrap завершился ошибкой `$safeCode`.
 > финансовых данных или текста исключения.
 ''';
 
-  final uri = Uri.https(
+  return Uri.https(
     'github.com',
     '/bekodeg/budget_accounting_system/issues/new',
     <String, String>{
@@ -77,25 +101,7 @@ Startup bootstrap завершился ошибкой `$safeCode`.
       'body': body,
       'labels': 'bug',
     },
-  );
-  final issueUrl = uri.toString();
-  final copied = await copyIssueUrlToClipboard(issueUrl);
-
-  var opened = false;
-  try {
-    opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened) {
-      opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
-    }
-  } on Object {
-    opened = false;
-  }
-
-  return StartupIssueReportResult(
-    opened: opened,
-    copiedToClipboard: copied,
-    issueUrl: issueUrl,
-  );
+  ).toString();
 }
 
 Future<bool> copyIssueUrlToClipboard(String issueUrl) async {
