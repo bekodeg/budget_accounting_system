@@ -114,6 +114,15 @@ jobs:
       - name: Configure Android signing
         run: python3 tool/configure_android_release_signing.py
 
+      - name: Prepare app build identity
+        shell: bash
+        run: |
+          app_version="$(awk '$1 == "version:" {print $2; exit}' pubspec.yaml)"
+          test -n "$app_version"
+          echo "APP_VERSION=$app_version" >> "$GITHUB_ENV"
+          echo "APP_CHANNEL=release" >> "$GITHUB_ENV"
+          echo "APP_COMMIT=${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
+
       - name: Build signed APK and AAB
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -121,8 +130,14 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         shell: bash
         run: |
-          flutter build apk --release
-          flutter build appbundle --release
+          flutter build apk --release \
+            --dart-define=APP_VERSION="$APP_VERSION" \
+            --dart-define=APP_CHANNEL="$APP_CHANNEL" \
+            --dart-define=APP_COMMIT="$APP_COMMIT"
+          flutter build appbundle --release \
+            --dart-define=APP_VERSION="$APP_VERSION" \
+            --dart-define=APP_CHANNEL="$APP_CHANNEL" \
+            --dart-define=APP_COMMIT="$APP_COMMIT"
           unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/arm64-v8a/libsqlcipher.so'
           unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/armeabi-v7a/libsqlcipher.so'
           unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/x86_64/libsqlcipher.so'
@@ -166,8 +181,21 @@ jobs:
       - name: Generate Drift code
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Prepare app build identity
+        shell: bash
+        run: |
+          app_version="$(awk '$1 == "version:" {print $2; exit}' pubspec.yaml)"
+          test -n "$app_version"
+          echo "APP_VERSION=$app_version" >> "$GITHUB_ENV"
+          echo "APP_CHANNEL=release" >> "$GITHUB_ENV"
+          echo "APP_COMMIT=${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
+
       - name: Build iOS release without codesign
-        run: flutter build ios --release --no-codesign
+        run: >-
+          flutter build ios --release --no-codesign
+          --dart-define=APP_VERSION="$APP_VERSION"
+          --dart-define=APP_CHANNEL="$APP_CHANNEL"
+          --dart-define=APP_COMMIT="$APP_COMMIT"
 
       - name: Archive unsigned iOS build
         uses: actions/upload-artifact@v7
