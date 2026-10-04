@@ -33,6 +33,17 @@ Future<StartupIssueReportResult> reportStartupIssue(
     if (!opened) {
       opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
     }
+    if (!opened) {
+      final shortIssueUri = Uri.https(
+        'github.com',
+        '/bekodeg/budget_accounting_system/issues/new',
+        <String, String>{'title': '[Bug][Startup] $diagnosticCode'},
+      );
+      opened = await launchUrl(
+        shortIssueUri,
+        mode: LaunchMode.platformDefault,
+      );
+    }
   } on Object {
     opened = false;
   }
