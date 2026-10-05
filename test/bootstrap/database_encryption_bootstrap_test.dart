@@ -104,22 +104,25 @@ void main() {
     );
   });
 
-  test('accepts padded base64url key produced by secure token generator', () async {
-    final generatedKey = RandomSecureTokenGenerator(
-      random: Random(42),
-    ).nextToken(bytes: 32);
-    expect(generatedKey, endsWith('='));
+  test(
+    'accepts padded base64url key produced by secure token generator',
+    () async {
+      final generatedKey = RandomSecureTokenGenerator(
+        random: Random(42),
+      ).nextToken(bytes: 32);
+      expect(generatedKey, endsWith('='));
 
-    final keyStore = _KeyStore()..key = generatedKey;
-    final config = await DatabaseEncryptionBootstrap(
-      keyStore: keyStore,
-      tokenGenerator: const _TokenGenerator(),
-      databasePathResolver: () async => databasePath,
-    ).prepare();
+      final keyStore = _KeyStore()..key = generatedKey;
+      final config = await DatabaseEncryptionBootstrap(
+        keyStore: keyStore,
+        tokenGenerator: const _TokenGenerator(),
+        databasePathResolver: () async => databasePath,
+      ).prepare();
 
-    expect(config.key, generatedKey);
-    expect(keyStore.key, generatedKey);
-  });
+      expect(config.key, generatedKey);
+      expect(keyStore.key, generatedKey);
+    },
+  );
 
   test('uses the SQLCipher native backend', () async {
     final database = sqlite3.openInMemory();
