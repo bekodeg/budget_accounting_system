@@ -308,10 +308,19 @@ void main() {
     );
     expect(tester.takeException(), isNull);
 
+    final errorScrollView = find.byKey(
+      const ValueKey('runtime-bootstrap-error-scroll'),
+    );
+    final scrollable = find.descendant(
+      of: errorScrollView,
+      matching: find.byType(Scrollable),
+    );
+    expect(scrollable, findsOneWidget);
+
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
       200,
-      scrollable: find.byKey(const ValueKey('runtime-bootstrap-error-scroll')),
+      scrollable: scrollable,
     );
     expect(
       find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
