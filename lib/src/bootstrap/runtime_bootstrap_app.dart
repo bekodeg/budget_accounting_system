@@ -208,8 +208,9 @@ final class _StartupFailure extends StatelessWidget {
                             } on Object {
                               result = null;
                             }
-                            if (!context.mounted || result?.opened == true)
+                            if (!context.mounted || result?.opened == true) {
                               return;
+                            }
 
                             if (result?.copiedToClipboard == true) {
                               ScaffoldMessenger.of(context).showSnackBar(

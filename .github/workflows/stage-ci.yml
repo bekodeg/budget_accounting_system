@@ -58,7 +58,7 @@ jobs:
 
   prepare:
     name: Stage generated code
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'dev')
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -78,11 +78,17 @@ jobs:
             exit 0
           fi
 
-          before="${{ github.event.before }}"
-          if [ -z "$before" ] || printf '%s' "$before" | grep -Eq '^0+$'; then
-            changed="$(git show --pretty='' --name-only "$GITHUB_SHA")"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+            changed="$(git diff --name-only "$base" "$head")"
           else
-            changed="$(git diff --name-only "$before" "$GITHUB_SHA")"
+            before="${{ github.event.before }}"
+            if [ -z "$before" ] || printf '%s' "$before" | grep -Eq '^0+$'; then
+              changed="$(git show --pretty='' --name-only "$GITHUB_SHA")"
+            else
+              changed="$(git diff --name-only "$before" "$GITHUB_SHA")"
+            fi
           fi
 
           printf '%s\n' "$changed"
@@ -200,7 +206,7 @@ jobs:
 
   quality:
     name: Stage quality
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'dev')
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -284,6 +290,22 @@ jobs:
           path: coverage/lcov.info
           if-no-files-found: error
           retention-days: 7
+
+  promotion-validation:
+    name: Stage promotion validation
+    if: always() && github.event_name == 'pull_request'
+    needs:
+      - promotion
+      - quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Require promotion quality gates
+        shell: bash
+        run: |
+          test "${{ needs.promotion.result }}" = "success"
+          test "${{ needs.quality.result }}" = "success"
 
   android-release:
     name: Stage Android release
