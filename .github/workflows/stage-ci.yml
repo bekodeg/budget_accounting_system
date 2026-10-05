@@ -113,6 +113,16 @@ jobs:
         if: steps.codegen-cache.outputs.cache-hit != 'true' || steps.changes.outputs.migrations == 'true'
         run: flutter pub get
 
+      - name: Verify Android path provider compatibility pin for preparation
+        if: steps.codegen-cache.outputs.cache-hit != 'true' || steps.changes.outputs.migrations == 'true'
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used on Android release builds."
+            exit 1
+          fi
+
       - name: Generate Drift code once
         if: steps.codegen-cache.outputs.cache-hit != 'true'
         run: dart run build_runner build --delete-conflicting-outputs
@@ -224,6 +234,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify Android path provider compatibility pin
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used on Android release builds."
+            exit 1
+          fi
+
       - name: Verify source formatting
         shell: bash
         run: |
@@ -298,6 +317,15 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Verify Android path provider compatibility pin
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used on Android release builds."
+            exit 1
+          fi
 
       - name: Generate Android host project
         run: >-
