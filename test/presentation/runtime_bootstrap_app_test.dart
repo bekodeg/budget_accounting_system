@@ -308,15 +308,18 @@ void main() {
     );
     expect(tester.takeException(), isNull);
 
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
-      200,
-      scrollable: find.byKey(const ValueKey('runtime-bootstrap-error-scroll')),
+    final issueLink = find.byKey(
+      const ValueKey('runtime-bootstrap-show-issue-url'),
     );
-    expect(
-      find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
-      findsOneWidget,
-    );
+    final scrollPosition = Scrollable.of(tester.element(issueLink)).position;
+    expect(scrollPosition.maxScrollExtent, greaterThan(0));
+
+    await tester.ensureVisible(issueLink);
+    await tester.pumpAndSettle();
+
+    expect(scrollPosition.pixels, greaterThan(0));
+    expect(issueLink, findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('continues to normal app when runtime loads', (tester) async {
