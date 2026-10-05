@@ -63,7 +63,10 @@ void main() {
       expect(find.text('Версия: 0.1.0+42'), findsOneWidget);
       expect(find.text('Сборка: stage · 0123456789ab'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('runtime-bootstrap-retry')));
+      await _tapVisible(
+        tester,
+        find.byKey(const ValueKey('runtime-bootstrap-retry')),
+      );
       await tester.pumpAndSettle();
 
       expect(attempts, 2);
@@ -136,7 +139,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(
+    await _tapVisible(
+      tester,
       find.byKey(const ValueKey('runtime-bootstrap-report-issue')),
     );
     await tester.pump();
@@ -164,7 +168,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(
+    await _tapVisible(
+      tester,
       find.byKey(const ValueKey('runtime-bootstrap-report-issue')),
     );
     await tester.pumpAndSettle();
@@ -192,7 +197,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(
+    await _tapVisible(
+      tester,
       find.byKey(const ValueKey('runtime-bootstrap-report-issue')),
     );
     await tester.pumpAndSettle();
@@ -223,7 +229,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(
+    await _tapVisible(
+      tester,
       find.byKey(const ValueKey('runtime-bootstrap-report-issue')),
     );
     await tester.pumpAndSettle();
@@ -259,7 +266,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(
+    await _tapVisible(
+      tester,
       find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
     );
     await tester.pumpAndSettle();
@@ -271,6 +279,46 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('github.com'), findsWidgets);
+  });
+
+  testWidgets('startup failure remains scrollable on a short viewport', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 420);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      RuntimeBootstrapApp(
+        loadRuntime: () async {
+          throw const StartupDiagnosticException(
+            phase: 'path-resolve',
+            causeType: 'platformexception',
+            platformCode: 'channel-error',
+          );
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('runtime-bootstrap-error-scroll')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
+      200,
+      scrollable: find.byKey(
+        const ValueKey('runtime-bootstrap-error-scroll'),
+      ),
+    );
+    expect(
+      find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('continues to normal app when runtime loads', (tester) async {
@@ -288,4 +336,11 @@ void main() {
 
     expect(find.text('Первый бюджет'), findsOneWidget);
   });
+}
+
+
+Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
 }
