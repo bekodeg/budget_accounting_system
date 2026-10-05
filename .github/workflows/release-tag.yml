@@ -45,6 +45,16 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify Android path provider compatibility pin
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used in Android releases."
+            exit 1
+          fi
+
       - name: Generate Drift code
         run: dart run build_runner build --delete-conflicting-outputs
 
@@ -177,6 +187,16 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Verify Android path provider compatibility pin
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used in Android releases."
+            exit 1
+          fi
 
       - name: Generate Drift code
         run: dart run build_runner build --delete-conflicting-outputs
