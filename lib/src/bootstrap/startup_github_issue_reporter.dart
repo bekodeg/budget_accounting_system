@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'app_build_info.dart';
+import 'startup_diagnostic_exception.dart';
 
 typedef StartupIssueReporter =
     Future<StartupIssueReportResult> Function(String diagnosticCode);
@@ -65,12 +66,17 @@ String buildStartupIssueUrl(
   );
   final dartVersion = _singleLine(Platform.version, maxLength: 160);
   final timestamp = (occurredAt ?? DateTime.now().toUtc()).toIso8601String();
+  final location = startupDiagnosticLocation(safeCode);
 
   final body =
       '''
 ## Автоматическая диагностика
 
 - Startup code: `$safeCode`
+- Class: `${location.className}`
+- Function: `${location.functionName}`
+- Operation: `${location.operation}`
+- Dependency: `${location.dependency}`
 - App version: `${buildInfo.version}`
 - Build channel: `${buildInfo.channel}`
 - Build commit: `${buildInfo.commit}`

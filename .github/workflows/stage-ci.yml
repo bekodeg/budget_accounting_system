@@ -315,7 +315,16 @@ jobs:
           cache: true
           pub-cache: true
 
-      - name: Install dependencies
+      - name: Generate Android host project
+        run: >-
+          flutter create
+          --platforms=android
+          --project-name budget_accounting_system
+          --org com.bekodeg
+          --no-pub
+          .
+
+      - name: Install dependencies after Android host generation
         run: flutter pub get
 
       - name: Verify Android path provider compatibility pin
@@ -327,14 +336,14 @@ jobs:
             exit 1
           fi
 
-      - name: Generate Android host project
-        run: >-
-          flutter create
-          --platforms=android
-          --project-name budget_accounting_system
-          --org com.bekodeg
-          --no-pub
-          .
+      - name: Verify Android Flutter plugin registrant
+        shell: bash
+        run: |
+          registrant="android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java"
+          test -s "$registrant"
+          grep -F 'PathProviderPlugin' "$registrant"
+          grep -F 'FlutterSecureStoragePlugin' "$registrant"
+          grep -F 'UrlLauncherPlugin' "$registrant"
 
       - name: Configure LAN platform permissions
         run: python3 tool/configure_lan_platform_permissions.py
@@ -480,6 +489,9 @@ jobs:
           unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsqlcipher.so'
           unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsqlcipher.so'
           unzip -l "$apk" | grep -F 'lib/x86_64/libsqlcipher.so'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'PathProviderPlugin'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'FlutterSecureStoragePlugin'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'UrlLauncherPlugin'
 
       - name: Upload signed stage APK
         uses: actions/upload-artifact@v7

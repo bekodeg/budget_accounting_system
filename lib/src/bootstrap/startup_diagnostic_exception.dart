@@ -46,3 +46,66 @@ final class StartupDiagnosticException implements Exception {
   @override
   String toString() => 'StartupDiagnosticException($diagnosticCode)';
 }
+
+
+final class StartupDiagnosticLocation {
+  const StartupDiagnosticLocation({
+    required this.className,
+    required this.functionName,
+    required this.operation,
+    required this.dependency,
+  });
+
+  final String className;
+  final String functionName;
+  final String operation;
+  final String dependency;
+}
+
+StartupDiagnosticLocation startupDiagnosticLocation(String diagnosticCode) {
+  final phase = diagnosticCode.split(':').first;
+  return switch (phase) {
+    'path-resolve' => const StartupDiagnosticLocation(
+      className: 'DatabaseEncryptionBootstrap',
+      functionName: '_defaultDatabasePathResolver',
+      operation: 'getApplicationDocumentsDirectory',
+      dependency: 'path_provider / PathProviderPlugin',
+    ),
+    'sqlite-native-load' => const StartupDiagnosticLocation(
+      className: 'DatabaseEncryptionBootstrap',
+      functionName: '_verifySqlCipherBackend',
+      operation: 'sqlite3.openInMemory + PRAGMA cipher_version',
+      dependency: 'sqlite3 / SQLCipher',
+    ),
+    'secure-key-read' => const StartupDiagnosticLocation(
+      className: 'FlutterSecureDatabaseKeyStore',
+      functionName: 'loadKey',
+      operation: 'read encrypted database key',
+      dependency: 'flutter_secure_storage',
+    ),
+    'secure-key-write' => const StartupDiagnosticLocation(
+      className: 'FlutterSecureDatabaseKeyStore',
+      functionName: 'saveKey',
+      operation: 'persist encrypted database key',
+      dependency: 'flutter_secure_storage',
+    ),
+    'database-file-check' => const StartupDiagnosticLocation(
+      className: 'DatabaseEncryptionBootstrap',
+      functionName: 'prepare',
+      operation: 'File.exists',
+      dependency: 'dart:io',
+    ),
+    'database-header-read' => const StartupDiagnosticLocation(
+      className: 'DatabaseEncryptionBootstrap',
+      functionName: '_hasPlainSqliteHeader',
+      operation: 'read first 16 database bytes',
+      dependency: 'dart:io',
+    ),
+    _ => StartupDiagnosticLocation(
+      className: 'runtime-bootstrap',
+      functionName: phase,
+      operation: phase,
+      dependency: 'application runtime',
+    ),
+  };
+}

@@ -104,6 +104,7 @@ final class _StartupFailure extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMissingKey = error is DatabaseKeyMissingException;
     final diagnosticCode = _diagnosticCode(error);
+    final location = startupDiagnosticLocation(diagnosticCode);
 
     return Scaffold(
       body: SafeArea(
@@ -139,6 +140,31 @@ final class _StartupFailure extends StatelessWidget {
                   SelectableText(
                     'Код ошибки: $diagnosticCode',
                     key: const ValueKey('runtime-bootstrap-error-code'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 6),
+                  SelectableText(
+                    'Класс: ${location.className}',
+                    key: const ValueKey('runtime-bootstrap-error-class'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  SelectableText(
+                    'Функция: ${location.functionName}',
+                    key: const ValueKey('runtime-bootstrap-error-function'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  SelectableText(
+                    'Операция: ${location.operation}',
+                    key: const ValueKey('runtime-bootstrap-error-operation'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  SelectableText(
+                    'Зависимость: ${location.dependency}',
+                    key: const ValueKey('runtime-bootstrap-error-dependency'),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),

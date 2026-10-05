@@ -42,7 +42,16 @@ jobs:
           cache: true
           pub-cache: true
 
-      - name: Install dependencies
+      - name: Generate Android host project
+        run: >-
+          flutter create
+          --platforms=android
+          --project-name budget_accounting_system
+          --org com.bekodeg
+          --no-pub
+          .
+
+      - name: Install dependencies after Android host generation
         run: flutter pub get
 
       - name: Verify Android path provider compatibility pin
@@ -61,14 +70,14 @@ jobs:
       - name: Run tests
         run: flutter test
 
-      - name: Generate Android host project
-        run: >-
-          flutter create
-          --platforms=android
-          --project-name budget_accounting_system
-          --org com.bekodeg
-          --no-pub
-          .
+      - name: Verify Android Flutter plugin registrant
+        shell: bash
+        run: |
+          registrant="android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java"
+          test -s "$registrant"
+          grep -F 'PathProviderPlugin' "$registrant"
+          grep -F 'FlutterSecureStoragePlugin' "$registrant"
+          grep -F 'UrlLauncherPlugin' "$registrant"
 
       - name: Configure Android platform dependencies
         shell: bash
@@ -148,9 +157,13 @@ jobs:
             --dart-define=APP_VERSION="$APP_VERSION" \
             --dart-define=APP_CHANNEL="$APP_CHANNEL" \
             --dart-define=APP_COMMIT="$APP_COMMIT"
-          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/arm64-v8a/libsqlcipher.so'
-          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/armeabi-v7a/libsqlcipher.so'
-          unzip -l build/app/outputs/flutter-apk/app-release.apk | grep -F 'lib/x86_64/libsqlcipher.so'
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsqlcipher.so'
+          unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsqlcipher.so'
+          unzip -l "$apk" | grep -F 'lib/x86_64/libsqlcipher.so'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'PathProviderPlugin'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'FlutterSecureStoragePlugin'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'UrlLauncherPlugin'
 
       - name: Prepare checksums
         shell: bash
