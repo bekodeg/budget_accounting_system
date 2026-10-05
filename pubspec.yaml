@@ -16,6 +16,7 @@ dependencies:
   file_picker: ^13.1.0
   excel: ^4.0.6
   path_provider: ^2.1.5
+  path_provider_android: 2.2.23
   qr_flutter: ^4.1.0
   nsd: ^5.0.1
   mobile_scanner: ^7.4.2
@@ -23,7 +24,6 @@ dependencies:
   google_mlkit_barcode_scanning: ^0.16.0
   google_mlkit_text_recognition: ^0.16.0
   share_plus: ^13.3.0
-  package_info_plus: ^10.2.2
   url_launcher: ^6.3.2
   shared_preferences: ^2.5.5
   sqlite3: ^3.7.0
