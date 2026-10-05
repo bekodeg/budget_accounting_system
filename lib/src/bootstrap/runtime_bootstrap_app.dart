@@ -108,14 +108,19 @@ final class _StartupFailure extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            key: const ValueKey('runtime-bootstrap-error-scroll'),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                   const Icon(Icons.error_outline, size: 48),
                   const SizedBox(height: 16),
                   Text(
@@ -237,7 +242,10 @@ final class _StartupFailure extends StatelessWidget {
                     ),
                     child: const Text('Показать ссылку issue'),
                   ),
-                ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
