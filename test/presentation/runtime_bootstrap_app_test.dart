@@ -311,9 +311,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
       200,
-      scrollable: find.byKey(
-        const ValueKey('runtime-bootstrap-error-scroll'),
-      ),
+      scrollable: find.byKey(const ValueKey('runtime-bootstrap-error-scroll')),
     );
     expect(
       find.byKey(const ValueKey('runtime-bootstrap-show-issue-url')),
@@ -337,7 +335,6 @@ void main() {
     expect(find.text('Первый бюджет'), findsOneWidget);
   });
 }
-
 
 Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder);
