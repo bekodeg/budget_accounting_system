@@ -88,6 +88,12 @@ StartupDiagnosticLocation startupDiagnosticLocation(String diagnosticCode) {
       operation: 'persist encrypted database key',
       dependency: 'flutter_secure_storage',
     ),
+    'secure-key-validate' => const StartupDiagnosticLocation(
+      className: 'DatabaseEncryptionBootstrap',
+      functionName: '_validateKey',
+      operation: 'validate database encryption key format',
+      dependency: 'secure storage key format',
+    ),
     'database-file-check' => const StartupDiagnosticLocation(
       className: 'DatabaseEncryptionBootstrap',
       functionName: 'prepare',
