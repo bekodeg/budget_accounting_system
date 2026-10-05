@@ -230,7 +230,8 @@ final class DatabaseEncryptionBootstrap {
   String _sqlLiteral(String value) => value.replaceAll("'", "''");
 
   void _validateKey(String key) {
-    if (key.length < 32 || !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(key)) {
+    if (key.length < 32 || !RegExp(r'^[A-Za-z0-9_-]+={0,2}}
+).hasMatch(key)) {
       throw StateError('Stored database encryption key is invalid.');
     }
   }
