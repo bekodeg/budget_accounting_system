@@ -3,33 +3,66 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-import 'src/app.dart';
 import 'src/application/ports/diagnostic_log_store.dart';
 import 'src/bootstrap/app_composition_root.dart';
 import 'src/bootstrap/database_encryption_bootstrap.dart';
+import 'src/bootstrap/runtime_bootstrap_app.dart';
+import 'src/bootstrap/startup_diagnostic_exception.dart';
 import 'src/data/database/app_database.dart';
 import 'src/data/security/flutter_secure_database_key_store.dart';
 import 'src/data/services/random_secure_token_generator.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  runApp(RuntimeBootstrapApp(loadRuntime: _loadRuntime));
+}
 
-  final encryption = await DatabaseEncryptionBootstrap(
-    keyStore: FlutterSecureDatabaseKeyStore(),
-    tokenGenerator: RandomSecureTokenGenerator(),
-  ).prepare();
-  final database = AppDatabase.encrypted(
-    key: encryption.key,
-    databasePath: encryption.databasePath,
-  );
-  final compositionRoot = AppCompositionRoot.defaults(database: database);
+Future<AppRuntime> _loadRuntime() async {
+  late final DatabaseEncryptionConfig encryption;
+  try {
+    encryption = await DatabaseEncryptionBootstrap(
+      keyStore: FlutterSecureDatabaseKeyStore(),
+      tokenGenerator: RandomSecureTokenGenerator(),
+    ).prepare();
+  } on DatabaseKeyMissingException {
+    rethrow;
+  } on StartupDiagnosticException {
+    rethrow;
+  } on Object catch (error) {
+    throw StartupDiagnosticException.fromError(
+      phase: 'database-bootstrap',
+      error: error,
+    );
+  }
+
+  late final AppDatabase database;
+  try {
+    database = AppDatabase.encrypted(
+      key: encryption.key,
+      databasePath: encryption.databasePath,
+    );
+  } on Object catch (error) {
+    throw StartupDiagnosticException.fromError(
+      phase: 'database-create',
+      error: error,
+    );
+  }
+
+  late final AppCompositionRoot compositionRoot;
+  try {
+    compositionRoot = AppCompositionRoot.defaults(database: database);
+  } on Object catch (error) {
+    await database.close();
+    throw StartupDiagnosticException.fromError(
+      phase: 'composition-root',
+      error: error,
+    );
+  }
+
   _installSafeErrorCapture(compositionRoot.services.diagnosticLogStore);
-
-  runApp(
-    BudgetAccountingApp(
-      services: compositionRoot.services,
-      onDispose: compositionRoot.close,
-    ),
+  return AppRuntime(
+    services: compositionRoot.services,
+    onDispose: compositionRoot.close,
   );
 }
 

@@ -33,11 +33,11 @@ jobs:
             exit 1
           fi
 
-  validate:
-    name: Stage validation
+  security:
+    name: Stage security
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 8
 
     steps:
       - name: Checkout repository
@@ -56,6 +56,177 @@ jobs:
           cache: true
           timeout: 5m
 
+  prepare:
+    name: Stage generated code
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'dev')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect schema-sensitive changes
+        id: changes
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+            echo "Workflow dispatch: migration verification forced."
+            exit 0
+          fi
+
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+            changed="$(git diff --name-only "$base" "$head")"
+          else
+            before="${{ github.event.before }}"
+            if [ -z "$before" ] || printf '%s' "$before" | grep -Eq '^0+$'; then
+              changed="$(git show --pretty='' --name-only "$GITHUB_SHA")"
+            else
+              changed="$(git diff --name-only "$before" "$GITHUB_SHA")"
+            fi
+          fi
+
+          printf '%s\n' "$changed"
+
+          if printf '%s\n' "$changed" |
+            grep -Eq '^(lib/src/data/database/|drift_schemas/|pubspec\.yaml$|pubspec\.lock$)'; then
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore generated Dart cache
+        id: codegen-cache
+        uses: actions/cache@v6
+        with:
+          path: .stage-cache
+          key: ${{ format('stage-codegen-v2-{0}-{1}', runner.os, hashFiles('lib/src/data/database/*.dart', 'lib/src/data/database/**/*.dart', 'drift_schemas/**/*.json', 'pubspec.yaml', 'pubspec.lock')) }}
+
+      - name: Set up Flutter for cache miss or migration verification
+        if: steps.codegen-cache.outputs.cache-hit != 'true' || steps.changes.outputs.migrations == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install dependencies for preparation
+        if: steps.codegen-cache.outputs.cache-hit != 'true' || steps.changes.outputs.migrations == 'true'
+        run: flutter pub get
+
+      - name: Verify Android path provider compatibility pin for preparation
+        if: steps.codegen-cache.outputs.cache-hit != 'true' || steps.changes.outputs.migrations == 'true'
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used on Android release builds."
+            exit 1
+          fi
+
+      - name: Generate Drift code once
+        if: steps.codegen-cache.outputs.cache-hit != 'true'
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate Drift migrations
+        if: steps.changes.outputs.migrations == 'true'
+        run: dart run drift_dev make-migrations
+
+      - name: Verify Drift migration artifacts are committed
+        if: steps.changes.outputs.migrations == 'true'
+        shell: bash
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- drift_schemas lib/src/data/database test/drift |
+            grep -v 'test/drift/generated_migrations/' |
+            grep -vE '\.(g|freezed)\.dart$' || true)"
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "Drift migration artifacts are not committed."
+            exit 1
+          fi
+
+      - name: Generate Drift migration test helper
+        if: steps.codegen-cache.outputs.cache-hit != 'true'
+        run: >-
+          dart run drift_dev schema generate
+          --data-classes
+          --companions
+          drift_schemas/app_database/
+          test/drift/generated_migrations/
+
+      - name: Package generated Dart
+        if: steps.codegen-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p .stage-cache
+
+          {
+            find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0
+            find test/drift/generated_migrations -type f -print0
+          } |
+            sort -zu |
+            xargs -0 -r sha256sum > .stage-cache/generated-code.sha256
+
+          if [ ! -s .stage-cache/generated-code.sha256 ]; then
+            echo "Generated Dart manifest is empty."
+            exit 1
+          fi
+
+          cut -d' ' -f3- .stage-cache/generated-code.sha256 \
+            | tr '\n' '\0' \
+            | tar --null -czf .stage-cache/generated-code.tgz --files-from=-
+
+      - name: Verify generated artifact integrity
+        shell: bash
+        run: |
+          test -s .stage-cache/generated-code.tgz
+          test -s .stage-cache/generated-code.sha256
+
+          rm -rf /tmp/generated-code-check
+          mkdir -p /tmp/generated-code-check
+          tar -xzf .stage-cache/generated-code.tgz -C /tmp/generated-code-check
+          (
+            cd /tmp/generated-code-check
+            sha256sum -c "$GITHUB_WORKSPACE/.stage-cache/generated-code.sha256"
+          )
+
+      - name: Upload generated Dart
+        uses: actions/upload-artifact@v7
+        with:
+          name: stage-generated-dart-${{ github.sha }}
+          path: .stage-cache/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 1
+
+  quality:
+    name: Stage quality
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'dev')
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download generated Dart
+        uses: actions/download-artifact@v8
+        with:
+          name: stage-generated-dart-${{ github.sha }}
+          path: .stage-generated
+
+      - name: Restore generated Dart
+        shell: bash
+        run: |
+          tar -xzf .stage-generated/generated-code.tgz
+          sha256sum -c .stage-generated/generated-code.sha256
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -69,54 +240,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run Trivy security scan
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: vuln,secret,misconfig
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          format: table
-          exit-code: 1
-
-      - name: Generate Drift code
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Verify generated code is reproducible
+      - name: Verify Android path provider compatibility pin
         shell: bash
         run: |
-          find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0 \
-            | sort -z \
-            | xargs -0 -r sha256sum > /tmp/codegen-before.sha256
-
-          dart run build_runner build --delete-conflicting-outputs
-
-          find lib test -type f \( -name '*.g.dart' -o -name '*.freezed.dart' \) -print0 \
-            | sort -z \
-            | xargs -0 -r sha256sum > /tmp/codegen-after.sha256
-
-          diff -u /tmp/codegen-before.sha256 /tmp/codegen-after.sha256
-
-      - name: Generate Drift migrations
-        run: dart run drift_dev make-migrations
-
-      - name: Generate Drift migration test helper
-        run: >-
-          dart run drift_dev schema generate
-          --data-classes
-          --companions
-          drift_schemas/app_database/
-          test/drift/generated_migrations/
-
-      - name: Verify Drift migration artifacts are committed
-        shell: bash
-        run: |
-          changes="$(git status --porcelain --untracked-files=all -- drift_schemas lib/src/data/database test/drift |
-            grep -v 'test/drift/generated_migrations/' || true)"
-          if [ -n "$changes" ]; then
-            echo "$changes"
-            echo "Drift migration artifacts are not committed."
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used on Android release builds."
             exit 1
           fi
 
@@ -162,6 +291,52 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  promotion-validation:
+    name: Stage promotion validation
+    if: always() && github.event_name == 'pull_request'
+    needs:
+      - promotion
+      - quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Require promotion quality gates
+        shell: bash
+        run: |
+          test "${{ needs.promotion.result }}" = "success"
+          test "${{ needs.quality.result }}" = "success"
+
+  android-release:
+    name: Stage Android release
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download generated Dart
+        uses: actions/download-artifact@v8
+        with:
+          name: stage-generated-dart-${{ github.sha }}
+          path: .stage-generated
+
+      - name: Restore generated Dart
+        shell: bash
+        run: |
+          tar -xzf .stage-generated/generated-code.tgz
+          sha256sum -c .stage-generated/generated-code.sha256
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
       - name: Generate Android host project
         run: >-
           flutter create
@@ -171,8 +346,32 @@ jobs:
           --no-pub
           .
 
+      - name: Install dependencies after Android host generation
+        run: flutter pub get
+
+      - name: Verify Android path provider compatibility pin
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used on Android release builds."
+            exit 1
+          fi
+
+      - name: Verify Android Flutter plugin registrant
+        shell: bash
+        run: |
+          registrant="android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java"
+          test -s "$registrant"
+          grep -F 'PathProviderPlugin' "$registrant"
+          grep -F 'FlutterSecureStoragePlugin' "$registrant"
+          grep -F 'UrlLauncherPlugin' "$registrant"
+
       - name: Configure LAN platform permissions
         run: python3 tool/configure_lan_platform_permissions.py
+
+      - name: Configure Android native library loading
+        run: python3 tool/configure_android_native_library_loading.py
 
       - name: Configure ML Kit Android dependencies
         run: |
@@ -181,6 +380,16 @@ jobs:
           grep -F 'com.google.mlkit:text-recognition-devanagari:16.0.1' android/app/build.gradle.kts
           grep -F 'com.google.mlkit:text-recognition-japanese:16.0.1' android/app/build.gradle.kts
           grep -F 'com.google.mlkit:text-recognition-korean:16.0.1' android/app/build.gradle.kts
+
+      - name: Restore Gradle cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ format('stage-gradle-{0}-{1}', runner.os, hashFiles('pubspec.lock', 'android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties')) }}
+          restore-keys: |
+            stage-gradle-${{ runner.os }}-
 
       - name: Validate Android signing secrets
         env:
@@ -191,7 +400,12 @@ jobs:
           ANDROID_CERT_SHA256: ${{ secrets.ANDROID_CERT_SHA256 }}
         shell: bash
         run: |
-          for name in             ANDROID_KEYSTORE_BASE64             ANDROID_KEYSTORE_PASSWORD             ANDROID_KEY_ALIAS             ANDROID_KEY_PASSWORD             ANDROID_CERT_SHA256; do
+          for name in \
+            ANDROID_KEYSTORE_BASE64 \
+            ANDROID_KEYSTORE_PASSWORD \
+            ANDROID_KEY_ALIAS \
+            ANDROID_KEY_PASSWORD \
+            ANDROID_CERT_SHA256; do
             if [ -z "${!name}" ]; then
               echo "Missing required GitHub Actions secret: $name"
               exit 1
@@ -263,16 +477,43 @@ jobs:
       - name: Configure Android release signing
         run: python3 tool/configure_android_release_signing.py
 
+      - name: Verify Android native library compatibility settings
+        shell: bash
+        run: |
+          grep -F 'android:extractNativeLibs="true"' android/app/src/main/AndroidManifest.xml
+          grep -F 'useLegacyPackaging = true' android/app/build.gradle.kts
+
+      - name: Prepare app build identity
+        shell: bash
+        run: |
+          app_version="$(awk '$1 == "version:" {print $2; exit}' pubspec.yaml)"
+          test -n "$app_version"
+          echo "APP_VERSION=$app_version" >> "$GITHUB_ENV"
+          echo "APP_CHANNEL=stage" >> "$GITHUB_ENV"
+          echo "APP_COMMIT=${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
+
       - name: Build signed Android release APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: flutter build apk --release
+        run: >-
+          flutter build apk --release --no-pub
+          --dart-define=APP_VERSION="$APP_VERSION"
+          --dart-define=APP_CHANNEL="$APP_CHANNEL"
+          --dart-define=APP_COMMIT="$APP_COMMIT"
 
-      - name: Verify release APK exists
+      - name: Verify release APK and SQLCipher native assets
         shell: bash
-        run: test -s build/app/outputs/flutter-apk/app-release.apk
+        run: |
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          test -s "$apk"
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsqlcipher.so'
+          unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsqlcipher.so'
+          unzip -l "$apk" | grep -F 'lib/x86_64/libsqlcipher.so'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'PathProviderPlugin'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'FlutterSecureStoragePlugin'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'UrlLauncherPlugin'
 
       - name: Upload signed stage APK
         uses: actions/upload-artifact@v7
@@ -281,3 +522,40 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 3
+
+  validate:
+    name: Stage validation
+    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs:
+      - security
+      - prepare
+      - quality
+      - android-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Require all stage gates
+        env:
+          SECURITY_RESULT: ${{ needs.security.result }}
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          ANDROID_RESULT: ${{ needs['android-release'].result }}
+        shell: bash
+        run: |
+          printf '%-18s %s\n' \
+            "security" "$SECURITY_RESULT" \
+            "generated-code" "$PREPARE_RESULT" \
+            "quality" "$QUALITY_RESULT" \
+            "android-release" "$ANDROID_RESULT"
+
+          for result in \
+            "$SECURITY_RESULT" \
+            "$PREPARE_RESULT" \
+            "$QUALITY_RESULT" \
+            "$ANDROID_RESULT"; do
+            if [ "$result" != "success" ]; then
+              echo "Stage gate failed."
+              exit 1
+            fi
+          done

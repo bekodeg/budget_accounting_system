@@ -42,15 +42,6 @@ jobs:
           cache: true
           pub-cache: true
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Generate Drift code
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Run tests
-        run: flutter test
-
       - name: Generate Android host project
         run: >-
           flutter create
@@ -60,11 +51,46 @@ jobs:
           --no-pub
           .
 
+      - name: Install dependencies after Android host generation
+        run: flutter pub get
+
+      - name: Verify Android path provider compatibility pin
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used in Android releases."
+            exit 1
+          fi
+
+      - name: Generate Drift code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Verify Android Flutter plugin registrant
+        shell: bash
+        run: |
+          registrant="android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java"
+          test -s "$registrant"
+          grep -F 'PathProviderPlugin' "$registrant"
+          grep -F 'FlutterSecureStoragePlugin' "$registrant"
+          grep -F 'UrlLauncherPlugin' "$registrant"
+
       - name: Configure Android platform dependencies
         shell: bash
         run: |
           python3 tool/configure_lan_platform_permissions.py
+          python3 tool/configure_android_native_library_loading.py
           python3 tool/configure_mlkit_android_dependencies.py
+
+      - name: Verify Android native library compatibility settings
+        shell: bash
+        run: |
+          grep -F 'android:extractNativeLibs="true"' android/app/src/main/AndroidManifest.xml
+          grep -F 'useLegacyPackaging = true' android/app/build.gradle.kts
 
       - name: Validate Android signing secrets
         env:
@@ -107,6 +133,15 @@ jobs:
       - name: Configure Android signing
         run: python3 tool/configure_android_release_signing.py
 
+      - name: Prepare app build identity
+        shell: bash
+        run: |
+          app_version="$(awk '$1 == "version:" {print $2; exit}' pubspec.yaml)"
+          test -n "$app_version"
+          echo "APP_VERSION=$app_version" >> "$GITHUB_ENV"
+          echo "APP_CHANNEL=release" >> "$GITHUB_ENV"
+          echo "APP_COMMIT=${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
+
       - name: Build signed APK and AAB
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -114,8 +149,21 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         shell: bash
         run: |
-          flutter build apk --release
-          flutter build appbundle --release
+          flutter build apk --release \
+            --dart-define=APP_VERSION="$APP_VERSION" \
+            --dart-define=APP_CHANNEL="$APP_CHANNEL" \
+            --dart-define=APP_COMMIT="$APP_COMMIT"
+          flutter build appbundle --release \
+            --dart-define=APP_VERSION="$APP_VERSION" \
+            --dart-define=APP_CHANNEL="$APP_CHANNEL" \
+            --dart-define=APP_COMMIT="$APP_COMMIT"
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsqlcipher.so'
+          unzip -l "$apk" | grep -F 'lib/armeabi-v7a/libsqlcipher.so'
+          unzip -l "$apk" | grep -F 'lib/x86_64/libsqlcipher.so'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'PathProviderPlugin'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'FlutterSecureStoragePlugin'
+          unzip -p "$apk" 'classes*.dex' | strings | grep -F 'UrlLauncherPlugin'
 
       - name: Prepare checksums
         shell: bash
@@ -153,11 +201,34 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Verify Android path provider compatibility pin
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          flutter pub deps --style=compact | grep -F 'path_provider_android 2.2.23'
+          if flutter pub deps --style=compact | grep -Eq 'path_provider_android 2\.3\.'; then
+            echo "JNI-based path_provider_android must not be used in Android releases."
+            exit 1
+          fi
+
       - name: Generate Drift code
         run: dart run build_runner build --delete-conflicting-outputs
 
+      - name: Prepare app build identity
+        shell: bash
+        run: |
+          app_version="$(awk '$1 == "version:" {print $2; exit}' pubspec.yaml)"
+          test -n "$app_version"
+          echo "APP_VERSION=$app_version" >> "$GITHUB_ENV"
+          echo "APP_CHANNEL=release" >> "$GITHUB_ENV"
+          echo "APP_COMMIT=${GITHUB_SHA:0:12}" >> "$GITHUB_ENV"
+
       - name: Build iOS release without codesign
-        run: flutter build ios --release --no-codesign
+        run: >-
+          flutter build ios --release --no-codesign
+          --dart-define=APP_VERSION="$APP_VERSION"
+          --dart-define=APP_CHANNEL="$APP_CHANNEL"
+          --dart-define=APP_COMMIT="$APP_COMMIT"
 
       - name: Archive unsigned iOS build
         uses: actions/upload-artifact@v7
