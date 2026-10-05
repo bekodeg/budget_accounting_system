@@ -11,6 +11,25 @@ void main() {
         .setMockMethodCallHandler(SystemChannels.platform, null);
   });
 
+  test('adds safe source location for path-provider startup failures', () {
+    const buildInfo = AppBuildInfo(
+      version: '0.1.0+2',
+      channel: 'stage',
+      commit: '08328d9e6dbc',
+    );
+    final issueUrl = buildStartupIssueUrl(
+      'path-resolve:platformexception:channel-error',
+      buildInfo: buildInfo,
+      occurredAt: DateTime.utc(2026, 10, 5, 9, 55),
+    );
+    final body = Uri.parse(issueUrl).queryParameters['body'] ?? '';
+
+    expect(body, contains('Class: `DatabaseEncryptionBootstrap`'));
+    expect(body, contains('Function: `_defaultDatabasePathResolver`'));
+    expect(body, contains('Operation: `getApplicationDocumentsDirectory`'));
+    expect(body, contains('Dependency: `path_provider / PathProviderPlugin`'));
+  });
+
   test('builds issue URL from compile-time-safe build info', () {
     const buildInfo = AppBuildInfo(
       version: '0.1.0+42',
