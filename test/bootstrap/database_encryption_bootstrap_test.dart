@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:budget_accounting_system/src/application/ports/database_key_store.dart';
 import 'package:budget_accounting_system/src/application/ports/secure_token_generator.dart';
 import 'package:budget_accounting_system/src/bootstrap/database_encryption_bootstrap.dart';
 import 'package:budget_accounting_system/src/bootstrap/startup_diagnostic_exception.dart';
+import 'package:budget_accounting_system/src/data/services/random_secure_token_generator.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -100,6 +102,23 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('accepts padded base64url key produced by secure token generator', () async {
+    final generatedKey = RandomSecureTokenGenerator(
+      random: Random(42),
+    ).nextToken(bytes: 32);
+    expect(generatedKey, endsWith('='));
+
+    final keyStore = _KeyStore()..key = generatedKey;
+    final config = await DatabaseEncryptionBootstrap(
+      keyStore: keyStore,
+      tokenGenerator: const _TokenGenerator(),
+      databasePathResolver: () async => databasePath,
+    ).prepare();
+
+    expect(config.key, generatedKey);
+    expect(keyStore.key, generatedKey);
   });
 
   test('uses the SQLCipher native backend', () async {
