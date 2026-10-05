@@ -47,7 +47,6 @@ final class StartupDiagnosticException implements Exception {
   String toString() => 'StartupDiagnosticException($diagnosticCode)';
 }
 
-
 final class StartupDiagnosticLocation {
   const StartupDiagnosticLocation({
     required this.className,
