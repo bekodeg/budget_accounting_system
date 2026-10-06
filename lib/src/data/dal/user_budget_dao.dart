@@ -161,7 +161,9 @@ final class UserBudgetDao {
       await _db.into(_db.users).insert(joiningUser);
       await _db.into(_db.devices).insert(joiningDevice);
       await _db.into(_db.budgetMembers).insertOnConflictUpdate(ownerMembership);
-      await _db.into(_db.budgetMembers).insertOnConflictUpdate(joiningMembership);
+      await _db
+          .into(_db.budgetMembers)
+          .insertOnConflictUpdate(joiningMembership);
     });
   }
 

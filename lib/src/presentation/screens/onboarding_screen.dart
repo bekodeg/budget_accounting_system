@@ -113,10 +113,7 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
       if (join == null) {
         throw StateError('Invite onboarding is unavailable.');
       }
-      await join(
-        userName: name,
-        rawPayload: raw,
-      );
+      await join(userName: name, rawPayload: raw);
       if (mounted) widget.onJoined();
     } on InviteError catch (error) {
       _showError(error.message);
@@ -234,8 +231,8 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
                   onChanged: _submitting
                       ? null
                       : (value) => setState(
-                            () => _applyDefaultCategories = value ?? true,
-                          ),
+                          () => _applyDefaultCategories = value ?? true,
+                        ),
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),

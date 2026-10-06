@@ -135,7 +135,7 @@ AppServices fakeAppServices({
   final memberships = membershipRepository ?? FakeMembershipRepository();
   final invitations =
       invitationRepository ??
-          FakeInvitationRepository(budgetRepository: repository);
+      FakeInvitationRepository(budgetRepository: repository);
   final signatures = identitySignatureService ?? FakeIdentitySignatureService();
   final inviteConsumption =
       inviteConsumptionStore ?? FakeInviteConsumptionStore();
@@ -392,14 +392,14 @@ final class FakeInvitationRepository
     this.budgetRepository,
     this.acceptNewIdentityError,
   }) : budgets =
-          budgets ??
-          {
-            'budget-1': const BudgetSummary(
-              id: 'budget-1',
-              name: 'Test budget',
-              baseCurrency: 'EUR',
-            ),
-          };
+           budgets ??
+           {
+             'budget-1': const BudgetSummary(
+               id: 'budget-1',
+               name: 'Test budget',
+               baseCurrency: 'EUR',
+             ),
+           };
 
   final Map<String, BudgetSummary> budgets;
   final FakeBudgetRepository? budgetRepository;

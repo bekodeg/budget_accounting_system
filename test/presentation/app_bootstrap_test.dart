@@ -45,7 +45,6 @@ void main() {
     expect(sessionStore.currentBudgetId, 'budget-1');
   });
 
-
   testWidgets('fresh device joins existing budget from invite file', (
     tester,
   ) async {
@@ -89,17 +88,13 @@ void main() {
       find.byKey(const ValueKey('onboarding-user-name')),
       'Bob',
     );
-    await tester.tap(
-      find.byKey(const ValueKey('onboarding-open-invite-file')),
-    );
+    await tester.tap(find.byKey(const ValueKey('onboarding-open-invite-file')));
     await tester.pumpAndSettle();
 
     expect(find.text('Присоединиться к бюджету?'), findsOneWidget);
     expect(find.text('Бюджет: Test budget'), findsOneWidget);
 
-    await tester.tap(
-      find.byKey(const ValueKey('onboarding-confirm-invite')),
-    );
+    await tester.tap(find.byKey(const ValueKey('onboarding-confirm-invite')));
     await tester.pumpAndSettle();
 
     expect(find.text('Test budget'), findsOneWidget);
