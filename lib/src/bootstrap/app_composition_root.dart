@@ -283,6 +283,9 @@ final class AppCompositionRoot {
           sessionStore: sessionStore,
           getPublicIdentity: getPublicIdentity,
           transportSecretManager: transportSecretManager,
+          idGenerator: idGenerator,
+          identityKeyStore: identityKeyStore,
+          identityKeyPairGenerator: identityKeyPairGenerator,
         ),
         applyBudgetSnapshot: ApplyBudgetSnapshot(snapshotRepository),
         applyCategoryTemplates: ApplyCategoryTemplates(
