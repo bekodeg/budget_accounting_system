@@ -90,6 +90,7 @@ import 'package:budget_accounting_system/src/domain/repositories/report_export_r
 import 'package:budget_accounting_system/src/domain/repositories/monthly_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/extended_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/identity_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/fresh_invitation_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/invitation_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/membership_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
@@ -133,7 +134,8 @@ AppServices fakeAppServices({
       identityKeyPairGenerator ?? FakeIdentityKeyPairGenerator();
   final memberships = membershipRepository ?? FakeMembershipRepository();
   final invitations =
-      invitationRepository ?? FakeInvitationRepository(budgetRepository: repository);
+      invitationRepository ??
+          FakeInvitationRepository(budgetRepository: repository);
   final signatures = identitySignatureService ?? FakeIdentitySignatureService();
   final inviteConsumption =
       inviteConsumptionStore ?? FakeInviteConsumptionStore();
@@ -383,7 +385,8 @@ final class FakeSecureTokenGenerator implements SecureTokenGenerator {
   }
 }
 
-final class FakeInvitationRepository implements InvitationRepository {
+final class FakeInvitationRepository
+    implements InvitationRepository, FreshInvitationRepository {
   FakeInvitationRepository({
     Map<String, BudgetSummary>? budgets,
     this.budgetRepository,
