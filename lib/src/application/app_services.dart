@@ -78,7 +78,7 @@ final class AppServices {
     required this.getBudgetAccountBalances,
     required this.getPublicIdentity,
     required this.inspectBudgetInvite,
-    required this.joinBudgetFromInvite,
+    this.joinBudgetFromInvite,
     this.importReceiptPhoto,
     this.budgetSnapshotSessions,
     this.lanPeerSessions,
@@ -136,7 +136,7 @@ final class AppServices {
   final GetBudgetAccountBalances getBudgetAccountBalances;
   final GetPublicIdentity getPublicIdentity;
   final InspectBudgetInvite inspectBudgetInvite;
-  final JoinBudgetFromInvite joinBudgetFromInvite;
+  final JoinBudgetFromInvite? joinBudgetFromInvite;
   final ImportReceiptPhoto? importReceiptPhoto;
   final BudgetSnapshotSessionService? budgetSnapshotSessions;
   final LanPeerSessionManager? lanPeerSessions;
