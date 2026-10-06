@@ -104,6 +104,51 @@ void main() {
     },
   );
 
+  test('fresh join rolls back external state when persistence fails', () async {
+    final ownerServices = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(currentUserId: 'owner-1'),
+      idGenerator: FakeIdGenerator(['owner-device', 'invite-1']),
+    );
+    final generated = await ownerServices.createBudgetInvite(
+      budgetId: 'budget-1',
+      role: MemberRole.editor,
+    );
+
+    final session = FakeSessionStore();
+    final keys = FakeIdentityKeyStore();
+    final consumed = FakeInviteConsumptionStore();
+    final transportSecrets = FakeBudgetTransportSecretStore();
+    final invitations = FakeInvitationRepository(
+      acceptNewIdentityError: StateError('database unavailable'),
+    );
+    final services = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: session,
+      invitationRepository: invitations,
+      identityKeyStore: keys,
+      inviteConsumptionStore: consumed,
+      transportSecretStore: transportSecrets,
+      idGenerator: FakeIdGenerator(['user-2', 'device-2']),
+    );
+
+    await expectLater(
+      services.joinBudgetFromInvite!(
+        userName: 'Bob',
+        rawPayload: generated.rawPayload,
+      ),
+      throwsStateError,
+    );
+
+    expect(keys.deviceByUser, isEmpty);
+    expect(keys.privateKeyByDevice, isEmpty);
+    expect(consumed.consumed, isEmpty);
+    expect(await transportSecrets.load('budget-1'), isNull);
+    expect(await session.loadCurrentUserId(), isNull);
+    expect(await session.loadCurrentBudgetId(), isNull);
+    expect(invitations.accepted, isEmpty);
+  });
+
   test('rejects tampered signature and expired invite', () async {
     final codec = const BudgetInviteCodec();
     final identities = FakeIdentityRepository();

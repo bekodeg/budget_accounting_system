@@ -36,6 +36,7 @@ import 'package:budget_accounting_system/src/application/use_cases/get_account_b
 import 'package:budget_accounting_system/src/application/use_cases/get_budget_account_balances.dart';
 import 'package:budget_accounting_system/src/application/use_cases/get_public_identity.dart';
 import 'package:budget_accounting_system/src/application/use_cases/inspect_budget_invite.dart';
+import 'package:budget_accounting_system/src/application/use_cases/join_budget_from_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/pick_budget_invite_file.dart';
 import 'package:budget_accounting_system/src/application/use_cases/rename_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/require_account_in_budget.dart';
@@ -89,6 +90,7 @@ import 'package:budget_accounting_system/src/domain/repositories/report_export_r
 import 'package:budget_accounting_system/src/domain/repositories/monthly_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/extended_report_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/identity_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/fresh_invitation_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/invitation_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/membership_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
@@ -131,7 +133,9 @@ AppServices fakeAppServices({
   final identityGenerator =
       identityKeyPairGenerator ?? FakeIdentityKeyPairGenerator();
   final memberships = membershipRepository ?? FakeMembershipRepository();
-  final invitations = invitationRepository ?? FakeInvitationRepository();
+  final invitations =
+      invitationRepository ??
+          FakeInvitationRepository(budgetRepository: repository);
   final signatures = identitySignatureService ?? FakeIdentitySignatureService();
   final inviteConsumption =
       inviteConsumptionStore ?? FakeInviteConsumptionStore();
@@ -240,6 +244,16 @@ AppServices fakeAppServices({
     getBudgetAccountBalances: GetBudgetAccountBalances(accounts),
     getPublicIdentity: getPublicIdentity,
     inspectBudgetInvite: inspectInvite,
+    joinBudgetFromInvite: JoinBudgetFromInvite(
+      inspectInvite: inspectInvite,
+      invitationRepository: invitations,
+      consumptionStore: inviteConsumption,
+      sessionStore: sessionStore,
+      transportSecretManager: transportSecretManager,
+      idGenerator: ids,
+      identityKeyStore: identityKeys,
+      identityKeyPairGenerator: identityGenerator,
+    ),
     pickBudgetInviteFile: PickBudgetInviteFile(inviteFiles),
     renameCategory: RenameCategory(repository: categories, authorization: auth),
     requireAccountInBudget: RequireAccountInBudget(accounts),
@@ -371,9 +385,13 @@ final class FakeSecureTokenGenerator implements SecureTokenGenerator {
   }
 }
 
-final class FakeInvitationRepository implements InvitationRepository {
-  FakeInvitationRepository({Map<String, BudgetSummary>? budgets})
-    : budgets =
+final class FakeInvitationRepository
+    implements InvitationRepository, FreshInvitationRepository {
+  FakeInvitationRepository({
+    Map<String, BudgetSummary>? budgets,
+    this.budgetRepository,
+    this.acceptNewIdentityError,
+  }) : budgets =
           budgets ??
           {
             'budget-1': const BudgetSummary(
@@ -384,6 +402,8 @@ final class FakeInvitationRepository implements InvitationRepository {
           };
 
   final Map<String, BudgetSummary> budgets;
+  final FakeBudgetRepository? budgetRepository;
+  final Object? acceptNewIdentityError;
   final List<({BudgetInvite invite, PublicIdentity joiningIdentity})> accepted =
       [];
 
@@ -395,6 +415,34 @@ final class FakeInvitationRepository implements InvitationRepository {
     required BudgetInvite invite,
     required PublicIdentity joiningIdentity,
   }) async {
+    _accept(invite, joiningIdentity);
+  }
+
+  @override
+  Future<void> acceptInviteForNewIdentity({
+    required BudgetInvite invite,
+    required String joiningUserName,
+    required PublicIdentity joiningIdentity,
+  }) async {
+    final error = acceptNewIdentityError;
+    if (error != null) {
+      throw error;
+    }
+    _accept(invite, joiningIdentity);
+    final repository = budgetRepository;
+    if (repository != null) {
+      repository.firstUserId ??= joiningIdentity.userId;
+      repository.budgetsByUser[joiningIdentity.userId] = [
+        BudgetSummary(
+          id: invite.budgetId,
+          name: invite.budgetName,
+          baseCurrency: invite.baseCurrency,
+        ),
+      ];
+    }
+  }
+
+  void _accept(BudgetInvite invite, PublicIdentity joiningIdentity) {
     accepted.add((invite: invite, joiningIdentity: joiningIdentity));
     budgets.putIfAbsent(
       invite.budgetId,

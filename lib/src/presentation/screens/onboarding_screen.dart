@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../application/app_services.dart';
+import '../../application/errors/invite_error.dart';
 import '../../application/errors/onboarding_error.dart';
 import '../../domain/errors/domain_validation_error.dart';
+import '../../domain/models/budget_invite.dart';
 import '../../domain/value_objects/currency.dart';
+import 'budget_invite_panel.dart';
 
 typedef CreateInitialBudgetCallback =
     Future<void> Function({
@@ -13,9 +17,16 @@ typedef CreateInitialBudgetCallback =
     });
 
 final class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({required this.onCreate, super.key});
+  const OnboardingScreen({
+    required this.services,
+    required this.onCreate,
+    required this.onJoined,
+    super.key,
+  });
 
+  final AppServices services;
   final CreateInitialBudgetCallback onCreate;
+  final VoidCallback onJoined;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -39,10 +50,7 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _submit() async {
-    if (_submitting) {
-      return;
-    }
-
+    if (_submitting) return;
     setState(() {
       _submitting = true;
       _errorMessage = null;
@@ -62,22 +70,68 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
     } on Object {
       _showError('Не удалось создать бюджет. Проверьте данные и повторите.');
     } finally {
-      if (mounted) {
-        setState(() {
-          _submitting = false;
-        });
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _joinFromFile() async {
+    final raw = await widget.services.pickBudgetInviteFile();
+    if (raw == null || !mounted) return;
+    await _join(raw);
+  }
+
+  Future<void> _joinFromQr() async {
+    final raw = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const InviteQrScannerScreen()),
+    );
+    if (raw == null || !mounted) return;
+    await _join(raw);
+  }
+
+  Future<void> _join(String raw) async {
+    if (_submitting) return;
+    final name = _userNameController.text.trim();
+    if (name.isEmpty) {
+      _showError('Укажите ваше имя перед присоединением к бюджету.');
+      return;
+    }
+
+    try {
+      final preview = await widget.services.inspectBudgetInvite(raw);
+      if (!mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) => _FreshInviteConfirmDialog(preview: preview),
+      );
+      if (confirmed != true || !mounted) return;
+
+      setState(() {
+        _submitting = true;
+        _errorMessage = null;
+      });
+      final join = widget.services.joinBudgetFromInvite;
+      if (join == null) {
+        throw StateError('Invite onboarding is unavailable.');
       }
+      await join(
+        userName: name,
+        rawPayload: raw,
+      );
+      if (mounted) widget.onJoined();
+    } on InviteError catch (error) {
+      _showError(error.message);
+    } on OnboardingError catch (error) {
+      _showError(error.message);
+    } on Object {
+      _showError('Не удалось присоединиться к бюджету.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
   void _showError(String message) {
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _errorMessage = message;
-    });
+    if (!mounted) return;
+    setState(() => _errorMessage = message);
   }
 
   @override
@@ -92,13 +146,13 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
               shrinkWrap: true,
               children: [
                 Text(
-                  'Первый бюджет',
+                  'Первый запуск',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Создайте локального пользователя и первый бюджет. '
-                  'Все данные сохраняются на устройстве.',
+                  'Создайте новый бюджет или присоединитесь к существующему '
+                  'по приглашению владельца.',
                 ),
                 const SizedBox(height: 24),
                 TextField(
@@ -111,7 +165,38 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                Text(
+                  'Присоединиться к существующему бюджету',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      key: const ValueKey('onboarding-scan-invite'),
+                      onPressed: _submitting ? null : _joinFromQr,
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Сканировать QR'),
+                    ),
+                    OutlinedButton.icon(
+                      key: const ValueKey('onboarding-open-invite-file'),
+                      onPressed: _submitting ? null : _joinFromFile,
+                      icon: const Icon(Icons.file_open_outlined),
+                      label: const Text('Открыть приглашение'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                const Divider(),
+                const SizedBox(height: 20),
+                Text(
+                  'Создать новый бюджет',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   key: const ValueKey('onboarding-budget-name'),
                   controller: _budgetNameController,
@@ -148,11 +233,9 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   onChanged: _submitting
                       ? null
-                      : (value) {
-                          setState(() {
-                            _applyDefaultCategories = value ?? true;
-                          });
-                        },
+                      : (value) => setState(
+                            () => _applyDefaultCategories = value ?? true,
+                          ),
                 ),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 8),
@@ -180,6 +263,41 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+final class _FreshInviteConfirmDialog extends StatelessWidget {
+  const _FreshInviteConfirmDialog({required this.preview});
+
+  final BudgetInvitePreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final invite = preview.invite;
+    return AlertDialog(
+      title: const Text('Присоединиться к бюджету?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Бюджет: ${invite.budgetName}'),
+          Text('Валюта: ${invite.baseCurrency}'),
+          Text('Владелец: ${invite.ownerName}'),
+          Text('Роль: ${invite.role.name.toUpperCase()}'),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Отмена'),
+        ),
+        FilledButton(
+          key: const ValueKey('onboarding-confirm-invite'),
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Присоединиться'),
+        ),
+      ],
     );
   }
 }
