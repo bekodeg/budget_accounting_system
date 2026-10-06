@@ -24,6 +24,7 @@ import 'use_cases/get_account_balance.dart';
 import 'use_cases/get_budget_account_balances.dart';
 import 'use_cases/get_public_identity.dart';
 import 'use_cases/inspect_budget_invite.dart';
+import 'use_cases/join_budget_from_invite.dart';
 import 'use_cases/import_receipt_photo.dart';
 import 'use_cases/pick_budget_invite_file.dart';
 import 'use_cases/pick_budget_backup.dart';
@@ -77,6 +78,7 @@ final class AppServices {
     required this.getBudgetAccountBalances,
     required this.getPublicIdentity,
     required this.inspectBudgetInvite,
+    required this.joinBudgetFromInvite,
     this.importReceiptPhoto,
     this.budgetSnapshotSessions,
     this.lanPeerSessions,
@@ -134,6 +136,7 @@ final class AppServices {
   final GetBudgetAccountBalances getBudgetAccountBalances;
   final GetPublicIdentity getPublicIdentity;
   final InspectBudgetInvite inspectBudgetInvite;
+  final JoinBudgetFromInvite joinBudgetFromInvite;
   final ImportReceiptPhoto? importReceiptPhoto;
   final BudgetSnapshotSessionService? budgetSnapshotSessions;
   final LanPeerSessionManager? lanPeerSessions;
