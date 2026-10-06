@@ -27,6 +27,7 @@ final class DriftInvitationRepository implements InvitationRepository {
   Future<void> acceptInvite({
     required BudgetInvite invite,
     required PublicIdentity joiningIdentity,
+    String? joiningUserName,
   }) {
     return _dao.acceptInvitation(
       owner: UsersCompanion.insert(
@@ -57,6 +58,11 @@ final class DriftInvitationRepository implements InvitationRepository {
         revokedAt: const Value(null),
       ),
       joiningPublicKey: joiningIdentity.publicKey,
+      joiningUserName: joiningUserName,
+      joiningDevice: DevicesCompanion.insert(
+        id: joiningIdentity.deviceId,
+        userId: joiningIdentity.userId,
+      ),
     );
   }
 }
