@@ -174,6 +174,9 @@ AppServices fakeAppServices({
       sessionStore: sessionStore,
       getPublicIdentity: getPublicIdentity,
       transportSecretManager: transportSecretManager,
+      idGenerator: ids,
+      identityKeyStore: identityKeys,
+      identityKeyPairGenerator: identityGenerator,
     ),
     applyCategoryTemplates: ApplyCategoryTemplates(
       repository: categories,
