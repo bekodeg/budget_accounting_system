@@ -390,6 +390,7 @@ final class FakeInvitationRepository
   FakeInvitationRepository({
     Map<String, BudgetSummary>? budgets,
     this.budgetRepository,
+    this.acceptNewIdentityError,
   }) : budgets =
           budgets ??
           {
@@ -402,6 +403,7 @@ final class FakeInvitationRepository
 
   final Map<String, BudgetSummary> budgets;
   final FakeBudgetRepository? budgetRepository;
+  final Object? acceptNewIdentityError;
   final List<({BudgetInvite invite, PublicIdentity joiningIdentity})> accepted =
       [];
 
@@ -422,6 +424,10 @@ final class FakeInvitationRepository
     required String joiningUserName,
     required PublicIdentity joiningIdentity,
   }) async {
+    final error = acceptNewIdentityError;
+    if (error != null) {
+      throw error;
+    }
     _accept(invite, joiningIdentity);
     final repository = budgetRepository;
     if (repository != null) {
