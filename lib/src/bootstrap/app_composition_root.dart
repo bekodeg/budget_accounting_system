@@ -35,6 +35,7 @@ import '../application/use_cases/get_account_balance.dart';
 import '../application/use_cases/get_budget_account_balances.dart';
 import '../application/use_cases/get_public_identity.dart';
 import '../application/use_cases/inspect_budget_invite.dart';
+import '../application/use_cases/join_budget_from_invite.dart';
 import '../application/use_cases/import_receipt_photo.dart';
 import '../application/use_cases/pick_budget_invite_file.dart';
 import '../application/use_cases/pick_budget_backup.dart';
@@ -270,6 +271,16 @@ final class AppCompositionRoot {
       signatureService: identitySignatureService,
       consumptionStore: inviteConsumptionStore,
     );
+    final joinBudgetFromInvite = JoinBudgetFromInvite(
+      inspectInvite: inspectBudgetInvite,
+      invitationRepository: invitationRepository,
+      consumptionStore: inviteConsumptionStore,
+      sessionStore: sessionStore,
+      transportSecretManager: transportSecretManager,
+      idGenerator: idGenerator,
+      identityKeyStore: identityKeyStore,
+      identityKeyPairGenerator: identityKeyPairGenerator,
+    );
     final requireAccountInBudget = RequireAccountInBudget(accountRepository);
     final requireCategoryInBudget = RequireCategoryInBudget(categoryRepository);
 
@@ -363,6 +374,7 @@ final class AppCompositionRoot {
         getBudgetAccountBalances: GetBudgetAccountBalances(accountRepository),
         getPublicIdentity: getPublicIdentity,
         inspectBudgetInvite: inspectBudgetInvite,
+        joinBudgetFromInvite: joinBudgetFromInvite,
         importReceiptPhoto: ImportReceiptPhoto(
           receiptRepository: receiptRepository,
           imageStore: const PlatformReceiptImageStore(),
