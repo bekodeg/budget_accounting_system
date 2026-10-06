@@ -236,6 +236,9 @@ void main() {
       sessionStore: session,
       getPublicIdentity: getJoiningIdentity,
       transportSecretManager: joiningTransportSecretManager,
+      idGenerator: FakeIdGenerator(const []),
+      identityKeyStore: joiningKeys,
+      identityKeyPairGenerator: FakeIdentityKeyPairGenerator(),
     );
 
     final accepted = await accept(generated.rawPayload);
