@@ -5,8 +5,9 @@
 На этапе S2 приложение должно работать без backend и после чистой установки самостоятельно создать минимальный рабочий контекст:
 
 - локального пользователя;
-- первый бюджет;
-- membership пользователя в бюджете с ролью `OWNER`;
+- либо первый собственный бюджет, либо импортированный по подписанному приглашению бюджет;
+- membership пользователя в выбранном бюджете;
+- локальную Ed25519 identity устройства;
 - выбор активного бюджета для следующего запуска.
 
 Источник истины для пользователя, бюджета и membership — Drift/SQLite.
@@ -38,6 +39,8 @@ ResolveAppStartup
   |      +-- several budgets --> BudgetSelectionScreen
   |
   +-- no local membership -----> OnboardingScreen
+                                  |-- создать новый бюджет
+                                  +-- принять QR/.budgetinvite
 ```
 
 ## 8.3. Создание первого бюджета
@@ -54,7 +57,23 @@ ResolveAppStartup
 
 Если SQLite-транзакция падает, ни одна из трех доменных записей не должна остаться в базе.
 
-## 8.4. Почему preferences не участвуют в SQLite-транзакции
+## 8.4. Присоединение нового устройства
+
+Fresh-install onboarding позволяет принять подписанный invite без предварительного создания локального бюджета.
+
+`JoinBudgetFromInvite`:
+
+1. проверяет имя локального пользователя и отсутствие существующей local session;
+2. проверяет version/expiration/Ed25519 signature приглашения;
+3. генерирует новые user/device id и Ed25519 key pair;
+4. сохраняет private key в platform secure storage;
+5. помечает invite consumed и импортирует budget transport secret;
+6. одной Drift-транзакцией создает joining user/device, budget metadata и memberships OWNER/joining user;
+7. сохраняет current user/budget в preferences.
+
+Если Drift-import завершается ошибкой, local private key, consumed marker и импортированный transport secret удаляются. Drift-транзакция не оставляет частичный User/Device/Budget/Membership.
+
+## 8.5. Почему preferences не участвуют в SQLite-транзакции
 
 Platform preferences и SQLite не могут участвовать в общей ACID-транзакции.
 
@@ -67,7 +86,7 @@ Platform preferences и SQLite не могут участвовать в общ�
 
 Это также соответствует ограничению `shared_preferences`: package предназначен для простого key-value состояния, а не для критичных данных.
 
-## 8.5. Несколько бюджетов
+## 8.6. Несколько бюджетов
 
 Если у локального пользователя несколько доступных бюджетов:
 
@@ -78,13 +97,13 @@ Platform preferences и SQLite не могут участвовать в общ�
 
 UI не может выбрать бюджет, которого нет среди доступных membership.
 
-## 8.6. Идентификаторы
+## 8.7. Идентификаторы
 
 Для локальных сущностей используется UUID v4 shape, генерируемый через `Random.secure()`.
 
 Генератор скрыт за application port `IdGenerator`, поэтому use cases тестируются с детерминированными fake-id.
 
-## 8.7. Временное поле public_key
+## 8.8. Временное поле public_key
 
 Таблица `users` уже требует `public_key`, но криптографическая identity относится к S4.
 
@@ -98,7 +117,7 @@ local-unverified:<userId>
 
 S4 обязан заменить эту временную identity на реальную пару ключей.
 
-## 8.8. Ошибки
+## 8.9. Ошибки
 
 Ошибки делятся на два класса:
 
@@ -107,7 +126,7 @@ S4 обязан заменить эту временную identity на реа�
 
 Ошибка записи preferences после успешной SQLite-транзакции не делает onboarding неуспешным, поскольку selection-state можно восстановить из БД.
 
-## 8.9. Тестирование
+## 8.10. Тестирование
 
 S2 onboarding покрывается на нескольких уровнях:
 
