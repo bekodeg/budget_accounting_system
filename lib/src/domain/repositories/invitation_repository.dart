@@ -8,6 +8,5 @@ abstract interface class InvitationRepository {
   Future<void> acceptInvite({
     required BudgetInvite invite,
     required PublicIdentity joiningIdentity,
-    String? joiningUserName,
   });
 }
