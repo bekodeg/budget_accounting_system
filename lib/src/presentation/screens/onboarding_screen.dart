@@ -143,7 +143,7 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
               shrinkWrap: true,
               children: [
                 Text(
-                  'Первый запуск',
+                  'Первый бюджет',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
@@ -162,38 +162,7 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  'Присоединиться к существующему бюджету',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      key: const ValueKey('onboarding-scan-invite'),
-                      onPressed: _submitting ? null : _joinFromQr,
-                      icon: const Icon(Icons.qr_code_scanner),
-                      label: const Text('Сканировать QR'),
-                    ),
-                    OutlinedButton.icon(
-                      key: const ValueKey('onboarding-open-invite-file'),
-                      onPressed: _submitting ? null : _joinFromFile,
-                      icon: const Icon(Icons.file_open_outlined),
-                      label: const Text('Открыть приглашение'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                const Divider(),
-                const SizedBox(height: 20),
-                Text(
-                  'Создать новый бюджет',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextField(
                   key: const ValueKey('onboarding-budget-name'),
                   controller: _budgetNameController,
@@ -254,6 +223,32 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text('Создать бюджет'),
+                ),
+                const SizedBox(height: 28),
+                const Divider(),
+                const SizedBox(height: 20),
+                Text(
+                  'Присоединиться к существующему бюджету',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      key: const ValueKey('onboarding-scan-invite'),
+                      onPressed: _submitting ? null : _joinFromQr,
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Сканировать QR'),
+                    ),
+                    OutlinedButton.icon(
+                      key: const ValueKey('onboarding-open-invite-file'),
+                      onPressed: _submitting ? null : _joinFromFile,
+                      icon: const Icon(Icons.file_open_outlined),
+                      label: const Text('Открыть приглашение'),
+                    ),
+                  ],
                 ),
               ],
             ),
