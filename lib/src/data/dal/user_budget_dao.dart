@@ -73,6 +73,8 @@ final class UserBudgetDao {
     required BudgetMembersCompanion ownerMembership,
     required BudgetMembersCompanion joiningMembership,
     required String joiningPublicKey,
+    String? joiningUserName,
+    DevicesCompanion? joiningDevice,
   }) {
     return _db.transaction(() async {
       final ownerId = owner.id.value;
@@ -95,8 +97,36 @@ final class UserBudgetDao {
 
       final joiningUserId = joiningMembership.userId.value;
       final joiningUser = await findUserById(joiningUserId);
-      if (joiningUser == null || joiningUser.publicKey != joiningPublicKey) {
-        throw StateError('Joining identity conflicts with local user.');
+      if (joiningUser == null) {
+        final normalizedName = joiningUserName?.trim();
+        if (normalizedName == null || normalizedName.isEmpty) {
+          throw StateError('Joining user name is required for a new identity.');
+        }
+        await _db.into(_db.users).insert(
+          UsersCompanion.insert(
+            id: joiningUserId,
+            name: normalizedName,
+            publicKey: joiningPublicKey,
+          ),
+        );
+        if (joiningDevice == null) {
+          throw StateError('Joining device is required for a new identity.');
+        }
+        await _db.into(_db.devices).insert(joiningDevice);
+      } else {
+        if (joiningUser.publicKey != joiningPublicKey) {
+          throw StateError('Joining identity conflicts with local user.');
+        }
+        if (joiningDevice != null) {
+          final existingJoiningDevice = await findDeviceById(
+            joiningDevice.id.value,
+          );
+          if (existingJoiningDevice == null) {
+            await _db.into(_db.devices).insert(joiningDevice);
+          } else if (existingJoiningDevice.userId != joiningUserId) {
+            throw StateError('Joining device conflicts with local identity.');
+          }
+        }
       }
 
       final budgetId = budget.id.value;
