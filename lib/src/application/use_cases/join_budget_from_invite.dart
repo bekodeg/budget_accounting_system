@@ -1,6 +1,6 @@
 import '../../domain/models/budget_invite.dart';
 import '../../domain/models/public_identity.dart';
-import '../../domain/repositories/invitation_repository.dart';
+import '../../domain/repositories/fresh_invitation_repository.dart';
 import '../errors/onboarding_error.dart';
 import '../ports/id_generator.dart';
 import '../ports/identity_key_pair_generator.dart';
@@ -13,7 +13,7 @@ import 'inspect_budget_invite.dart';
 final class JoinBudgetFromInvite {
   const JoinBudgetFromInvite({
     required InspectBudgetInvite inspectInvite,
-    required InvitationRepository invitationRepository,
+    required FreshInvitationRepository invitationRepository,
     required InviteConsumptionStore consumptionStore,
     required SessionStore sessionStore,
     required BudgetTransportSecretManager transportSecretManager,
@@ -30,7 +30,7 @@ final class JoinBudgetFromInvite {
        _identityKeyPairGenerator = identityKeyPairGenerator;
 
   final InspectBudgetInvite _inspectInvite;
-  final InvitationRepository _invitationRepository;
+  final FreshInvitationRepository _invitationRepository;
   final InviteConsumptionStore _consumptionStore;
   final SessionStore _sessionStore;
   final BudgetTransportSecretManager _transportSecretManager;
@@ -50,7 +50,9 @@ final class JoinBudgetFromInvite {
       );
     }
     if (await _sessionStore.loadCurrentUserId() != null) {
-      throw StateError('Fresh-device invite flow requires an empty local session.');
+      throw StateError(
+        'Fresh-device invite flow requires an empty local session.',
+      );
     }
 
     final preview = await _inspectInvite(rawPayload);
