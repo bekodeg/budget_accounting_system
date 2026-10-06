@@ -75,15 +75,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Первый бюджет'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('onboarding-scan-invite')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('onboarding-open-invite-file')),
-      findsOneWidget,
-    );
-
     await tester.enterText(
       find.byKey(const ValueKey('onboarding-user-name')),
       'Bob',
@@ -91,7 +82,16 @@ void main() {
     final openInvite = find.byKey(
       const ValueKey('onboarding-open-invite-file'),
     );
-    await tester.ensureVisible(openInvite);
+    await tester.scrollUntilVisible(
+      openInvite,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.byKey(const ValueKey('onboarding-scan-invite')),
+      findsOneWidget,
+    );
+    expect(openInvite, findsOneWidget);
     await tester.tap(openInvite);
     await tester.pumpAndSettle();
 
