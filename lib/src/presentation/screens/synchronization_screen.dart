@@ -193,7 +193,9 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
       }
     } on Object {
       if (mounted) {
-        setState(() => _status = 'Не удалось синхронизироваться с устройством.');
+        setState(
+          () => _status = 'Не удалось синхронизироваться с устройством.',
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -321,15 +323,11 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
           runSpacing: 8,
           children: [
             OutlinedButton(
-              onPressed: _busy
-                  ? null
-                  : () => _connectManual(initial: true),
+              onPressed: _busy ? null : () => _connectManual(initial: true),
               child: const Text('Получить впервые'),
             ),
             OutlinedButton(
-              onPressed: _busy
-                  ? null
-                  : () => _connectManual(initial: false),
+              onPressed: _busy ? null : () => _connectManual(initial: false),
               child: const Text('Синхронизировать'),
             ),
           ],
