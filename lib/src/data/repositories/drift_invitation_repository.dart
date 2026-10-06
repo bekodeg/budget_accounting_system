@@ -3,11 +3,13 @@ import 'package:drift/drift.dart';
 import '../../domain/models/budget_invite.dart';
 import '../../domain/models/budget_summary.dart';
 import '../../domain/models/public_identity.dart';
+import '../../domain/repositories/fresh_invitation_repository.dart';
 import '../../domain/repositories/invitation_repository.dart';
 import '../dal/user_budget_dao.dart';
 import '../database/app_database.dart';
 
-final class DriftInvitationRepository implements InvitationRepository {
+final class DriftInvitationRepository
+    implements InvitationRepository, FreshInvitationRepository {
   const DriftInvitationRepository(this._dao);
 
   final UserBudgetDao _dao;
@@ -59,6 +61,7 @@ final class DriftInvitationRepository implements InvitationRepository {
       joiningPublicKey: joiningIdentity.publicKey,
     );
   }
+
   @override
   Future<void> acceptInviteForNewIdentity({
     required BudgetInvite invite,
