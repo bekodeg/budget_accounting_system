@@ -397,6 +397,7 @@ final class FakeInvitationRepository implements InvitationRepository {
   Future<void> acceptInvite({
     required BudgetInvite invite,
     required PublicIdentity joiningIdentity,
+    String? joiningUserName,
   }) async {
     accepted.add((invite: invite, joiningIdentity: joiningIdentity));
     budgets.putIfAbsent(
