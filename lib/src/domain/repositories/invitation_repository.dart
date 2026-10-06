@@ -10,9 +10,4 @@ abstract interface class InvitationRepository {
     required PublicIdentity joiningIdentity,
   });
 
-  Future<void> acceptInviteForNewIdentity({
-    required BudgetInvite invite,
-    required String joiningUserName,
-    required PublicIdentity joiningIdentity,
-  });
 }
