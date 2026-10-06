@@ -46,47 +46,7 @@ final class BudgetInvitePanel extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        if (canCreate)
-          FilledButton.icon(
-            key: const ValueKey('create-budget-invite'),
-            onPressed: () => _create(context),
-            icon: const Icon(Icons.person_add_alt_1),
-            label: const Text('Пригласить'),
-          ),
-        BudgetInviteJoinActions(services: services),
-      ],
-    );
-  }
-}
-
-final class BudgetInviteJoinActions extends StatelessWidget {
-  const BudgetInviteJoinActions({
-    required this.services,
-    this.joiningUserName,
-    this.onAccepted,
-    super.key,
-  });
-
-  final AppServices services;
-  final String? joiningUserName;
-  final VoidCallback? onAccepted;
-
-  bool _requireName(BuildContext context) {
-    if (joiningUserName == null || joiningUserName!.trim().isNotEmpty) {
-      return true;
-    }
-    _message(context, 'Введите ваше имя перед присоединением.');
-    return false;
-  }
-
   Future<void> _importFile(BuildContext context) async {
-    if (!_requireName(context)) return;
     try {
       final raw = await services.pickBudgetInviteFile();
       if (raw == null || !context.mounted) return;
@@ -99,7 +59,6 @@ final class BudgetInviteJoinActions extends StatelessWidget {
   }
 
   Future<void> _scanQr(BuildContext context) async {
-    if (!_requireName(context)) return;
     final raw = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const InviteQrScannerScreen()),
     );
@@ -117,16 +76,13 @@ final class BudgetInviteJoinActions extends StatelessWidget {
       );
       if (confirmed != true || !context.mounted) return;
 
-      await services.acceptBudgetInvite(
-        raw,
-        joiningUserName: joiningUserName?.trim(),
-      );
-      if (!context.mounted) return;
-      _message(
-        context,
-        'Вы присоединились к бюджету «${preview.invite.budgetName}».',
-      );
-      onAccepted?.call();
+      await services.acceptBudgetInvite(raw);
+      if (context.mounted) {
+        _message(
+          context,
+          'Вы присоединились к бюджету «${preview.invite.budgetName}».',
+        );
+      }
     } on InviteError catch (error) {
       if (context.mounted) _message(context, error.message);
     } on Object {
@@ -136,12 +92,25 @@ final class BudgetInviteJoinActions extends StatelessWidget {
     }
   }
 
+  void _message(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
+        if (canCreate)
+          FilledButton.icon(
+            key: const ValueKey('create-budget-invite'),
+            onPressed: () => _create(context),
+            icon: const Icon(Icons.person_add_alt_1),
+            label: const Text('Пригласить'),
+          ),
         OutlinedButton.icon(
           key: const ValueKey('scan-budget-invite'),
           onPressed: () => _scanQr(context),
@@ -157,12 +126,6 @@ final class BudgetInviteJoinActions extends StatelessWidget {
       ],
     );
   }
-}
-
-void _message(BuildContext context, String message) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message)));
 }
 
 final class _InviteRoleDialog extends StatelessWidget {
