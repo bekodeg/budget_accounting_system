@@ -74,7 +74,7 @@ void main() {
     await tester.pumpWidget(BudgetAccountingApp(services: services));
     await tester.pumpAndSettle();
 
-    expect(find.text('Первый запуск'), findsOneWidget);
+    expect(find.text('Первый бюджет'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('onboarding-scan-invite')),
       findsOneWidget,
