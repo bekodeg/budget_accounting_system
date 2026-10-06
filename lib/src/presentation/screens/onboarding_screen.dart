@@ -109,7 +109,11 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
         _submitting = true;
         _errorMessage = null;
       });
-      await widget.services.joinBudgetFromInvite(
+      final join = widget.services.joinBudgetFromInvite;
+      if (join == null) {
+        throw StateError('Invite onboarding is unavailable.');
+      }
+      await join(
         userName: name,
         rawPayload: raw,
       );
