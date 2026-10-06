@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../application/app_services.dart';
 import '../../application/errors/onboarding_error.dart';
 import '../../domain/errors/domain_validation_error.dart';
 import '../../domain/value_objects/currency.dart';
+import 'budget_invite_panel.dart';
 
 typedef CreateInitialBudgetCallback =
     Future<void> Function({
@@ -13,9 +15,16 @@ typedef CreateInitialBudgetCallback =
     });
 
 final class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({required this.onCreate, super.key});
+  const OnboardingScreen({
+    required this.services,
+    required this.onCreate,
+    required this.onJoined,
+    super.key,
+  });
 
+  final AppServices services;
   final CreateInitialBudgetCallback onCreate;
+  final VoidCallback onJoined;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -86,19 +95,19 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
+            constraints: const BoxConstraints(maxWidth: 520),
             child: ListView(
               padding: const EdgeInsets.all(24),
               shrinkWrap: true,
               children: [
                 Text(
-                  'Первый бюджет',
+                  'Начало работы',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Создайте локального пользователя и первый бюджет. '
-                  'Все данные сохраняются на устройстве.',
+                  'Создайте новый бюджет или присоединитесь к существующему '
+                  'по приглашению. Все данные сохраняются локально.',
                 ),
                 const SizedBox(height: 24),
                 TextField(
@@ -110,6 +119,41 @@ final class _OnboardingScreenState extends State<OnboardingScreen> {
                     labelText: 'Ваше имя',
                     border: OutlineInputBorder(),
                   ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 20),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Присоединиться к бюджету',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'На устройстве владельца откройте '
+                          'Настройки → Участники → Пригласить.',
+                        ),
+                        const SizedBox(height: 12),
+                        BudgetInviteJoinActions(
+                          services: widget.services,
+                          joiningUserName: _userNameController.text,
+                          onAccepted: widget.onJoined,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Divider(),
+                ),
+                Text(
+                  'Создать новый бюджет',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
                 TextField(
