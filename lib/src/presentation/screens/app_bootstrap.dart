@@ -82,7 +82,11 @@ final class _AppBootstrapState extends State<AppBootstrap> {
 
         final startup = snapshot.requireData;
         if (startup.needsOnboarding) {
-          return OnboardingScreen(onCreate: _createInitialBudget);
+          return OnboardingScreen(
+            services: widget.services,
+            onCreate: _createInitialBudget,
+            onJoined: _reload,
+          );
         }
 
         final userId = startup.userId!;

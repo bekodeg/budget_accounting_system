@@ -41,5 +41,13 @@ void main() {
 
     expect(find.byKey(const ValueKey('settings-screen')), findsOneWidget);
     expect(find.byKey(const ValueKey('account-management')), findsOneWidget);
+
+    await tester.tap(find.text('Синхронизация'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('P2P-синхронизация недоступна в этой конфигурации.'),
+      findsOneWidget,
+    );
   });
 }

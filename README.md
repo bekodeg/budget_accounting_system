@@ -18,7 +18,7 @@
 - Flutter / Dart;
 - SQLite;
 - Drift как ORM/DAL и единственный механизм миграций локальной БД;
-- P2P-синхронизация поверх журнала `sync_operations` (следующий этап реализации).
+- P2P-синхронизация поверх журнала `sync_operations` с LAN discovery, state-vector protocol и snapshot bootstrap.
 
 Liquibase удален: Drift хранит snapshots версий схемы, генерирует пошаговые миграции и тесты миграций. История схемы должна храниться в `drift_schemas/`.
 

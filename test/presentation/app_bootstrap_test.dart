@@ -45,6 +45,68 @@ void main() {
     expect(sessionStore.currentBudgetId, 'budget-1');
   });
 
+  testWidgets('fresh device joins existing budget from invite file', (
+    tester,
+  ) async {
+    final ownerServices = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(currentUserId: 'owner-1'),
+      idGenerator: FakeIdGenerator(['owner-device', 'invite-1']),
+    );
+    final invite = await ownerServices.createBudgetInvite(
+      budgetId: 'budget-1',
+      role: MemberRole.editor,
+    );
+
+    final repository = FakeBudgetRepository();
+    final sessionStore = FakeSessionStore();
+    final inviteFiles = FakeInviteFileGateway()
+      ..pickedPayload = invite.rawPayload;
+    final identityKeys = FakeIdentityKeyStore();
+    final services = fakeAppServices(
+      repository: repository,
+      sessionStore: sessionStore,
+      inviteFileGateway: inviteFiles,
+      identityKeyStore: identityKeys,
+      idGenerator: FakeIdGenerator(['user-2', 'device-2']),
+    );
+
+    await tester.pumpWidget(BudgetAccountingApp(services: services));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Первый бюджет'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const ValueKey('onboarding-user-name')),
+      'Bob',
+    );
+    final openInvite = find.byKey(
+      const ValueKey('onboarding-open-invite-file'),
+    );
+    await tester.scrollUntilVisible(
+      openInvite,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.byKey(const ValueKey('onboarding-scan-invite')),
+      findsOneWidget,
+    );
+    expect(openInvite, findsOneWidget);
+    await tester.tap(openInvite);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Присоединиться к бюджету?'), findsOneWidget);
+    expect(find.text('Бюджет: Test budget'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('onboarding-confirm-invite')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Test budget'), findsOneWidget);
+    expect(sessionStore.currentUserId, 'user-2');
+    expect(sessionStore.currentBudgetId, 'budget-1');
+    expect(identityKeys.deviceByUser['user-2'], 'device-2');
+  });
+
   testWidgets('can opt out from standard categories on first launch', (
     tester,
   ) async {
