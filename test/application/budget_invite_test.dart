@@ -263,4 +263,79 @@ void main() {
       ),
     );
   });
+
+  test('clean install creates local identity while accepting invite', () async {
+    final ownerIdentities = FakeIdentityRepository();
+    final ownerKeys = FakeIdentityKeyStore();
+    final signatures = FakeIdentitySignatureService();
+    final consumed = FakeInviteConsumptionStore();
+    final invitations = FakeInvitationRepository();
+    final ownerSecrets = FakeBudgetTransportSecretStore();
+    final create = CreateBudgetInvite(
+      invitationRepository: invitations,
+      authorization: FakeBudgetAuthorizationGuard(
+        userId: 'owner-1',
+        role: MemberRole.owner,
+      ),
+      getPublicIdentity: identityFor(
+        userId: 'owner-1',
+        deviceId: 'owner-device',
+        publicKey: 'ed25519:owner-public',
+        repository: ownerIdentities,
+        keyStore: ownerKeys,
+      ),
+      signatureService: signatures,
+      tokenGenerator: FakeSecureTokenGenerator(),
+      transportSecretManager: BudgetTransportSecretManager(
+        store: ownerSecrets,
+        tokenGenerator: FakeSecureTokenGenerator(),
+      ),
+      idGenerator: FakeIdGenerator(['invite-clean']),
+      now: () => fixedNow,
+    );
+    final generated = await create(
+      budgetId: 'budget-1',
+      role: MemberRole.editor,
+    );
+
+    final joiningKeys = FakeIdentityKeyStore();
+    final session = FakeSessionStore();
+    final joiningSecrets = FakeBudgetTransportSecretStore();
+    final accept = AcceptBudgetInvite(
+      inspectInvite: InspectBudgetInvite(
+        signatureService: signatures,
+        consumptionStore: consumed,
+        now: () => fixedNow.add(const Duration(minutes: 1)),
+      ),
+      invitationRepository: invitations,
+      consumptionStore: consumed,
+      sessionStore: session,
+      getPublicIdentity: GetPublicIdentity(
+        EnsureLocalIdentity(
+          identityRepository: FakeIdentityRepository(),
+          keyStore: joiningKeys,
+          keyPairGenerator: FakeIdentityKeyPairGenerator(),
+          idGenerator: FakeIdGenerator(const []),
+        ),
+      ),
+      transportSecretManager: BudgetTransportSecretManager(
+        store: joiningSecrets,
+        tokenGenerator: FakeSecureTokenGenerator(),
+      ),
+      idGenerator: FakeIdGenerator(['user-2', 'device-2']),
+      identityKeyStore: joiningKeys,
+      identityKeyPairGenerator: FakeIdentityKeyPairGenerator(
+        publicKey: 'ed25519:user-2-public',
+      ),
+    );
+
+    await accept(generated.rawPayload, joiningUserName: 'Bob');
+
+    expect(session.currentUserId, 'user-2');
+    expect(session.currentBudgetId, 'budget-1');
+    expect(joiningKeys.deviceByUser['user-2'], 'device-2');
+    expect(invitations.accepted.single.joiningIdentity.deviceId, 'device-2');
+    expect(await joiningSecrets.load('budget-1'), isNotNull);
+  });
+
 }
