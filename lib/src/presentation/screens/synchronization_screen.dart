@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../application/app_services.dart';
+import '../../application/ports/secure_lan_channel.dart';
+import '../../application/services/lan_peer_session_manager.dart';
 import '../../domain/models/lan_peer_endpoint.dart';
 
 final class SynchronizationScreen extends StatefulWidget {
@@ -24,9 +26,9 @@ final class SynchronizationScreen extends StatefulWidget {
 final class _SynchronizationScreenState extends State<SynchronizationScreen> {
   final _manualEndpointController = TextEditingController();
   StreamSubscription<List<LanPeerEndpoint>>? _peerSubscription;
-  StreamSubscription? _hostSubscription;
-  dynamic _browser;
-  dynamic _hosted;
+  StreamSubscription<SecureLanChannel>? _hostSubscription;
+  LanPeerBrowser? _browser;
+  LanHostedSession? _hosted;
   List<LanPeerEndpoint> _peers = const [];
   String _status = 'Готово к синхронизации.';
   bool _busy = false;
@@ -37,10 +39,10 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
 
   @override
   void dispose() {
-    _peerSubscription?.cancel();
-    _hostSubscription?.cancel();
-    _browser?.close();
-    _hosted?.close();
+    unawaited(_peerSubscription?.cancel());
+    unawaited(_hostSubscription?.cancel());
+    unawaited(_browser?.close());
+    unawaited(_hosted?.close());
     _manualEndpointController.dispose();
     super.dispose();
   }
@@ -225,7 +227,7 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
       );
     }
 
-    final hostedCode = _hosted?.manualEndpointCode as String?;
+    final hostedCode = _hosted?.manualEndpointCode;
     return ListView(
       key: const ValueKey('synchronization-screen'),
       padding: const EdgeInsets.all(16),
