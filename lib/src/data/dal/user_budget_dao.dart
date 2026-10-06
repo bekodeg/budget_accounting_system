@@ -118,6 +118,53 @@ final class UserBudgetDao {
     });
   }
 
+  Future<void> acceptInvitationForNewIdentity({
+    required UsersCompanion owner,
+    required DevicesCompanion ownerDevice,
+    required UsersCompanion joiningUser,
+    required DevicesCompanion joiningDevice,
+    required BudgetsCompanion budget,
+    required BudgetMembersCompanion ownerMembership,
+    required BudgetMembersCompanion joiningMembership,
+  }) {
+    return _db.transaction(() async {
+      final ownerId = owner.id.value;
+      final existingOwner = await findUserById(ownerId);
+      if (existingOwner == null) {
+        await _db.into(_db.users).insert(owner);
+      } else if (existingOwner.publicKey != owner.publicKey.value) {
+        throw StateError('Owner public key conflicts with local identity.');
+      }
+
+      final existingOwnerDevice = await findDeviceById(ownerDevice.id.value);
+      if (existingOwnerDevice == null) {
+        await _db.into(_db.devices).insert(ownerDevice);
+      } else if (existingOwnerDevice.userId != ownerId) {
+        throw StateError('Owner device conflicts with local identity.');
+      }
+
+      if (await findUserById(joiningUser.id.value) != null ||
+          await findDeviceById(joiningDevice.id.value) != null) {
+        throw StateError('Joining identity already exists.');
+      }
+
+      final budgetId = budget.id.value;
+      final existingBudget = await findBudgetById(budgetId);
+      if (existingBudget == null) {
+        await _db.into(_db.budgets).insert(budget);
+      } else if (existingBudget.createdBy != budget.createdBy.value ||
+          existingBudget.name != budget.name.value ||
+          existingBudget.baseCurrency != budget.baseCurrency.value) {
+        throw StateError('Invite budget metadata conflicts with local data.');
+      }
+
+      await _db.into(_db.users).insert(joiningUser);
+      await _db.into(_db.devices).insert(joiningDevice);
+      await _db.into(_db.budgetMembers).insertOnConflictUpdate(ownerMembership);
+      await _db.into(_db.budgetMembers).insertOnConflictUpdate(joiningMembership);
+    });
+  }
+
   Future<void> createOwnedBudget({
     required UsersCompanion user,
     required BudgetsCompanion budget,
