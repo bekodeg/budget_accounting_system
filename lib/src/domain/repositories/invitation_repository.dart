@@ -9,5 +9,4 @@ abstract interface class InvitationRepository {
     required BudgetInvite invite,
     required PublicIdentity joiningIdentity,
   });
-
 }
