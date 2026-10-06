@@ -22,7 +22,7 @@ void main() {
     await tester.pumpWidget(BudgetAccountingApp(services: services));
     await tester.pumpAndSettle();
 
-    expect(find.text('Первый бюджет'), findsOneWidget);
+    expect(find.text('Первый запуск'), findsOneWidget);
 
     await tester.enterText(
       find.byKey(const ValueKey('onboarding-user-name')),
