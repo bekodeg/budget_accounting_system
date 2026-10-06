@@ -111,29 +111,32 @@ void main() {
     expect(await dao.findBudgetById('budget-shared'), isNull);
   });
 
-  test('fresh invite creates local user and device in the same transaction', () async {
-    await repository.acceptInviteForNewIdentity(
-      invite: invite(),
-      joiningUserName: 'Carol',
-      joiningIdentity: const PublicIdentity(
-        userId: 'user-3',
-        deviceId: 'device-3',
-        publicKey: 'ed25519:user-3-public',
-      ),
-    );
+  test(
+    'fresh invite creates local user and device in the same transaction',
+    () async {
+      await repository.acceptInviteForNewIdentity(
+        invite: invite(),
+        joiningUserName: 'Carol',
+        joiningIdentity: const PublicIdentity(
+          userId: 'user-3',
+          deviceId: 'device-3',
+          publicKey: 'ed25519:user-3-public',
+        ),
+      );
 
-    final joiningUser = await dao.findUserById('user-3');
-    final joiningDevice = await dao.findDeviceById('device-3');
-    final members = await dao.getMembers('budget-shared');
+      final joiningUser = await dao.findUserById('user-3');
+      final joiningDevice = await dao.findDeviceById('device-3');
+      final members = await dao.getMembers('budget-shared');
 
-    expect(joiningUser?.name, 'Carol');
-    expect(joiningUser?.publicKey, 'ed25519:user-3-public');
-    expect(joiningDevice?.userId, 'user-3');
-    expect(
-      members.singleWhere((member) => member.userId == 'user-3').role,
-      'EDITOR',
-    );
-  });
+      expect(joiningUser?.name, 'Carol');
+      expect(joiningUser?.publicKey, 'ed25519:user-3-public');
+      expect(joiningDevice?.userId, 'user-3');
+      expect(
+        members.singleWhere((member) => member.userId == 'user-3').role,
+        'EDITOR',
+      );
+    },
+  );
 
   test('fresh invite rolls back local identity on owner conflict', () async {
     await dao.upsertUser(
@@ -161,5 +164,4 @@ void main() {
     expect(await dao.findDeviceById('device-3'), isNull);
     expect(await dao.findBudgetById('budget-shared'), isNull);
   });
-
 }
