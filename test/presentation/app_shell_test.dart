@@ -5,6 +5,39 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/onboarding_fakes.dart';
 
 void main() {
+  testWidgets('opens LAN sync for the active budget from the app bar', (
+    tester,
+  ) async {
+    final services = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AppShell(
+          services: services,
+          userId: 'user-1',
+          budgetId: 'budget-1',
+          budgetName: 'Дом',
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('open-synchronization')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Синхронизация: Дом'), findsOneWidget);
+    expect(
+      find.text('P2P-синхронизация недоступна в этой конфигурации.'),
+      findsOneWidget,
+    );
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('budget-dashboard')), findsOneWidget);
+  });
+
   testWidgets('switches between main application sections', (tester) async {
     final services = fakeAppServices(
       repository: FakeBudgetRepository(),

@@ -8,6 +8,7 @@ import 'budget_dashboard_screen.dart';
 import 'monthly_plan_screen.dart';
 import 'reports_screen.dart';
 import 'settings_screen.dart';
+import 'synchronization_screen.dart';
 
 final class AppShell extends StatefulWidget {
   const AppShell({
@@ -31,6 +32,7 @@ final class AppShell extends StatefulWidget {
 
 final class _AppShellState extends State<AppShell> {
   late final AppNavigationController _navigation;
+  String? _lastSyncResult;
 
   @override
   void initState() {
@@ -45,14 +47,63 @@ final class _AppShellState extends State<AppShell> {
   }
 
   @override
+  void didUpdateWidget(covariant AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.budgetId != widget.budgetId) _lastSyncResult = null;
+  }
+
+  Future<void> _openSynchronization() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text('Синхронизация: ${widget.budgetName}')),
+          body: SynchronizationScreen(
+            services: widget.services,
+            userId: widget.userId,
+            budgetId: widget.budgetId,
+            autoDiscover: true,
+            onSyncResult: (result) {
+              if (mounted) setState(() => _lastSyncResult = result);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _navigation,
       builder: (context, _) {
         return Scaffold(
           appBar: AppBar(
-            title: Text(widget.budgetName),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.budgetName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (_lastSyncResult != null)
+                  Text(
+                    _lastSyncResult!,
+                    key: const ValueKey('last-sync-result'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+              ],
+            ),
             actions: [
+              IconButton(
+                key: const ValueKey('open-synchronization'),
+                tooltip: 'Синхронизировать',
+                onPressed: _openSynchronization,
+                icon: const Icon(Icons.sync),
+              ),
               if (widget.onChooseBudget != null)
                 IconButton(
                   key: const ValueKey('choose-budget'),
