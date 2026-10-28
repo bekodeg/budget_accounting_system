@@ -18,6 +18,8 @@ import 'package:budget_accounting_system/src/application/ports/session_store.dar
 import 'package:budget_accounting_system/src/application/ports/report_document_encoder.dart';
 import 'package:budget_accounting_system/src/application/ports/report_share_gateway.dart';
 import 'package:budget_accounting_system/src/application/services/budget_transport_secret_manager.dart';
+import 'package:budget_accounting_system/src/application/services/lan_peer_session_manager.dart';
+import 'package:budget_accounting_system/src/application/services/sync_session_service.dart';
 import 'package:budget_accounting_system/src/application/use_cases/accept_budget_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/apply_category_templates.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_account.dart';
@@ -118,6 +120,8 @@ AppServices fakeAppServices({
   FakeBudgetTransportSecretStore? transportSecretStore,
   BudgetAuthorizationGuard? authorization,
   FakeIdGenerator? idGenerator,
+  LanPeerSessionManager? lanPeerSessions,
+  SyncSessionService? syncSessions,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
   final accounts = accountRepository ?? FakeAccountRepository();
@@ -171,6 +175,8 @@ AppServices fakeAppServices({
   );
 
   return AppServices(
+    lanPeerSessions: lanPeerSessions,
+    syncSessions: syncSessions,
     acceptBudgetInvite: AcceptBudgetInvite(
       inspectInvite: inspectInvite,
       invitationRepository: invitations,

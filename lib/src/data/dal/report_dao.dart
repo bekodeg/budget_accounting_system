@@ -511,7 +511,7 @@ month_flow AS (
 ),
 month_plan AS (
   SELECT
-    CAST(strftime('%m', p.month, 'unixepoch') AS INTEGER) AS month_number,
+    CAST(strftime('%m', p.month, 'unixepoch', 'localtime') AS INTEGER) AS month_number,
     SUM(p.planned_amount_minor) AS amount_minor
   FROM plans p
   WHERE p.budget_id = ?
