@@ -113,6 +113,12 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
           }
         });
       });
+      if (_peers.isEmpty) {
+        setState(() {
+          _status =
+              'Устройства пока не найдены. На другом устройстве включите ожидание подключения.';
+        });
+      }
     } on Object {
       if (mounted) {
         setState(() => _status = 'Не удалось запустить поиск устройств.');
