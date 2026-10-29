@@ -16,6 +16,8 @@ final class AppShell extends StatefulWidget {
     required this.userId,
     required this.budgetId,
     required this.budgetName,
+    this.initialSyncPending = false,
+    this.onInitialSyncPromptHandled,
     this.onChooseBudget,
     super.key,
   });
@@ -24,6 +26,8 @@ final class AppShell extends StatefulWidget {
   final String userId;
   final String budgetId;
   final String budgetName;
+  final bool initialSyncPending;
+  final VoidCallback? onInitialSyncPromptHandled;
   final VoidCallback? onChooseBudget;
 
   @override
@@ -33,11 +37,13 @@ final class AppShell extends StatefulWidget {
 final class _AppShellState extends State<AppShell> {
   late final AppNavigationController _navigation;
   String? _lastSyncResult;
+  late bool _showInitialSyncPrompt;
 
   @override
   void initState() {
     super.initState();
     _navigation = AppNavigationController();
+    _showInitialSyncPrompt = widget.initialSyncPending;
   }
 
   @override
@@ -69,6 +75,16 @@ final class _AppShellState extends State<AppShell> {
         ),
       ),
     );
+  }
+
+  void _dismissInitialSyncPrompt() {
+    setState(() => _showInitialSyncPrompt = false);
+    widget.onInitialSyncPromptHandled?.call();
+  }
+
+  Future<void> _startInitialSync() async {
+    _dismissInitialSyncPrompt();
+    await _openSynchronization();
   }
 
   @override
@@ -113,11 +129,36 @@ final class _AppShellState extends State<AppShell> {
                 ),
             ],
           ),
-          body: _SectionBody(
-            section: _navigation.section,
-            services: widget.services,
-            userId: widget.userId,
-            budgetId: widget.budgetId,
+          body: Column(
+            children: [
+              if (_showInitialSyncPrompt)
+                MaterialBanner(
+                  key: const ValueKey('initial-sync-prompt'),
+                  content: const Text(
+                    'Бюджет подключён. Синхронизируйте данные с устройством владельца в локальной сети.',
+                  ),
+                  actions: [
+                    TextButton(
+                      key: const ValueKey('initial-sync-later'),
+                      onPressed: _dismissInitialSyncPrompt,
+                      child: const Text('Позже'),
+                    ),
+                    TextButton(
+                      key: const ValueKey('initial-sync-start'),
+                      onPressed: _startInitialSync,
+                      child: const Text('Синхронизировать'),
+                    ),
+                  ],
+                ),
+              Expanded(
+                child: _SectionBody(
+                  section: _navigation.section,
+                  services: widget.services,
+                  userId: widget.userId,
+                  budgetId: widget.budgetId,
+                ),
+              ),
+            ],
           ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _navigation.section.index,

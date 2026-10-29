@@ -108,6 +108,13 @@ void main() {
     expect(sessionStore.currentUserId, 'user-2');
     expect(sessionStore.currentBudgetId, 'budget-1');
     expect(identityKeys.deviceByUser['user-2'], 'device-2');
+    expect(find.byKey(const ValueKey('initial-sync-prompt')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('initial-sync-start')));
+    await tester.pumpAndSettle();
+    expect(find.text('Синхронизация: Test budget'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('initial-sync-prompt')), findsNothing);
   });
 
   testWidgets('can opt out from standard categories on first launch', (
@@ -423,6 +430,7 @@ void main() {
     expect(repository.budgetsByUser['user-1'], hasLength(2));
     expect(session.currentBudgetId, 'budget-2');
     expect(tester.widget<AppShell>(find.byType(AppShell)).budgetId, 'budget-2');
+    expect(find.byKey(const ValueKey('initial-sync-prompt')), findsOneWidget);
   });
 
   testWidgets(

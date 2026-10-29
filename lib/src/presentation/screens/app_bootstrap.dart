@@ -22,6 +22,7 @@ final class _AppBootstrapState extends State<AppBootstrap> {
   bool _forceBudgetSelection = false;
   String? _watchingUserId;
   Stream<List<BudgetSummary>>? _budgetStream;
+  bool _initialSyncPending = false;
 
   @override
   void initState() {
@@ -36,6 +37,11 @@ final class _AppBootstrapState extends State<AppBootstrap> {
       _budgetStream = null;
       _startup = widget.services.resolveAppStartup();
     });
+  }
+
+  void _joined() {
+    _initialSyncPending = true;
+    _reload();
   }
 
   Stream<List<BudgetSummary>> _watchBudgets(String userId) {
@@ -99,7 +105,7 @@ final class _AppBootstrapState extends State<AppBootstrap> {
           return OnboardingScreen(
             services: widget.services,
             onCreate: _createInitialBudget,
-            onJoined: _reload,
+            onJoined: _joined,
           );
         }
 
@@ -123,6 +129,7 @@ final class _AppBootstrapState extends State<AppBootstrap> {
                 onSelect: (budgetId) =>
                     _selectBudget(userId: userId, budgetId: budgetId),
                 onMembershipChanged: _reload,
+                onJoined: _joined,
               );
             }
 
@@ -133,6 +140,8 @@ final class _AppBootstrapState extends State<AppBootstrap> {
               userId: userId,
               budgetId: selectedBudget.id,
               budgetName: selectedBudget.name,
+              initialSyncPending: _initialSyncPending,
+              onInitialSyncPromptHandled: () => _initialSyncPending = false,
               onChooseBudget: () {
                 setState(() => _forceBudgetSelection = true);
               },
