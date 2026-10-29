@@ -16,8 +16,7 @@ final class AppStartupState {
   final List<BudgetSummary> budgets;
   final String? selectedBudgetId;
 
-  bool get needsOnboarding => userId == null || budgets.isEmpty;
+  bool get needsOnboarding => userId == null;
 
-  bool get needsBudgetSelection =>
-      !needsOnboarding && selectedBudgetId == null && budgets.length > 1;
+  bool get needsBudgetSelection => !needsOnboarding && selectedBudgetId == null;
 }

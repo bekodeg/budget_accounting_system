@@ -60,4 +60,15 @@ final class _FakeBudgetRepository implements BudgetRepository {
   }) {
     throw UnimplementedError('Not needed by WatchUserBudgets tests.');
   }
+
+  @override
+  Future<AppSession> createAdditionalOwnedBudget({
+    required String userId,
+    required String budgetId,
+    required String budgetName,
+    required Currency baseCurrency,
+    List<InitialBudgetCategory> initialCategories = const [],
+  }) {
+    throw UnimplementedError('Not needed by WatchUserBudgets tests.');
+  }
 }

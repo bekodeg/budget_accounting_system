@@ -6,12 +6,138 @@ import 'package:budget_accounting_system/src/domain/models/year_report.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 import 'package:budget_accounting_system/src/presentation/screens/period_report_screen.dart';
 import 'package:budget_accounting_system/src/presentation/screens/reports_screen.dart';
+import 'package:budget_accounting_system/src/presentation/screens/year_report_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/onboarding_fakes.dart';
 
 void main() {
+  testWidgets('year charts show all months and selected expense currency', (
+    tester,
+  ) async {
+    final extended = FakeExtendedReportRepository(
+      yearReport: YearReport(
+        year: 2026,
+        baseCurrency: 'EUR',
+        months: [
+          for (var month = 1; month <= 12; month++)
+            YearMonthReport(
+              monthStart: DateTime(2026, month),
+              incomeMinorByCurrency: const {},
+              expenseMinorByCurrency: month == 1
+                  ? {'EUR': BigInt.from(1200), 'USD': BigInt.from(500)}
+                  : const {},
+              plannedAmountMinor: BigInt.zero,
+              actualBaseCurrencyMinor: month == 1
+                  ? BigInt.from(1200)
+                  : BigInt.zero,
+            ),
+        ],
+        categories: [
+          YearCategoryReport(
+            categoryId: 'food',
+            categoryName: 'Еда',
+            planCurrency: 'EUR',
+            plannedAmountMinor: BigInt.from(2000),
+            actualMinorByCurrency: {
+              'EUR': BigInt.from(1200),
+              'USD': BigInt.from(500),
+            },
+          ),
+        ],
+      ),
+    );
+    final services = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(),
+      extendedReportRepository: extended,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: YearReportScreen(
+            services: services,
+            budgetId: 'budget-1',
+            initialYear: 2026,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('year-category-pie-chart')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('report-chart-currency')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('USD').last);
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('year-category-pie-chart')),
+        matching: find.textContaining('5.00 USD (100.0%)'),
+      ),
+      findsOneWidget,
+    );
+
+    extended.emitYear(
+      YearReport(
+        year: 2026,
+        baseCurrency: 'EUR',
+        months: [
+          for (var month = 1; month <= 12; month++)
+            YearMonthReport(
+              monthStart: DateTime(2026, month),
+              incomeMinorByCurrency: const {},
+              expenseMinorByCurrency: month == 1
+                  ? {'USD': BigInt.from(700)}
+                  : const {},
+              plannedAmountMinor: BigInt.zero,
+              actualBaseCurrencyMinor: BigInt.zero,
+            ),
+        ],
+        categories: [
+          YearCategoryReport(
+            categoryId: 'food',
+            categoryName: 'Еда',
+            planCurrency: 'EUR',
+            plannedAmountMinor: BigInt.zero,
+            actualMinorByCurrency: {'USD': BigInt.from(700)},
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('year-category-pie-chart')),
+        matching: find.textContaining('7.00 USD (100.0%)'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('year-month-expense-chart')),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    for (var month = 1; month <= 12; month++) {
+      expect(find.byKey(ValueKey('report-chart-month-$month')), findsOneWidget);
+    }
+    expect(find.text('0.00'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('year-report-previous')),
+      -180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byKey(const ValueKey('year-report-previous')));
+    await tester.pumpAndSettle();
+    expect(extended.lastRequestedYear, 2025);
+  });
+
   testWidgets('switches between month year and period reports', (tester) async {
     final extended = FakeExtendedReportRepository(
       yearReport: YearReport(

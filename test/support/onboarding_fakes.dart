@@ -18,12 +18,15 @@ import 'package:budget_accounting_system/src/application/ports/session_store.dar
 import 'package:budget_accounting_system/src/application/ports/report_document_encoder.dart';
 import 'package:budget_accounting_system/src/application/ports/report_share_gateway.dart';
 import 'package:budget_accounting_system/src/application/services/budget_transport_secret_manager.dart';
+import 'package:budget_accounting_system/src/application/services/lan_peer_session_manager.dart';
+import 'package:budget_accounting_system/src/application/services/sync_session_service.dart';
 import 'package:budget_accounting_system/src/application/use_cases/accept_budget_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/apply_category_templates.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_account.dart';
 import 'package:budget_accounting_system/src/application/use_cases/archive_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/can_perform_budget_action.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_account.dart';
+import 'package:budget_accounting_system/src/application/use_cases/create_additional_budget.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_budget_invite.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_category.dart';
 import 'package:budget_accounting_system/src/application/use_cases/create_initial_budget.dart';
@@ -118,6 +121,8 @@ AppServices fakeAppServices({
   FakeBudgetTransportSecretStore? transportSecretStore,
   BudgetAuthorizationGuard? authorization,
   FakeIdGenerator? idGenerator,
+  LanPeerSessionManager? lanPeerSessions,
+  SyncSessionService? syncSessions,
 }) {
   final categories = categoryRepository ?? FakeCategoryRepository();
   final accounts = accountRepository ?? FakeAccountRepository();
@@ -171,6 +176,8 @@ AppServices fakeAppServices({
   );
 
   return AppServices(
+    lanPeerSessions: lanPeerSessions,
+    syncSessions: syncSessions,
     acceptBudgetInvite: AcceptBudgetInvite(
       inspectInvite: inspectInvite,
       invitationRepository: invitations,
@@ -193,6 +200,13 @@ AppServices fakeAppServices({
       accountRepository: accounts,
       idGenerator: ids,
       authorization: auth,
+    ),
+    createAdditionalBudget: CreateAdditionalBudget(
+      budgetRepository: repository,
+      categoryRepository: categories,
+      sessionStore: sessionStore,
+      idGenerator: ids,
+      getPublicIdentity: getPublicIdentity,
     ),
     createBudgetInvite: CreateBudgetInvite(
       invitationRepository: invitations,
@@ -416,6 +430,14 @@ final class FakeInvitationRepository
     required PublicIdentity joiningIdentity,
   }) async {
     _accept(invite, joiningIdentity);
+    budgetRepository?.addBudget(
+      joiningIdentity.userId,
+      BudgetSummary(
+        id: invite.budgetId,
+        name: invite.budgetName,
+        baseCurrency: invite.baseCurrency,
+      ),
+    );
   }
 
   @override
@@ -432,13 +454,14 @@ final class FakeInvitationRepository
     final repository = budgetRepository;
     if (repository != null) {
       repository.firstUserId ??= joiningIdentity.userId;
-      repository.budgetsByUser[joiningIdentity.userId] = [
+      repository.addBudget(
+        joiningIdentity.userId,
         BudgetSummary(
           id: invite.budgetId,
           name: invite.budgetName,
           baseCurrency: invite.baseCurrency,
         ),
-      ];
+      );
     }
   }
 
@@ -686,6 +709,7 @@ final class FakeBudgetRepository implements BudgetRepository {
   }) : budgetsByUser = budgetsByUser ?? {};
 
   final Map<String, List<BudgetSummary>> budgetsByUser;
+  final StreamController<String> _changes = StreamController.broadcast();
   String? firstUserId;
   Object? createError;
 
@@ -732,12 +756,62 @@ final class FakeBudgetRepository implements BudgetRepository {
         baseCurrency: baseCurrency.code,
       ),
     ];
+    _changes.add(userId);
 
     return AppSession(userId: userId, budgetId: budgetId);
   }
 
   @override
-  Future<String?> findFirstUserIdWithBudget() async => firstUserId;
+  Future<AppSession> createAdditionalOwnedBudget({
+    required String userId,
+    required String budgetId,
+    required String budgetName,
+    required Currency baseCurrency,
+    List<InitialBudgetCategory> initialCategories = const [],
+  }) async {
+    final error = createError;
+    if (error != null) throw error;
+    if (!budgetsByUser.containsKey(userId)) {
+      throw StateError('Missing local user.');
+    }
+    createdUserId = userId;
+    createdBudgetId = budgetId;
+    createdBudgetName = budgetName;
+    createdCurrency = baseCurrency;
+    createdInitialCategories = List.unmodifiable(initialCategories);
+    budgetsByUser[userId] = [
+      ...budgetsByUser[userId]!,
+      BudgetSummary(
+        id: budgetId,
+        name: budgetName,
+        baseCurrency: baseCurrency.code,
+      ),
+    ];
+    _changes.add(userId);
+    return AppSession(userId: userId, budgetId: budgetId);
+  }
+
+  void revokeBudget(String userId, String budgetId) {
+    budgetsByUser[userId]?.removeWhere((budget) => budget.id == budgetId);
+    _changes.add(userId);
+  }
+
+  void addBudget(String userId, BudgetSummary budget) {
+    budgetsByUser.putIfAbsent(userId, () => []).add(budget);
+    _changes.add(userId);
+  }
+
+  @override
+  Future<String?> findFirstUserIdWithBudget() async {
+    final first = firstUserId;
+    if (first != null && (budgetsByUser[first]?.isNotEmpty ?? false)) {
+      return first;
+    }
+    for (final entry in budgetsByUser.entries) {
+      if (entry.value.isNotEmpty) return entry.key;
+    }
+    return null;
+  }
 
   @override
   Future<List<BudgetSummary>> getBudgetsForUser(String userId) async {
@@ -745,10 +819,15 @@ final class FakeBudgetRepository implements BudgetRepository {
   }
 
   @override
-  Stream<List<BudgetSummary>> watchBudgetsForUser(String userId) {
-    return Stream.value(
-      List<BudgetSummary>.unmodifiable(budgetsByUser[userId] ?? const []),
-    );
+  Stream<List<BudgetSummary>> watchBudgetsForUser(String userId) async* {
+    yield List<BudgetSummary>.unmodifiable(budgetsByUser[userId] ?? const []);
+    await for (final changedUserId in _changes.stream) {
+      if (changedUserId == userId) {
+        yield List<BudgetSummary>.unmodifiable(
+          budgetsByUser[userId] ?? const [],
+        );
+      }
+    }
   }
 }
 
@@ -1061,6 +1140,7 @@ final class FakeExtendedReportRepository implements ExtendedReportRepository {
   PeriodReport periodReport;
   YearReport yearReport;
   ReportFilter? lastPeriodFilter;
+  int? lastRequestedYear;
   final StreamController<PeriodReport> _periodChanges =
       StreamController<PeriodReport>.broadcast();
   final StreamController<YearReport> _yearChanges =
@@ -1088,6 +1168,7 @@ final class FakeExtendedReportRepository implements ExtendedReportRepository {
     required String budgetId,
     required int year,
   }) async* {
+    lastRequestedYear = year;
     yield yearReport;
     yield* _yearChanges.stream;
   }
@@ -1107,6 +1188,7 @@ final class FakeMonthlyReportRepository implements MonthlyReportRepository {
           );
 
   MonthlyReport report;
+  DateTime? lastRequestedMonth;
   final StreamController<MonthlyReport> _changes =
       StreamController<MonthlyReport>.broadcast();
 
@@ -1120,6 +1202,7 @@ final class FakeMonthlyReportRepository implements MonthlyReportRepository {
     required String budgetId,
     required DateTime monthStart,
   }) async* {
+    lastRequestedMonth = monthStart;
     yield report;
     yield* _changes.stream;
   }

@@ -64,16 +64,162 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('monthly-report-screen')), findsOneWidget);
-    expect(find.text('Еда'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('report-category-food')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Еда'), findsWidgets);
     expect(find.text('План: 100.00 EUR'), findsOneWidget);
     expect(find.text('Факт: 70.00 EUR'), findsOneWidget);
     expect(find.text('Остаток: 30.00 EUR'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('report-account-cash')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text('50.00 EUR'), findsOneWidget);
 
     reports.emit(report(actualMinor: 8000));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('report-category-food')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Факт: 80.00 EUR'), findsOneWidget);
     expect(find.text('Остаток: 20.00 EUR'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('monthly-category-pie-chart')),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('monthly-category-pie-chart')),
+        matching: find.textContaining('80.00 EUR (100.0%)'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('pie changes currency while plan fact stays in base currency', (
+    tester,
+  ) async {
+    final reports = FakeMonthlyReportRepository(
+      report: MonthlyReport(
+        monthStart: DateTime(2026, 9),
+        baseCurrency: 'EUR',
+        incomeMinorByCurrency: const {},
+        expenseMinorByCurrency: {
+          'EUR': BigInt.from(2000),
+          'USD': BigInt.from(500),
+        },
+        categories: [
+          MonthlyCategoryReport(
+            categoryId: 'food',
+            categoryName: 'Еда',
+            planCurrency: 'EUR',
+            plannedAmountMinor: BigInt.from(3000),
+            actualMinorByCurrency: {
+              'EUR': BigInt.from(2000),
+              'USD': BigInt.from(500),
+            },
+          ),
+        ],
+        accountBalances: const [],
+      ),
+    );
+    final services = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(),
+      monthlyReportRepository: reports,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MonthlyReportScreen(
+            services: services,
+            budgetId: 'budget-1',
+            initialMonth: DateTime(2026, 9),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('monthly-category-pie-chart')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('monthly-category-pie-chart')),
+        matching: find.textContaining('20.00 EUR (100.0%)'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('report-chart-currency')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('USD').last);
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('monthly-category-pie-chart')),
+        matching: find.textContaining('5.00 USD (100.0%)'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('monthly-plan-fact-chart')),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.text('Сравнение только в базовой валюте · EUR'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('empty month shows explicit chart states and period changes', (
+    tester,
+  ) async {
+    final reports = FakeMonthlyReportRepository();
+    final services = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(),
+      monthlyReportRepository: reports,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MonthlyReportScreen(
+            services: services,
+            budgetId: 'budget-1',
+            initialMonth: DateTime(2026, 9),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Нет расходов в EUR за выбранный период.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('report-next-month')));
+    await tester.pumpAndSettle();
+    expect(reports.lastRequestedMonth, DateTime(2026, 10));
+    expect(
+      find.byKey(const ValueKey('monthly-category-pie-chart')),
+      findsOneWidget,
+    );
   });
 }

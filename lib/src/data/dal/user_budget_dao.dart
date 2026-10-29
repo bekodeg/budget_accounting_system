@@ -186,6 +186,24 @@ final class UserBudgetDao {
     });
   }
 
+  Future<void> createAdditionalOwnedBudget({
+    required String userId,
+    required BudgetsCompanion budget,
+    required BudgetMembersCompanion ownerMembership,
+    List<CategoriesCompanion> initialCategories = const [],
+  }) {
+    return _db.transaction(() async {
+      if (await findUserById(userId) == null) {
+        throw StateError('Cannot create budget for missing user $userId.');
+      }
+      await _db.into(_db.budgets).insert(budget);
+      await _db.into(_db.budgetMembers).insert(ownerMembership);
+      for (final category in initialCategories) {
+        await _db.into(_db.categories).insert(category);
+      }
+    });
+  }
+
   Future<String?> findFirstUserIdWithBudget() async {
     final query = _db.select(_db.budgetMembers)
       ..where((row) => row.revokedAt.isNull())

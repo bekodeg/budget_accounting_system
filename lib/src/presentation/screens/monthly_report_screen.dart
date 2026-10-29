@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../application/app_services.dart';
 import '../../application/formatters/minor_units_text.dart';
 import '../../domain/models/monthly_report.dart';
+import '../report_charts/report_chart_data.dart';
+import '../report_charts/report_chart_widgets.dart';
 
 final class MonthlyReportScreen extends StatefulWidget {
   const MonthlyReportScreen({
@@ -22,27 +24,43 @@ final class MonthlyReportScreen extends StatefulWidget {
 
 final class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
   late DateTime _month;
+  late Stream<MonthlyReport> _reportStream;
+  String? _chartCurrency;
 
   @override
   void initState() {
     super.initState();
     final value = widget.initialMonth ?? DateTime.now();
     _month = DateTime(value.year, value.month);
+    _reportStream = _watchReport();
   }
+
+  @override
+  void didUpdateWidget(covariant MonthlyReportScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.services != widget.services ||
+        oldWidget.budgetId != widget.budgetId) {
+      _reportStream = _watchReport();
+      _chartCurrency = null;
+    }
+  }
+
+  Stream<MonthlyReport> _watchReport() => widget.services.watchMonthlyReport(
+    budgetId: widget.budgetId,
+    month: _month,
+  );
 
   void _moveMonth(int delta) {
     setState(() {
       _month = DateTime(_month.year, _month.month + delta);
+      _reportStream = _watchReport();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<MonthlyReport>(
-      stream: widget.services.watchMonthlyReport(
-        budgetId: widget.budgetId,
-        month: _month,
-      ),
+      stream: _reportStream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(
@@ -54,6 +72,13 @@ final class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
         }
 
         final report = snapshot.data!;
+        final currencies = reportCurrencies(
+          report.baseCurrency,
+          report.expenseMinorByCurrency,
+        );
+        final selectedCurrency = currencies.contains(_chartCurrency)
+            ? _chartCurrency!
+            : currencies.first;
         return ListView(
           key: const ValueKey('monthly-report-screen'),
           padding: const EdgeInsets.all(16),
@@ -103,8 +128,26 @@ final class _MonthlyReportScreenState extends State<MonthlyReportScreen> {
               ],
             ),
             const SizedBox(height: 24),
+            ReportCurrencySelector(
+              currencies: currencies,
+              selected: selectedCurrency,
+              onChanged: (currency) =>
+                  setState(() => _chartCurrency = currency),
+            ),
+            ExpensePieChart(
+              key: const ValueKey('monthly-category-pie-chart'),
+              title: 'Расходы по категориям',
+              currency: selectedCurrency,
+              values: monthlyCategoryExpenses(report, selectedCurrency),
+            ),
+            PlanFactColumnChart(
+              key: const ValueKey('monthly-plan-fact-chart'),
+              currency: report.baseCurrency,
+              values: monthlyPlanFact(report),
+            ),
+            const SizedBox(height: 24),
             Text(
-              'План / факт по категориям',
+              'Числовые итоги по категориям',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),

@@ -86,6 +86,103 @@ void main() {
   });
 
   test(
+    'remote account, plan and transaction materialize and delete safely',
+    () async {
+      final createdAt = DateTime.utc(2026, 2, 6, 10);
+      SignedSyncOperation create(
+        String id,
+        String entityType,
+        String entityId,
+        Map<String, Object?> patch,
+        int clock,
+      ) => SignedSyncOperation(
+        operationId: id,
+        budgetId: 'budget-1',
+        entityType: entityType,
+        entityId: entityId,
+        type: SyncMutationType.create,
+        patchJson: jsonEncode(patch),
+        authorId: 'user-a',
+        deviceId: 'device-a',
+        logicalClock: BigInt.from(clock),
+        createdAt: createdAt.add(Duration(minutes: clock)),
+      );
+
+      final operations = [
+        create('category-1', 'category', 'food', {
+          'name': 'Food',
+          'kind': 'EXPENSE',
+        }, 1),
+        create('account-1', 'account', 'cash', {
+          'name': 'Cash',
+          'currency': 'EUR',
+          'opening_balance_minor': '0',
+        }, 2),
+        create('plan-1', 'plan', 'food-plan', {
+          'month': DateTime.utc(2026, 2).toIso8601String(),
+          'category_id': 'food',
+          'planned_amount_minor': '5000',
+          'updated_at': createdAt.toIso8601String(),
+        }, 3),
+        create('transaction-1', 'transaction', 'expense-1', {
+          'occurred_at': createdAt.toIso8601String(),
+          'amount_minor': '1200',
+          'currency': 'EUR',
+          'type': 'EXPENSE',
+          'author_id': 'user-a',
+          'account_id': 'cash',
+          'category_id': 'food',
+          'created_at': createdAt.toIso8601String(),
+          'updated_at': createdAt.toIso8601String(),
+        }, 4),
+      ];
+
+      final ingest = await target.journal.ingest(
+        budgetId: 'budget-1',
+        operations: [
+          for (final operation in operations) await source.wire(operation),
+        ],
+      );
+      expect(ingest.inserted, 4);
+
+      final account = await (target.database.select(
+        target.database.accounts,
+      )..where((row) => row.id.equals('cash'))).getSingle();
+      final plan = await (target.database.select(
+        target.database.plans,
+      )..where((row) => row.id.equals('food-plan'))).getSingle();
+      final transaction = await (target.database.select(
+        target.database.budgetTransactions,
+      )..where((row) => row.id.equals('expense-1'))).getSingle();
+      expect(account.name, 'Cash');
+      expect(plan.plannedAmountMinor, BigInt.from(5000));
+      expect(transaction.amountMinor, BigInt.from(1200));
+      expect(transaction.deletedAt, isNull);
+
+      final deletion = SignedSyncOperation(
+        operationId: 'transaction-delete',
+        budgetId: 'budget-1',
+        entityType: 'transaction',
+        entityId: 'expense-1',
+        type: SyncMutationType.delete,
+        patchJson: '{}',
+        authorId: 'user-a',
+        deviceId: 'device-a',
+        logicalClock: BigInt.from(5),
+        createdAt: createdAt.add(const Duration(minutes: 5)),
+      );
+      await target.journal.ingest(
+        budgetId: 'budget-1',
+        operations: [await source.wire(deletion)],
+      );
+      final deleted = await (target.database.select(
+        target.database.budgetTransactions,
+      )..where((row) => row.id.equals('expense-1'))).getSingle();
+      expect(deleted.deletedAt, isNotNull);
+    },
+  );
+
+  test(
     'verified ingest is idempotent and rejects conflicting replay',
     () async {
       final operation = _operation('a-1', device: 'device-a', clock: 1);

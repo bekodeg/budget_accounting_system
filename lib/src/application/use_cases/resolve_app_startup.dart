@@ -30,6 +30,18 @@ final class ResolveAppStartup {
 
     final fallbackUserId = await _budgetRepository.findFirstUserIdWithBudget();
     if (fallbackUserId == null) {
+      if (storedUserId != null) {
+        try {
+          await _ensureLocalIdentity?.call(storedUserId);
+          return AppStartupState(
+            userId: storedUserId,
+            budgets: const [],
+            selectedBudgetId: null,
+          );
+        } on StateError {
+          // A stale preference without a corresponding user is not a session.
+        }
+      }
       return const AppStartupState.onboarding();
     }
 

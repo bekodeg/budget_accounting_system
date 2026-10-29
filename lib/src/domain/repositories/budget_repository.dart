@@ -20,4 +20,12 @@ abstract interface class BudgetRepository {
     required Currency baseCurrency,
     List<InitialBudgetCategory> initialCategories = const [],
   });
+
+  Future<AppSession> createAdditionalOwnedBudget({
+    required String userId,
+    required String budgetId,
+    required String budgetName,
+    required Currency baseCurrency,
+    List<InitialBudgetCategory> initialCategories = const [],
+  });
 }

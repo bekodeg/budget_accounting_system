@@ -72,6 +72,41 @@ final class DriftBudgetRepository implements BudgetRepository {
     return AppSession(userId: userId, budgetId: budgetId);
   }
 
+  @override
+  Future<AppSession> createAdditionalOwnedBudget({
+    required String userId,
+    required String budgetId,
+    required String budgetName,
+    required Currency baseCurrency,
+    List<InitialBudgetCategory> initialCategories = const [],
+  }) async {
+    await _dao.createAdditionalOwnedBudget(
+      userId: userId,
+      budget: BudgetsCompanion.insert(
+        id: budgetId,
+        name: budgetName,
+        baseCurrency: baseCurrency.code,
+        createdBy: userId,
+      ),
+      ownerMembership: BudgetMembersCompanion.insert(
+        budgetId: budgetId,
+        userId: userId,
+        role: 'OWNER',
+      ),
+      initialCategories: initialCategories
+          .map(
+            (category) => CategoriesCompanion.insert(
+              id: category.id,
+              budgetId: budgetId,
+              name: category.name,
+              kind: _categoryKindToStorage(category.kind),
+            ),
+          )
+          .toList(growable: false),
+    );
+    return AppSession(userId: userId, budgetId: budgetId);
+  }
+
   List<BudgetSummary> _toSummaries(List<Budget> budgets) {
     return budgets
         .map(

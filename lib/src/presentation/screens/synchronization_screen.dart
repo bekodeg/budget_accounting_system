@@ -12,12 +12,16 @@ final class SynchronizationScreen extends StatefulWidget {
     required this.services,
     required this.userId,
     required this.budgetId,
+    this.autoDiscover = false,
+    this.onSyncResult,
     super.key,
   });
 
   final AppServices services;
   final String userId;
   final String budgetId;
+  final bool autoDiscover;
+  final ValueChanged<String>? onSyncResult;
 
   @override
   State<SynchronizationScreen> createState() => _SynchronizationScreenState();
@@ -36,6 +40,22 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
   bool get _available =>
       widget.services.lanPeerSessions != null &&
       widget.services.syncSessions != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoDiscover) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_startDiscovery());
+      });
+    }
+  }
+
+  void _finishSync(String result) {
+    if (!mounted) return;
+    setState(() => _status = result);
+    widget.onSyncResult?.call(result);
+  }
 
   @override
   void dispose() {
@@ -69,6 +89,7 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
     if (!_available || _busy) return;
     setState(() {
       _busy = true;
+      _peers = const [];
       _status = 'Ищу устройства этого бюджета в локальной сети…';
     });
     try {
@@ -76,16 +97,28 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
       final browser = await widget.services.lanPeerSessions!.discover(
         widget.budgetId,
       );
+      if (!mounted) {
+        await browser.close();
+        return;
+      }
       _browser = browser;
       _peerSubscription = browser.peers.listen((peers) {
         if (!mounted) return;
         setState(() {
           _peers = peers;
-          _status = peers.isEmpty
-              ? 'Устройства пока не найдены.'
-              : 'Найдено устройств: ${peers.length}.';
+          if (_status != 'Синхронизация завершена.') {
+            _status = peers.isEmpty
+                ? 'Устройства пока не найдены. На другом устройстве включите ожидание подключения.'
+                : 'Найдено устройств: ${peers.length}.';
+          }
         });
       });
+      if (_peers.isEmpty) {
+        setState(() {
+          _status =
+              'Устройства пока не найдены. На другом устройстве включите ожидание подключения.';
+        });
+      }
     } on Object {
       if (mounted) {
         setState(() => _status = 'Не удалось запустить поиск устройств.');
@@ -99,6 +132,7 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
     if (!_available || _busy) return;
     setState(() {
       _busy = true;
+      _peers = const [];
       _status = initial
           ? 'Ожидаю новое устройство для первичной синхронизации…'
           : 'Ожидаю устройство для обычной синхронизации…';
@@ -108,6 +142,10 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
       final hosted = await widget.services.lanPeerSessions!.host(
         widget.budgetId,
       );
+      if (!mounted) {
+        await hosted.close();
+        return;
+      }
       _hosted = hosted;
       _hostSubscription = hosted.channels.listen((channel) async {
         try {
@@ -125,11 +163,11 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
             localDeviceId: localDeviceId,
           );
           if (mounted) {
-            setState(() => _status = 'Синхронизация завершена.');
+            _finishSync('Синхронизация завершена.');
           }
         } on Object {
           if (mounted) {
-            setState(() => _status = 'Ошибка во время синхронизации.');
+            _finishSync('Ошибка во время синхронизации.');
           }
         } finally {
           await channel.close();
@@ -189,13 +227,11 @@ final class _SynchronizationScreenState extends State<SynchronizationScreen> {
         await channel.close();
       }
       if (mounted) {
-        setState(() => _status = 'Синхронизация завершена.');
+        _finishSync('Синхронизация завершена.');
       }
     } on Object {
       if (mounted) {
-        setState(
-          () => _status = 'Не удалось синхронизироваться с устройством.',
-        );
+        _finishSync('Не удалось синхронизироваться с устройством.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
