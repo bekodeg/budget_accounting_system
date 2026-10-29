@@ -16,6 +16,7 @@ final class BudgetSelectionScreen extends StatefulWidget {
     required this.budgets,
     required this.onSelect,
     required this.onMembershipChanged,
+    required this.onJoined,
     this.activeBudgetId,
     super.key,
   });
@@ -25,6 +26,7 @@ final class BudgetSelectionScreen extends StatefulWidget {
   final List<BudgetSummary> budgets;
   final SelectBudgetCallback onSelect;
   final VoidCallback onMembershipChanged;
+  final VoidCallback onJoined;
   final String? activeBudgetId;
 
   @override
@@ -129,7 +131,7 @@ final class _BudgetSelectionScreenState extends State<BudgetSelectionScreen> {
             services: widget.services,
             budgetId: widget.activeBudgetId ?? '',
             canCreate: false,
-            onJoined: widget.onMembershipChanged,
+            onJoined: widget.onJoined,
           ),
           if (_errorMessage != null)
             Padding(
