@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../application/app_services.dart';
 import '../../application/models/app_startup_state.dart';
+import '../../domain/models/budget_summary.dart';
 import '../../domain/value_objects/currency.dart';
 import 'app_shell.dart';
 import 'budget_selection_screen.dart';
@@ -19,6 +20,8 @@ final class AppBootstrap extends StatefulWidget {
 final class _AppBootstrapState extends State<AppBootstrap> {
   late Future<AppStartupState> _startup;
   bool _forceBudgetSelection = false;
+  String? _watchingUserId;
+  Stream<List<BudgetSummary>>? _budgetStream;
 
   @override
   void initState() {
@@ -28,8 +31,19 @@ final class _AppBootstrapState extends State<AppBootstrap> {
 
   void _reload() {
     setState(() {
+      _forceBudgetSelection = false;
+      _watchingUserId = null;
+      _budgetStream = null;
       _startup = widget.services.resolveAppStartup();
     });
+  }
+
+  Stream<List<BudgetSummary>> _watchBudgets(String userId) {
+    if (_watchingUserId != userId || _budgetStream == null) {
+      _watchingUserId = userId;
+      _budgetStream = widget.services.watchUserBudgets(userId);
+    }
+    return _budgetStream!;
   }
 
   Future<void> _createInitialBudget({
@@ -90,30 +104,40 @@ final class _AppBootstrapState extends State<AppBootstrap> {
         }
 
         final userId = startup.userId!;
-        if (startup.needsBudgetSelection || _forceBudgetSelection) {
-          return BudgetSelectionScreen(
-            budgets: startup.budgets,
-            onSelect: (budgetId) =>
-                _selectBudget(userId: userId, budgetId: budgetId),
-          );
-        }
+        return StreamBuilder<List<BudgetSummary>>(
+          stream: _watchBudgets(userId),
+          initialData: startup.budgets,
+          builder: (context, budgetSnapshot) {
+            final budgets = budgetSnapshot.data ?? startup.budgets;
+            final selected = budgets.where(
+              (budget) => budget.id == startup.selectedBudgetId,
+            );
+            if (budgetSnapshot.hasError ||
+                selected.isEmpty ||
+                _forceBudgetSelection) {
+              return BudgetSelectionScreen(
+                services: widget.services,
+                userId: userId,
+                budgets: budgets,
+                activeBudgetId: startup.selectedBudgetId,
+                onSelect: (budgetId) =>
+                    _selectBudget(userId: userId, budgetId: budgetId),
+                onMembershipChanged: _reload,
+              );
+            }
 
-        final selectedBudget = startup.budgets.firstWhere(
-          (budget) => budget.id == startup.selectedBudgetId,
-        );
-
-        return AppShell(
-          services: widget.services,
-          userId: userId,
-          budgetId: selectedBudget.id,
-          budgetName: selectedBudget.name,
-          onChooseBudget: startup.budgets.length > 1
-              ? () {
-                  setState(() {
-                    _forceBudgetSelection = true;
-                  });
-                }
-              : null,
+            final selectedBudget = selected.first;
+            return AppShell(
+              key: ValueKey('app-shell-${selectedBudget.id}'),
+              services: widget.services,
+              userId: userId,
+              budgetId: selectedBudget.id,
+              budgetName: selectedBudget.name,
+              onChooseBudget: () {
+                setState(() => _forceBudgetSelection = true);
+              },
+            );
+          },
         );
       },
     );
