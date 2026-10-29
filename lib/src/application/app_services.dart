@@ -10,6 +10,7 @@ import 'use_cases/archive_account.dart';
 import 'use_cases/archive_category.dart';
 import 'use_cases/can_perform_budget_action.dart';
 import 'use_cases/create_account.dart';
+import 'use_cases/create_additional_budget.dart';
 import 'use_cases/create_budget_invite.dart';
 import 'use_cases/create_budget_snapshot.dart';
 import 'use_cases/create_category.dart';
@@ -64,6 +65,7 @@ final class AppServices {
     required this.archiveCategory,
     required this.canPerformBudgetAction,
     required this.createAccount,
+    required this.createAdditionalBudget,
     required this.createBudgetInvite,
     this.createBudgetSnapshot,
     required this.createCategory,
@@ -122,6 +124,7 @@ final class AppServices {
   final ArchiveCategory archiveCategory;
   final CanPerformBudgetAction canPerformBudgetAction;
   final CreateAccount createAccount;
+  final CreateAdditionalBudget createAdditionalBudget;
   final CreateBudgetInvite createBudgetInvite;
   final CreateBudgetSnapshot? createBudgetSnapshot;
   final CreateCategory createCategory;

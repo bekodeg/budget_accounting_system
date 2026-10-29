@@ -12,12 +12,14 @@ final class BudgetInvitePanel extends StatelessWidget {
     required this.services,
     required this.budgetId,
     required this.canCreate,
+    this.onJoined,
     super.key,
   });
 
   final AppServices services;
   final String budgetId;
   final bool canCreate;
+  final VoidCallback? onJoined;
 
   Future<void> _create(BuildContext context) async {
     final role = await showDialog<MemberRole>(
@@ -83,6 +85,7 @@ final class BudgetInvitePanel extends StatelessWidget {
           'Вы присоединились к бюджету «${preview.invite.budgetName}».',
         );
       }
+      onJoined?.call();
     } on InviteError catch (error) {
       if (context.mounted) _message(context, error.message);
     } on Object {

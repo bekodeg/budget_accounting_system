@@ -21,6 +21,7 @@ import '../application/use_cases/archive_category.dart';
 import '../application/use_cases/authorize_budget_action.dart';
 import '../application/use_cases/can_perform_budget_action.dart';
 import '../application/use_cases/create_account.dart';
+import '../application/use_cases/create_additional_budget.dart';
 import '../application/use_cases/create_budget_invite.dart';
 import '../application/use_cases/create_budget_snapshot.dart';
 import '../application/use_cases/create_category.dart';
@@ -313,6 +314,13 @@ final class AppCompositionRoot {
           accountRepository: accountRepository,
           idGenerator: idGenerator,
           authorization: authorization,
+        ),
+        createAdditionalBudget: CreateAdditionalBudget(
+          budgetRepository: budgetRepository,
+          categoryRepository: categoryRepository,
+          sessionStore: sessionStore,
+          idGenerator: idGenerator,
+          getPublicIdentity: getPublicIdentity,
         ),
         createBudgetInvite: CreateBudgetInvite(
           invitationRepository: invitationRepository,

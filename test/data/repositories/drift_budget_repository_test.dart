@@ -127,6 +127,73 @@ void main() {
   });
 
   test(
+    'second budget reuses user and device and keeps the first membership',
+    () async {
+      await repository.createOwnedBudget(
+        userId: 'user-1',
+        userName: 'Alice',
+        publicKey: 'ed25519:test-public',
+        deviceId: 'device-1',
+        budgetId: 'budget-1',
+        budgetName: 'Home',
+        baseCurrency: Currency('EUR'),
+      );
+      await repository.createAdditionalOwnedBudget(
+        userId: 'user-1',
+        budgetId: 'budget-2',
+        budgetName: 'Travel',
+        baseCurrency: Currency('USD'),
+      );
+
+      expect((await database.select(database.users).get()), hasLength(1));
+      expect((await database.select(database.devices).get()), hasLength(1));
+      expect((await dao.getMembers('budget-1')).single.role, 'OWNER');
+      expect((await dao.getMembers('budget-2')).single.role, 'OWNER');
+      expect((await repository.getBudgetsForUser('user-1')).map((b) => b.id), [
+        'budget-1',
+        'budget-2',
+      ]);
+    },
+  );
+
+  test('failed second budget rolls back without damaging the first', () async {
+    await repository.createOwnedBudget(
+      userId: 'user-1',
+      userName: 'Alice',
+      publicKey: 'ed25519:test-public',
+      deviceId: 'device-1',
+      budgetId: 'budget-1',
+      budgetName: 'Home',
+      baseCurrency: Currency('EUR'),
+    );
+    await expectLater(
+      repository.createAdditionalOwnedBudget(
+        userId: 'user-1',
+        budgetId: 'budget-2',
+        budgetName: 'Travel',
+        baseCurrency: Currency('USD'),
+        initialCategories: const [
+          InitialBudgetCategory(
+            id: 'duplicate',
+            name: 'One',
+            kind: CategoryKind.expense,
+          ),
+          InitialBudgetCategory(
+            id: 'duplicate',
+            name: 'Two',
+            kind: CategoryKind.expense,
+          ),
+        ],
+      ),
+      throwsA(anything),
+    );
+    expect((await repository.getBudgetsForUser('user-1')).map((b) => b.id), [
+      'budget-1',
+    ]);
+    expect(await dao.getMembers('budget-2'), isEmpty);
+  });
+
+  test(
     'rolls back user budget and templates when category insert fails',
     () async {
       await expectLater(
