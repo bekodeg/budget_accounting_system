@@ -45,7 +45,11 @@ feature/*, fix/*, chore/*
 
 `stage` — кандидат для тестирования перед `main`.
 
-Продвижение выполняется Pull Request-ом **только из `dev` в `stage`**. PR запускает дешевый `Stage promotion gate`, который проверяет источник ветки.
+Продвижение выполняется Pull Request-ом **только из `dev` в `stage`**.
+До merge PR запускает `Stage promotion gate` (проверка исходной ветки),
+`Stage generated code`, полную `Stage quality` (форматирование, анализ,
+тесты и coverage) и итоговый `Stage promotion validation`. Ruleset требует
+успеха обоих promotion checks. Подписанный Android APK собирается после merge.
 
 После merge/push в `stage` workflow `.github/workflows/stage-ci.yml` выполняет полный quality gate параллельными jobs:
 
@@ -89,8 +93,8 @@ Workflow `.github/workflows/promote-main.yml` не повторяет Flutter te
 4. Pull Request -> dev
 5. merge -> dev
 6. когда набор изменений готов к проверке: Pull Request dev -> stage
-7. merge -> stage
-8. Stage CI: analyze + full tests + coverage + APK
+7. Stage promotion validation: format + analyze + full tests + coverage
+8. merge -> stage; Stage CI: security + Android release APK + quality
 9. ручное тестирование stage APK
 10. Pull Request stage -> main
 11. Main promotion gate подтверждает успешный Stage CI
@@ -198,11 +202,15 @@ Rules:
 
 - Require a pull request before merging;
 - Require status checks to pass before merging;
-- Required status check: `Stage promotion gate`;
+- Required status checks: `Stage promotion gate` и `Stage promotion validation`;
 - Restrict deletions;
 - Block force pushes.
 
-`Stage promotion gate` проверяет, что PR приходит из `dev`. Полный `Stage validation` намеренно запускается **после merge/push в stage**, потому что именно resulting stage SHA затем тестируется и допускается к promotion в `main`.
+`Stage promotion gate` проверяет, что PR приходит из `dev`. `Stage promotion
+validation` зависит от успешного `Stage quality`: PR нельзя влить, если
+форматирование, анализ, тесты или coverage не прошли. Полный `Stage validation`
+после merge/push проверяет security, quality и подписанный APK для получившегося
+stage SHA; только этот SHA допускается к promotion в `main`.
 
 ### Ruleset: main
 
@@ -245,7 +253,8 @@ Rules:
 
 1. direct push в `dev`, `stage` и `main` отклоняется;
 2. PR `feature/* -> stage` не проходит `Stage promotion gate`;
-3. PR `dev -> main` не проходит `Main promotion gate`.
+3. PR `dev -> stage` с упавшим `Stage quality` не проходит `Stage promotion validation` и не может быть влит;
+4. PR `dev -> main` не проходит `Main promotion gate`.
 
 И два штатных сценария:
 
@@ -257,6 +266,7 @@ Required status check в GitHub Rulesets задается по **имени job*
 ```text
 Dev lightweight check
 Stage promotion gate
+Stage promotion validation
 Main promotion gate
 ```
 
