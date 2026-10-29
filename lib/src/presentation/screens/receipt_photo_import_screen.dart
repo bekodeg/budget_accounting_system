@@ -67,8 +67,8 @@ final class _ReceiptPhotoImportScreenState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Фото сохраняется локально. Сначала приложение ищет QR, '
-              'а если его нет — запускает OCR на устройстве.',
+              'Фото сохраняется локально. Приложение ищет QR и распознаёт '
+              'текст на устройстве, чтобы предложить товары из чека.',
             ),
             const SizedBox(height: 20),
             FilledButton.icon(

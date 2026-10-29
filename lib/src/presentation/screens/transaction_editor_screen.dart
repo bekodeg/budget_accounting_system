@@ -339,7 +339,9 @@ final class _TransactionEditorScreenState
                         subtitle: Text(
                           widget.receiptDraft!.parseStatus == 'PARSED'
                               ? 'Дата и сумма распознаны. Проверьте счет и категорию.'
-                              : 'QR сохранен. Проверьте и дополните данные вручную.',
+                              : widget.receiptDraft!.rawQr.isNotEmpty
+                              ? 'QR сохранён. Проверьте и дополните данные вручную.'
+                              : 'Фото сохранено. Проверьте и дополните данные вручную.',
                         ),
                       ),
                     ),
