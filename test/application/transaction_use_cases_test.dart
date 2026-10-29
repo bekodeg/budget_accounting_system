@@ -7,6 +7,7 @@ import 'package:budget_accounting_system/src/application/use_cases/update_transa
 import 'package:budget_accounting_system/src/domain/models/budget_account.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
+import 'package:budget_accounting_system/src/domain/models/receipt_qr_draft.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -79,6 +80,115 @@ void main() {
     expect(transaction.description, 'Завтрак');
     expect(transaction.amount.minorUnits, BigInt.from(1250));
     expect(transactionRepository.snapshot('budget-1'), [transaction]);
+  });
+
+  test('links same-budget receipt and preserves link on edit', () async {
+    final transactionRepository = FakeTransactionRepository();
+    final receipts = FakeReceiptRepository();
+    await receipts.saveReceipt(
+      const ReceiptQrDraft(
+        receiptId: 'receipt-1',
+        budgetId: 'budget-1',
+        rawQr: 'raw',
+        occurredAt: null,
+        totalMinor: null,
+        description: null,
+        parsedPayloadJson: '{}',
+        parseStatus: 'NEW',
+        isDuplicate: false,
+      ),
+    );
+    await receipts.saveReceipt(
+      const ReceiptQrDraft(
+        receiptId: 'other-budget-receipt',
+        budgetId: 'budget-2',
+        rawQr: 'other',
+        occurredAt: null,
+        totalMinor: null,
+        description: null,
+        parsedPayloadJson: '{}',
+        parseStatus: 'NEW',
+        isDuplicate: false,
+      ),
+    );
+    final create = CreateTransaction(
+      transactionRepository: transactionRepository,
+      requireAccountInBudget: RequireAccountInBudget(accounts()),
+      requireCategoryInBudget: RequireCategoryInBudget(categories()),
+      idGenerator: FakeIdGenerator(['transaction-1']),
+      authorization: FakeBudgetAuthorizationGuard(),
+      receiptRepository: receipts,
+    );
+    final created = await create(
+      budgetId: 'budget-1',
+      authorId: 'user-1',
+      occurredAt: DateTime(2026, 9, 24),
+      amountMinor: BigInt.from(1000),
+      type: TransactionType.expense,
+      accountId: 'account-1',
+      categoryId: 'expense-food',
+      receiptId: 'receipt-1',
+    );
+    final update = UpdateTransaction(
+      transactionRepository: transactionRepository,
+      requireAccountInBudget: RequireAccountInBudget(accounts()),
+      requireCategoryInBudget: RequireCategoryInBudget(categories()),
+      authorization: FakeBudgetAuthorizationGuard(),
+    );
+    final edited = await update(
+      budgetId: 'budget-1',
+      transactionId: created.id,
+      occurredAt: created.occurredAt,
+      amountMinor: BigInt.from(1100),
+      type: TransactionType.expense,
+      accountId: 'account-1',
+      categoryId: 'expense-food',
+    );
+    expect(created.receiptId, 'receipt-1');
+    expect(edited.receiptId, 'receipt-1');
+    expect(
+      transactionRepository.snapshot('budget-1').single.receiptId,
+      'receipt-1',
+    );
+
+    await expectLater(
+      create(
+        budgetId: 'budget-1',
+        authorId: 'user-1',
+        occurredAt: DateTime(2026, 9, 24),
+        amountMinor: BigInt.from(100),
+        type: TransactionType.expense,
+        accountId: 'account-1',
+        categoryId: 'expense-food',
+        receiptId: 'missing',
+      ),
+      throwsA(
+        isA<TransactionError>().having(
+          (error) => error.code,
+          'code',
+          TransactionErrorCode.invalidReceipt,
+        ),
+      ),
+    );
+    await expectLater(
+      create(
+        budgetId: 'budget-1',
+        authorId: 'user-1',
+        occurredAt: DateTime(2026, 9, 24),
+        amountMinor: BigInt.from(100),
+        type: TransactionType.expense,
+        accountId: 'account-1',
+        categoryId: 'expense-food',
+        receiptId: 'other-budget-receipt',
+      ),
+      throwsA(
+        isA<TransactionError>().having(
+          (error) => error.code,
+          'code',
+          TransactionErrorCode.invalidReceipt,
+        ),
+      ),
+    );
   });
 
   test('rejects category incompatible with transaction type', () async {

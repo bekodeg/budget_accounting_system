@@ -2,6 +2,7 @@ import '../../domain/models/budget_transaction_entry.dart';
 import '../../domain/models/domain_types.dart';
 import '../../domain/models/transaction_draft.dart';
 import '../../domain/repositories/transaction_repository.dart';
+import '../../domain/repositories/receipt_repository.dart';
 import '../../domain/value_objects/money.dart';
 import '../authorization/budget_action.dart';
 import '../authorization/budget_authorization_guard.dart';
@@ -18,17 +19,20 @@ final class CreateTransaction {
     required RequireCategoryInBudget requireCategoryInBudget,
     required IdGenerator idGenerator,
     required BudgetAuthorizationGuard authorization,
+    ReceiptRepository? receiptRepository,
   }) : _transactionRepository = transactionRepository,
        _requireAccountInBudget = requireAccountInBudget,
        _requireCategoryInBudget = requireCategoryInBudget,
        _idGenerator = idGenerator,
-       _authorization = authorization;
+       _authorization = authorization,
+       _receiptRepository = receiptRepository;
 
   final TransactionRepository _transactionRepository;
   final RequireAccountInBudget _requireAccountInBudget;
   final RequireCategoryInBudget _requireCategoryInBudget;
   final IdGenerator _idGenerator;
   final BudgetAuthorizationGuard _authorization;
+  final ReceiptRepository? _receiptRepository;
 
   Future<BudgetTransactionEntry> call({
     required String budgetId,
@@ -39,6 +43,7 @@ final class CreateTransaction {
     required String accountId,
     required String categoryId,
     String? description,
+    String? receiptId,
   }) async {
     final member = await _authorization.require(
       budgetId: budgetId,
@@ -57,6 +62,12 @@ final class CreateTransaction {
         message: 'Переводы создаются отдельным сценарием.',
       );
     }
+    if (receiptId != null && type != TransactionType.expense) {
+      throw const TransactionError(
+        code: TransactionErrorCode.invalidReceipt,
+        message: 'Чек можно прикрепить только к расходу.',
+      );
+    }
 
     final account = await _requireAccountInBudget(
       budgetId: budgetId,
@@ -67,6 +78,15 @@ final class CreateTransaction {
       categoryId: categoryId,
       transactionType: type,
     );
+    if (receiptId != null) {
+      final receipt = await _receiptRepository?.findById(receiptId);
+      if (receipt == null || receipt.budgetId != budgetId) {
+        throw const TransactionError(
+          code: TransactionErrorCode.invalidReceipt,
+          message: 'Чек недоступен в этом бюджете.',
+        );
+      }
+    }
 
     final amount = Money.positive(
       minorUnits: amountMinor,
@@ -95,6 +115,7 @@ final class CreateTransaction {
       description: _normalizeDescription(description),
       createdAt: now,
       updatedAt: now,
+      receiptId: receiptId,
     );
 
     await _transactionRepository.createTransaction(transaction);

@@ -94,6 +94,7 @@ final class UpdateTransaction {
       description: _normalizeDescription(description),
       createdAt: current.createdAt,
       updatedAt: DateTime.now(),
+      receiptId: type == TransactionType.expense ? current.receiptId : null,
     );
 
     final didUpdate = await _transactionRepository.updateTransaction(updated);

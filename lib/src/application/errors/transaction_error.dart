@@ -2,6 +2,7 @@ enum TransactionErrorCode {
   transactionNotFound,
   missingCategory,
   invalidCategory,
+  invalidReceipt,
 }
 
 final class TransactionError implements Exception {

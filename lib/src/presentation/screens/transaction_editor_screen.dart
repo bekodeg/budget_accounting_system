@@ -10,6 +10,7 @@ import '../../domain/models/budget_category.dart';
 import '../../domain/models/budget_transaction_entry.dart';
 import '../../domain/models/domain_types.dart';
 import '../../domain/models/receipt_qr_draft.dart';
+import 'receipt_items_panel.dart';
 
 final class TransactionEditorScreen extends StatefulWidget {
   const TransactionEditorScreen({
@@ -160,6 +161,9 @@ final class _TransactionEditorScreenState
           accountId: accountId,
           categoryId: categoryId,
           description: _descriptionController.text,
+          receiptId: _type == TransactionType.expense
+              ? widget.receiptDraft?.receiptId
+              : null,
         );
       } else {
         await widget.services.updateTransaction(
@@ -331,13 +335,18 @@ final class _TransactionEditorScreenState
                       key: const ValueKey('receipt-draft-banner'),
                       child: ListTile(
                         leading: const Icon(Icons.receipt_long_outlined),
-                        title: const Text('Черновик из QR чека'),
+                        title: const Text('Черновик из чека'),
                         subtitle: Text(
                           widget.receiptDraft!.parseStatus == 'PARSED'
                               ? 'Дата и сумма распознаны. Проверьте счет и категорию.'
                               : 'QR сохранен. Проверьте и дополните данные вручную.',
                         ),
                       ),
+                    ),
+                    ReceiptItemsPanel(
+                      receipt: widget.receiptDraft!,
+                      budgetId: widget.budgetId,
+                      updateItems: widget.services.updateReceiptItems,
                     ),
                     const SizedBox(height: 12),
                   ],

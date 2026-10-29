@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../domain/models/receipt_qr_draft.dart';
+import '../../domain/models/receipt_item.dart';
 import '../../domain/repositories/receipt_repository.dart';
 import '../authorization/budget_action.dart';
 import '../authorization/budget_authorization_guard.dart';
@@ -56,6 +57,7 @@ final class ImportReceiptPhoto {
 
     try {
       final analysis = await _analyzer.analyze(imagePath);
+      final ocr = _ocrParser.parse(analysis.recognizedText);
       final qr = analysis.qrRawValue?.trim();
       if (qr != null && qr.isNotEmpty) {
         final existing = await _receiptRepository.findByRawQr(
@@ -70,7 +72,9 @@ final class ImportReceiptPhoto {
             occurredAt: existing.occurredAt,
             totalMinor: existing.totalMinor,
             description: existing.description,
-            parsedPayloadJson: existing.parsedPayloadJson,
+            parsedPayloadJson: existing.items.isEmpty && ocr.items.isNotEmpty
+                ? receiptPayloadWithItems(existing.parsedPayloadJson, ocr.items)
+                : existing.parsedPayloadJson,
             parseStatus: existing.parseStatus,
             isDuplicate: true,
             imagePath: imagePath,
@@ -88,7 +92,9 @@ final class ImportReceiptPhoto {
           occurredAt: parsed.occurredAt,
           totalMinor: parsed.totalMinor,
           description: parsed.merchant,
-          parsedPayloadJson: parsed.parsedPayloadJson,
+          parsedPayloadJson: ocr.items.isEmpty
+              ? parsed.parsedPayloadJson
+              : receiptPayloadWithItems(parsed.parsedPayloadJson, ocr.items),
           parseStatus: parsed.parseStatus,
           isDuplicate: false,
           imagePath: imagePath,
@@ -98,7 +104,7 @@ final class ImportReceiptPhoto {
         return draft;
       }
 
-      final parsed = _ocrParser.parse(analysis.recognizedText);
+      final parsed = ocr;
       final draft = ReceiptQrDraft(
         receiptId: receiptId,
         budgetId: budgetId,

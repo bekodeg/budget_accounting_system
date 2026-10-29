@@ -15,6 +15,7 @@ final class BudgetTransactionEntry {
     required this.description,
     required this.createdAt,
     required this.updatedAt,
+    this.receiptId,
   });
 
   final String id;
@@ -29,4 +30,5 @@ final class BudgetTransactionEntry {
   final String? description;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? receiptId;
 }
