@@ -1,3 +1,5 @@
+import 'receipt_item.dart';
+
 final class ReceiptQrDraft {
   const ReceiptQrDraft({
     required this.receiptId,
@@ -22,4 +24,6 @@ final class ReceiptQrDraft {
   final String parseStatus;
   final bool isDuplicate;
   final String? imagePath;
+
+  List<ReceiptItem> get items => receiptItemsFromPayload(parsedPayloadJson);
 }

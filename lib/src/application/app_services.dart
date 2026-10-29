@@ -41,6 +41,7 @@ import 'use_cases/scan_receipt_qr.dart';
 import 'use_cases/share_budget_invite_file.dart';
 import 'use_cases/set_monthly_plan_amount.dart';
 import 'use_cases/update_account.dart';
+import 'use_cases/update_receipt_items.dart';
 import 'use_cases/update_member_role.dart';
 import 'use_cases/update_transaction.dart';
 import 'use_cases/update_transfer.dart';
@@ -100,6 +101,7 @@ final class AppServices {
     required this.shareBudgetInviteFile,
     required this.setMonthlyPlanAmount,
     required this.updateAccount,
+    this.updateReceiptItems,
     required this.updateMemberRole,
     required this.updateTransaction,
     required this.updateTransfer,
@@ -159,6 +161,7 @@ final class AppServices {
   final ShareBudgetInviteFile shareBudgetInviteFile;
   final SetMonthlyPlanAmount setMonthlyPlanAmount;
   final UpdateAccount updateAccount;
+  final UpdateReceiptItems? updateReceiptItems;
   final UpdateMemberRole updateMemberRole;
   final UpdateTransaction updateTransaction;
   final UpdateTransfer updateTransfer;

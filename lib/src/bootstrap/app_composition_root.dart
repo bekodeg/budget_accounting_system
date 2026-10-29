@@ -53,6 +53,7 @@ import '../application/use_cases/scan_receipt_qr.dart';
 import '../application/use_cases/share_budget_invite_file.dart';
 import '../application/use_cases/set_monthly_plan_amount.dart';
 import '../application/use_cases/update_account.dart';
+import '../application/use_cases/update_receipt_items.dart';
 import '../application/use_cases/update_member_role.dart';
 import '../application/use_cases/update_transaction.dart';
 import '../application/use_cases/update_transfer.dart';
@@ -351,6 +352,7 @@ final class AppCompositionRoot {
           requireCategoryInBudget: requireCategoryInBudget,
           idGenerator: idGenerator,
           authorization: authorization,
+          receiptRepository: receiptRepository,
         ),
         createTransfer: CreateTransfer(
           transactionRepository: transactionRepository,
@@ -433,6 +435,10 @@ final class AppCompositionRoot {
         ),
         updateAccount: UpdateAccount(
           repository: accountRepository,
+          authorization: authorization,
+        ),
+        updateReceiptItems: UpdateReceiptItems(
+          receiptRepository: receiptRepository,
           authorization: authorization,
         ),
         updateMemberRole: UpdateMemberRole(

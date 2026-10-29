@@ -30,6 +30,11 @@ are not overwritten.
 Provider-specific raw HTTP responses are not persisted. Only normalized fields,
 provider id and optional item labels are merged into parsed_payload.
 
+The current optional provider contract supplies item labels only. Structured
+item amounts in the editor come from local OCR or manual correction; provider
+labels do not replace them. The bundled mock provider is disabled in normal
+builds. No production fiscal receipt lookup provider is configured.
+
 ## Privacy
 
 Receipt images are never passed to the provider contract. The adapter receives
