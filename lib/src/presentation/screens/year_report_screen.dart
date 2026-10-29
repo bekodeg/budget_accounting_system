@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../application/app_services.dart';
 import '../../application/formatters/minor_units_text.dart';
 import '../../domain/models/year_report.dart';
+import '../report_charts/report_chart_data.dart';
+import '../report_charts/report_chart_widgets.dart';
 
 final class YearReportScreen extends StatefulWidget {
   const YearReportScreen({
@@ -22,20 +24,40 @@ final class YearReportScreen extends StatefulWidget {
 
 final class _YearReportScreenState extends State<YearReportScreen> {
   late int _year;
+  late Stream<YearReport> _reportStream;
+  String? _chartCurrency;
 
   @override
   void initState() {
     super.initState();
     _year = widget.initialYear ?? DateTime.now().year;
+    _reportStream = _watchReport();
+  }
+
+  @override
+  void didUpdateWidget(covariant YearReportScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.services != widget.services ||
+        oldWidget.budgetId != widget.budgetId) {
+      _reportStream = _watchReport();
+      _chartCurrency = null;
+    }
+  }
+
+  Stream<YearReport> _watchReport() =>
+      widget.services.watchYearReport(budgetId: widget.budgetId, year: _year);
+
+  void _moveYear(int delta) {
+    setState(() {
+      _year += delta;
+      _reportStream = _watchReport();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<YearReport>(
-      stream: widget.services.watchYearReport(
-        budgetId: widget.budgetId,
-        year: _year,
-      ),
+      stream: _reportStream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(
@@ -47,6 +69,13 @@ final class _YearReportScreenState extends State<YearReportScreen> {
         }
 
         final report = snapshot.data!;
+        final currencies = reportCurrencies(
+          report.baseCurrency,
+          report.expenseMinorByCurrency,
+        );
+        final selectedCurrency = currencies.contains(_chartCurrency)
+            ? _chartCurrency!
+            : currencies.first;
         final isEmpty =
             report.incomeMinorByCurrency.isEmpty &&
             report.expenseMinorByCurrency.isEmpty &&
@@ -60,7 +89,7 @@ final class _YearReportScreenState extends State<YearReportScreen> {
               children: [
                 IconButton(
                   key: const ValueKey('year-report-previous'),
-                  onPressed: () => setState(() => _year--),
+                  onPressed: () => _moveYear(-1),
                   icon: const Icon(Icons.chevron_left),
                 ),
                 Expanded(
@@ -73,7 +102,7 @@ final class _YearReportScreenState extends State<YearReportScreen> {
                 ),
                 IconButton(
                   key: const ValueKey('year-report-next'),
-                  onPressed: () => setState(() => _year++),
+                  onPressed: () => _moveYear(1),
                   icon: const Icon(Icons.chevron_right),
                 ),
               ],
@@ -99,6 +128,24 @@ final class _YearReportScreenState extends State<YearReportScreen> {
                   key: const ValueKey('year-report-variance'),
                 ),
               ),
+            ),
+            const SizedBox(height: 12),
+            ReportCurrencySelector(
+              currencies: currencies,
+              selected: selectedCurrency,
+              onChanged: (currency) =>
+                  setState(() => _chartCurrency = currency),
+            ),
+            ExpensePieChart(
+              key: const ValueKey('year-category-pie-chart'),
+              title: 'Расходы за год по категориям',
+              currency: selectedCurrency,
+              values: yearCategoryExpenses(report, selectedCurrency),
+            ),
+            MonthExpenseColumnChart(
+              key: const ValueKey('year-month-expense-chart'),
+              currency: selectedCurrency,
+              values: yearMonthExpenses(report, selectedCurrency),
             ),
             if (isEmpty)
               const Padding(

@@ -1067,6 +1067,7 @@ final class FakeExtendedReportRepository implements ExtendedReportRepository {
   PeriodReport periodReport;
   YearReport yearReport;
   ReportFilter? lastPeriodFilter;
+  int? lastRequestedYear;
   final StreamController<PeriodReport> _periodChanges =
       StreamController<PeriodReport>.broadcast();
   final StreamController<YearReport> _yearChanges =
@@ -1094,6 +1095,7 @@ final class FakeExtendedReportRepository implements ExtendedReportRepository {
     required String budgetId,
     required int year,
   }) async* {
+    lastRequestedYear = year;
     yield yearReport;
     yield* _yearChanges.stream;
   }
@@ -1113,6 +1115,7 @@ final class FakeMonthlyReportRepository implements MonthlyReportRepository {
           );
 
   MonthlyReport report;
+  DateTime? lastRequestedMonth;
   final StreamController<MonthlyReport> _changes =
       StreamController<MonthlyReport>.broadcast();
 
@@ -1126,6 +1129,7 @@ final class FakeMonthlyReportRepository implements MonthlyReportRepository {
     required String budgetId,
     required DateTime monthStart,
   }) async* {
+    lastRequestedMonth = monthStart;
     yield report;
     yield* _changes.stream;
   }
