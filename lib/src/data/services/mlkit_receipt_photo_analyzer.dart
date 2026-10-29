@@ -10,6 +10,7 @@ final class MlKitReceiptPhotoAnalyzer implements ReceiptPhotoAnalyzer {
 
   @override
   Future<ReceiptPhotoAnalysis> analyze(String imagePath) async {
+    String? qrRawValue;
     final barcodeScanner = barcode.BarcodeScanner(
       formats: [barcode.BarcodeFormat.qrCode],
     );
@@ -19,7 +20,8 @@ final class MlKitReceiptPhotoAnalyzer implements ReceiptPhotoAnalyzer {
       for (final code in codes) {
         final raw = code.rawValue?.trim();
         if (raw != null && raw.isNotEmpty) {
-          return ReceiptPhotoAnalysis(qrRawValue: raw, recognizedText: '');
+          qrRawValue = raw;
+          break;
         }
       }
     } finally {
@@ -33,9 +35,14 @@ final class MlKitReceiptPhotoAnalyzer implements ReceiptPhotoAnalyzer {
       final input = text.InputImage.fromFilePath(imagePath);
       final recognized = await recognizer.processImage(input);
       return ReceiptPhotoAnalysis(
-        qrRawValue: null,
+        qrRawValue: qrRawValue,
         recognizedText: recognized.text,
       );
+    } on Object {
+      if (qrRawValue != null) {
+        return ReceiptPhotoAnalysis(qrRawValue: qrRawValue, recognizedText: '');
+      }
+      rethrow;
     } finally {
       await recognizer.close();
     }

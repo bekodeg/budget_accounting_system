@@ -71,6 +71,7 @@ void main() {
     required String id,
     required int amountMinor,
     DateTime? occurredAt,
+    String? receiptId,
   }) {
     final now = DateTime(2026, 9, 24, 10);
     return BudgetTransactionEntry(
@@ -89,6 +90,7 @@ void main() {
       description: null,
       createdAt: now,
       updatedAt: now,
+      receiptId: receiptId,
     );
   }
 
@@ -103,6 +105,23 @@ void main() {
     final items = await repository.watchActiveTransactions('budget-1').first;
 
     expect(items.map((item) => item.id).toList(), ['new', 'old']);
+  });
+
+  test('persists and reloads receipt relation', () async {
+    await database
+        .into(database.receipts)
+        .insert(
+          ReceiptsCompanion.insert(id: 'receipt-1', budgetId: 'budget-1'),
+        );
+    await repository.createTransaction(
+      entry(id: 'transaction-1', amountMinor: 950, receiptId: 'receipt-1'),
+    );
+
+    final found = await repository.findActiveTransaction(
+      budgetId: 'budget-1',
+      transactionId: 'transaction-1',
+    );
+    expect(found?.receiptId, 'receipt-1');
   });
 
   test('update only changes active transaction in requested budget', () async {

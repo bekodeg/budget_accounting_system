@@ -1,6 +1,7 @@
 import 'package:budget_accounting_system/src/application/ports/receipt_enrichment_provider.dart';
 import 'package:budget_accounting_system/src/application/services/receipt_enrichment_coordinator.dart';
 import 'package:budget_accounting_system/src/domain/models/receipt_qr_draft.dart';
+import 'package:budget_accounting_system/src/domain/models/receipt_item.dart';
 import 'package:budget_accounting_system/src/domain/repositories/receipt_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -38,6 +39,40 @@ void main() {
     expect(repository.current.parsedPayloadJson, contains('"provider":"test"'));
     expect(repository.current.parsedPayloadJson, contains('"A"'));
   });
+
+  test(
+    'background provider labels preserve corrected structured items',
+    () async {
+      final original = ReceiptQrDraft(
+        receiptId: 'receipt-1',
+        budgetId: 'budget-1',
+        rawQr: 'qr',
+        occurredAt: null,
+        totalMinor: null,
+        description: null,
+        parsedPayloadJson: receiptPayloadWithItems('{}', [
+          ReceiptItem(
+            name: 'Corrected milk',
+            quantity: 1,
+            lineTotalMinor: BigInt.from(350),
+            source: 'manual',
+          ),
+        ]),
+        parseStatus: 'NEW',
+        isDuplicate: false,
+      );
+      final repository = _Repository(original);
+      final coordinator = ReceiptEnrichmentCoordinator(
+        provider: const _Provider(ReceiptEnrichment(items: ['Wrong milk'])),
+        repository: repository,
+      );
+
+      await coordinator.enrichInBackground(original);
+
+      expect(repository.current.items.single.name, 'Corrected milk');
+      expect(repository.current.parsedPayloadJson, contains('"Wrong milk"'));
+    },
+  );
 
   test(
     'provider network failure is non-blocking and does not mutate receipt',

@@ -49,6 +49,7 @@ import 'package:budget_accounting_system/src/application/use_cases/select_budget
 import 'package:budget_accounting_system/src/application/use_cases/share_budget_invite_file.dart';
 import 'package:budget_accounting_system/src/application/use_cases/set_monthly_plan_amount.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_account.dart';
+import 'package:budget_accounting_system/src/application/use_cases/update_receipt_items.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_member_role.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_transaction.dart';
 import 'package:budget_accounting_system/src/application/use_cases/update_transfer.dart';
@@ -80,6 +81,7 @@ import 'package:budget_accounting_system/src/domain/models/monthly_report.dart';
 import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
 import 'package:budget_accounting_system/src/domain/models/period_report.dart';
 import 'package:budget_accounting_system/src/domain/models/public_identity.dart';
+import 'package:budget_accounting_system/src/domain/models/receipt_qr_draft.dart';
 import 'package:budget_accounting_system/src/domain/models/report_export.dart';
 import 'package:budget_accounting_system/src/domain/models/report_filter.dart';
 import 'package:budget_accounting_system/src/domain/models/year_report.dart';
@@ -97,6 +99,7 @@ import 'package:budget_accounting_system/src/domain/repositories/fresh_invitatio
 import 'package:budget_accounting_system/src/domain/repositories/invitation_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/membership_repository.dart';
 import 'package:budget_accounting_system/src/domain/repositories/transaction_repository.dart';
+import 'package:budget_accounting_system/src/domain/repositories/receipt_repository.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
 
 AppServices fakeAppServices({
@@ -105,6 +108,7 @@ AppServices fakeAppServices({
   FakeCategoryRepository? categoryRepository,
   FakeAccountRepository? accountRepository,
   FakeTransactionRepository? transactionRepository,
+  ReceiptRepository? receiptRepository,
   FakeDashboardRepository? dashboardRepository,
   FakePlanRepository? planRepository,
   FakeMonthlyReportRepository? monthlyReportRepository,
@@ -127,6 +131,7 @@ AppServices fakeAppServices({
   final categories = categoryRepository ?? FakeCategoryRepository();
   final accounts = accountRepository ?? FakeAccountRepository();
   final transactions = transactionRepository ?? FakeTransactionRepository();
+  final receipts = receiptRepository ?? FakeReceiptRepository();
   final dashboard = dashboardRepository ?? FakeDashboardRepository();
   final plans = planRepository ?? FakePlanRepository();
   final monthlyReports =
@@ -234,6 +239,7 @@ AppServices fakeAppServices({
       requireCategoryInBudget: RequireCategoryInBudget(categories),
       idGenerator: ids,
       authorization: auth,
+      receiptRepository: receipts,
     ),
     deleteTransaction: DeleteTransaction(
       repository: transactions,
@@ -288,6 +294,10 @@ AppServices fakeAppServices({
       authorization: auth,
     ),
     updateAccount: UpdateAccount(repository: accounts, authorization: auth),
+    updateReceiptItems: UpdateReceiptItems(
+      receiptRepository: receipts,
+      authorization: auth,
+    ),
     updateMemberRole: UpdateMemberRole(
       membershipRepository: memberships,
       authorization: auth,
@@ -828,6 +838,32 @@ final class FakeBudgetRepository implements BudgetRepository {
         );
       }
     }
+  }
+}
+
+final class FakeReceiptRepository implements ReceiptRepository {
+  final Map<String, ReceiptQrDraft> receipts = {};
+
+  @override
+  Future<ReceiptQrDraft?> findById(String receiptId) async =>
+      receipts[receiptId];
+
+  @override
+  Future<ReceiptQrDraft?> findByRawQr({
+    required String budgetId,
+    required String rawQr,
+  }) async {
+    for (final receipt in receipts.values) {
+      if (receipt.budgetId == budgetId && receipt.rawQr == rawQr) {
+        return receipt;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<void> saveReceipt(ReceiptQrDraft receipt) async {
+    receipts[receipt.receiptId] = receipt;
   }
 }
 

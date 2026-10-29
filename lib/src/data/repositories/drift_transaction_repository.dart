@@ -67,6 +67,7 @@ final class DriftTransactionRepository implements TransactionRepository {
         destinationAccountId: Value(transaction.destinationAccountId),
         description: Value(transaction.description),
         categoryId: Value(transaction.categoryId),
+        receiptId: Value(transaction.receiptId),
         createdAt: Value(transaction.createdAt),
         updatedAt: Value(transaction.updatedAt),
       ),
@@ -89,6 +90,7 @@ final class DriftTransactionRepository implements TransactionRepository {
         destinationAccountId: Value(transaction.destinationAccountId),
         description: Value(transaction.description),
         categoryId: Value(transaction.categoryId),
+        receiptId: Value(transaction.receiptId),
         updatedAt: Value(transaction.updatedAt),
       ),
     );
@@ -126,6 +128,7 @@ final class DriftTransactionRepository implements TransactionRepository {
       description: item.description,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
+      receiptId: item.receiptId,
     );
   }
 }
