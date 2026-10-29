@@ -1,6 +1,7 @@
 // A separate Android application ID must be used with this entrypoint.
 // It seeds only synthetic data and must never run against the production app.
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import 'package:budget_accounting_system/src/bootstrap/app_composition_root.dart';
@@ -43,10 +44,34 @@ final class _DevicePerformanceApp extends StatefulWidget {
 }
 
 final class _DevicePerformanceAppState extends State<_DevicePerformanceApp> {
-  late final Stopwatch _startup = Stopwatch()..start();
-  late final Future<AppCompositionRoot> _runtime = _load();
+  late final Stopwatch _startup;
+  late final Future<AppCompositionRoot> _runtime;
   AppCompositionRoot? _root;
   bool _firstFrameLogged = false;
+  final List<int> _frameDurationsUs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _startup = Stopwatch()..start();
+    SchedulerBinding.instance.addTimingsCallback(_onFrameTimings);
+    _runtime = _load();
+  }
+
+  void _onFrameTimings(List<FrameTiming> timings) {
+    for (final timing in timings) {
+      _frameDurationsUs.add(timing.totalSpan.inMicroseconds);
+      if (_frameDurationsUs.length < 30) continue;
+      final sorted = [..._frameDurationsUs]..sort();
+      final over16ms = sorted.where((duration) => duration > 16000).length;
+      debugPrint(
+        'PERF_DEVICE frames=30 p50_ms=${sorted[15] / 1000} '
+        'p90_ms=${sorted[27] / 1000} max_ms=${sorted.last / 1000} '
+        'over16ms=$over16ms elapsed_ms=${_startup.elapsedMilliseconds}',
+      );
+      _frameDurationsUs.clear();
+    }
+  }
 
   Future<AppCompositionRoot> _load() async {
     verifyPerformancePackage(
@@ -101,6 +126,7 @@ final class _DevicePerformanceAppState extends State<_DevicePerformanceApp> {
 
   @override
   void dispose() {
+    SchedulerBinding.instance.removeTimingsCallback(_onFrameTimings);
     _root?.close();
     super.dispose();
   }
