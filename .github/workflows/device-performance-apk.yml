@@ -1,0 +1,84 @@
+name: Device Performance APK
+
+on:
+  push:
+    branches:
+      - perf/35-android-profile-harness
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Isolated Android profile APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Install dependencies and generate Drift code
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+
+      - name: Check isolated package guard
+        run: flutter test --no-pub test/tool/device_performance_identity_test.dart
+
+      - name: Generate isolated Android host
+        run: >-
+          flutter create
+          --platforms=android
+          --project-name budget_accounting_system
+          --org com.bekodeg.perftest
+          --no-pub
+          .
+
+      - name: Refresh Android plugin registration
+        run: flutter pub get
+
+      - name: Configure Android host
+        run: |
+          python3 tool/configure_lan_platform_permissions.py
+          python3 tool/configure_android_native_library_loading.py
+          python3 tool/configure_mlkit_android_dependencies.py
+          python3 tool/configure_android_performance_app.py
+          grep -F 'applicationId = "com.bekodeg.perftest.budget_accounting_system"' android/app/build.gradle.kts
+          grep -F 'android:extractNativeLibs="true"' android/app/src/main/AndroidManifest.xml
+
+      - name: Build profile APK with synthetic data
+        run: >-
+          flutter build apk --profile --no-pub
+          --target-platform android-arm64
+          -t tool/device_performance_main.dart
+          --dart-define=PERF_TRANSACTION_COUNT=50000
+          --dart-define=PERF_SYNC_OPERATION_COUNT=50000
+
+      - name: Verify artifact
+        shell: bash
+        run: |
+          apk=build/app/outputs/flutter-apk/app-profile.apk
+          test -s "$apk"
+          aapt="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n 1)"
+          test -x "$aapt"
+          "$aapt" dump badging "$apk" | grep -F "package: name='com.bekodeg.perftest.budget_accounting_system'"
+          unzip -l "$apk" | grep -F 'lib/arm64-v8a/libsqlcipher.so'
+          sha256sum "$apk" > build/device-performance-apk.sha256
+
+      - name: Upload short-lived test APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: isolated-device-performance-apk
+          path: |
+            build/app/outputs/flutter-apk/app-profile.apk
+            build/device-performance-apk.sha256
+          retention-days: 2

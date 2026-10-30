@@ -1,7 +1,9 @@
 import 'package:budget_accounting_system/src/domain/models/budget_account.dart';
 import 'package:budget_accounting_system/src/domain/models/budget_category.dart';
 import 'package:budget_accounting_system/src/domain/models/domain_types.dart';
+import 'package:budget_accounting_system/src/domain/models/budget_transaction_entry.dart';
 import 'package:budget_accounting_system/src/domain/value_objects/currency.dart';
+import 'package:budget_accounting_system/src/domain/value_objects/money.dart';
 import 'package:budget_accounting_system/src/presentation/screens/transaction_crud_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +11,69 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/onboarding_fakes.dart';
 
 void main() {
+  testWidgets('large history builds transaction rows on demand', (
+    tester,
+  ) async {
+    final repository = FakeTransactionRepository(
+      transactionsByBudget: {
+        'budget-1': [
+          for (var index = 0; index < 200; index++)
+            BudgetTransactionEntry(
+              id: 'transaction-$index',
+              budgetId: 'budget-1',
+              occurredAt: DateTime(2026, 1, 1).add(Duration(days: index)),
+              amount: Money.positive(
+                minorUnits: BigInt.from(100),
+                currency: Currency('EUR'),
+              ),
+              type: TransactionType.expense,
+              authorId: 'user-1',
+              accountId: 'account-1',
+              destinationAccountId: null,
+              categoryId: null,
+              description: null,
+              createdAt: DateTime(2026, 1, 1),
+              updatedAt: DateTime(2026, 1, 1),
+            ),
+        ],
+      },
+    );
+    final services = fakeAppServices(
+      repository: FakeBudgetRepository(),
+      sessionStore: FakeSessionStore(),
+      accountRepository: FakeAccountRepository(),
+      categoryRepository: FakeCategoryRepository(),
+      transactionRepository: repository,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TransactionCrudScreen(
+            services: services,
+            budgetId: 'budget-1',
+            userId: 'user-1',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final list = tester.widget<ListView>(
+      find.byKey(const ValueKey('transaction-crud')),
+    );
+    expect(list.childrenDelegate, isA<SliverChildBuilderDelegate>());
+    expect(list.childrenDelegate.estimatedChildCount, 202);
+    expect(
+      find.byKey(const ValueKey('transaction-transaction-199')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('transaction-transaction-0')),
+      findsNothing,
+    );
+  });
+
   testWidgets('creates edits and soft deletes expense', (tester) async {
     final accountRepository = FakeAccountRepository(
       accountsByBudget: {

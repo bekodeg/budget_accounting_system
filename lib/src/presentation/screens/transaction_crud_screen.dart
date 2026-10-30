@@ -182,36 +182,39 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                 }
 
                 final transactions = snapshot.data!;
-                return ListView(
+                return ListView.builder(
                   key: const ValueKey('transaction-crud'),
                   padding: const EdgeInsets.all(16),
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (widget.canEdit)
-                          FilledButton.icon(
-                            key: const ValueKey('add-transaction'),
-                            onPressed: _openEditor,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Добавить операцию'),
+                  itemCount: transactions.isEmpty ? 3 : transactions.length + 2,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (widget.canEdit)
+                            FilledButton.icon(
+                              key: const ValueKey('add-transaction'),
+                              onPressed: _openEditor,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Добавить операцию'),
+                            ),
+                          OutlinedButton.icon(
+                            key: const ValueKey('transaction-filters'),
+                            onPressed: () => _openFilters(accounts, categories),
+                            icon: const Icon(Icons.filter_list),
+                            label: Text(
+                              _filterCount == 0
+                                  ? 'Фильтры'
+                                  : 'Фильтры ($_filterCount)',
+                            ),
                           ),
-                        OutlinedButton.icon(
-                          key: const ValueKey('transaction-filters'),
-                          onPressed: () => _openFilters(accounts, categories),
-                          icon: const Icon(Icons.filter_list),
-                          label: Text(
-                            _filterCount == 0
-                                ? 'Фильтры'
-                                : 'Фильтры ($_filterCount)',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (transactions.isEmpty)
-                      Padding(
+                        ],
+                      );
+                    }
+                    if (index == 1) return const SizedBox(height: 16);
+                    if (transactions.isEmpty) {
+                      return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 32),
                         child: Center(
                           child: Text(
@@ -220,59 +223,59 @@ final class _TransactionCrudScreenState extends State<TransactionCrudScreen> {
                                 : 'По выбранным фильтрам операций нет.',
                           ),
                         ),
-                      )
-                    else
-                      for (final transaction in transactions)
-                        Card(
-                          child: ListTile(
-                            key: ValueKey('transaction-${transaction.id}'),
-                            leading: Icon(_typeIcon(transaction.type)),
-                            title: Text(
-                              '${_amountPrefix(transaction.type)}'
-                              '${formatMinorUnits(transaction.amount.minorUnits)} '
-                              '${transaction.amount.currency.code}',
-                            ),
-                            subtitle: Text(
-                              _subtitle(
-                                transaction,
-                                accountNames,
-                                categoryNames,
-                                widget.userId,
-                              ),
-                            ),
-                            onTap: widget.canEdit
-                                ? () => _openEditor(transaction: transaction)
-                                : null,
-                            trailing: widget.canEdit
-                                ? PopupMenuButton<_TransactionAction>(
-                                    key: ValueKey(
-                                      'transaction-menu-${transaction.id}',
-                                    ),
-                                    onSelected: (action) {
-                                      switch (action) {
-                                        case _TransactionAction.edit:
-                                          _openEditor(transaction: transaction);
-                                          return;
-                                        case _TransactionAction.delete:
-                                          _delete(transaction);
-                                          return;
-                                      }
-                                    },
-                                    itemBuilder: (context) => const [
-                                      PopupMenuItem(
-                                        value: _TransactionAction.edit,
-                                        child: Text('Изменить'),
-                                      ),
-                                      PopupMenuItem(
-                                        value: _TransactionAction.delete,
-                                        child: Text('Удалить'),
-                                      ),
-                                    ],
-                                  )
-                                : null,
+                      );
+                    }
+                    final transaction = transactions[index - 2];
+                    return Card(
+                      child: ListTile(
+                        key: ValueKey('transaction-${transaction.id}'),
+                        leading: Icon(_typeIcon(transaction.type)),
+                        title: Text(
+                          '${_amountPrefix(transaction.type)}'
+                          '${formatMinorUnits(transaction.amount.minorUnits)} '
+                          '${transaction.amount.currency.code}',
+                        ),
+                        subtitle: Text(
+                          _subtitle(
+                            transaction,
+                            accountNames,
+                            categoryNames,
+                            widget.userId,
                           ),
                         ),
-                  ],
+                        onTap: widget.canEdit
+                            ? () => _openEditor(transaction: transaction)
+                            : null,
+                        trailing: widget.canEdit
+                            ? PopupMenuButton<_TransactionAction>(
+                                key: ValueKey(
+                                  'transaction-menu-${transaction.id}',
+                                ),
+                                onSelected: (action) {
+                                  switch (action) {
+                                    case _TransactionAction.edit:
+                                      _openEditor(transaction: transaction);
+                                      return;
+                                    case _TransactionAction.delete:
+                                      _delete(transaction);
+                                      return;
+                                  }
+                                },
+                                itemBuilder: (context) => const [
+                                  PopupMenuItem(
+                                    value: _TransactionAction.edit,
+                                    child: Text('Изменить'),
+                                  ),
+                                  PopupMenuItem(
+                                    value: _TransactionAction.delete,
+                                    child: Text('Удалить'),
+                                  ),
+                                ],
+                              )
+                            : null,
+                      ),
+                    );
+                  },
                 );
               },
             );
