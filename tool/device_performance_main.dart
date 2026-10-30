@@ -48,7 +48,7 @@ final class _DevicePerformanceAppState extends State<_DevicePerformanceApp> {
   late final Future<AppCompositionRoot> _runtime;
   AppCompositionRoot? _root;
   bool _firstFrameLogged = false;
-  final List<int> _frameDurationsUs = [];
+  final List<FrameTiming> _frameTimings = [];
 
   @override
   void initState() {
@@ -60,16 +60,23 @@ final class _DevicePerformanceAppState extends State<_DevicePerformanceApp> {
 
   void _onFrameTimings(List<FrameTiming> timings) {
     for (final timing in timings) {
-      _frameDurationsUs.add(timing.totalSpan.inMicroseconds);
-      if (_frameDurationsUs.length < 30) continue;
-      final sorted = [..._frameDurationsUs]..sort();
+      _frameTimings.add(timing);
+      if (_frameTimings.length < 30) continue;
+      final sorted =
+          _frameTimings.map((frame) => frame.totalSpan.inMicroseconds).toList()
+            ..sort();
       final over16ms = sorted.where((duration) => duration > 16000).length;
+      final slowest = _frameTimings.reduce(
+        (current, next) => next.totalSpan > current.totalSpan ? next : current,
+      );
       debugPrint(
         'PERF_DEVICE frames=30 p50_ms=${sorted[15] / 1000} '
         'p90_ms=${sorted[27] / 1000} max_ms=${sorted.last / 1000} '
+        'max_build_ms=${slowest.buildDuration.inMicroseconds / 1000} '
+        'max_raster_ms=${slowest.rasterDuration.inMicroseconds / 1000} '
         'over16ms=$over16ms elapsed_ms=${_startup.elapsedMilliseconds}',
       );
-      _frameDurationsUs.clear();
+      _frameTimings.clear();
     }
   }
 
