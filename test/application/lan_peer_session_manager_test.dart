@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:budget_accounting_system/src/application/ports/lan_discovery_gateway.dart';
 import 'package:budget_accounting_system/src/application/ports/lan_local_address_resolver.dart';
+import 'package:budget_accounting_system/src/application/ports/secure_token_generator.dart';
 import 'package:budget_accounting_system/src/application/services/budget_transport_secret_manager.dart';
 import 'package:budget_accounting_system/src/application/services/lan_discovery_token_service.dart';
 import 'package:budget_accounting_system/src/application/services/lan_handshake_service.dart';
@@ -101,6 +102,49 @@ void main() {
       }
     },
   );
+
+  test(
+    'owner can start discovery and host before creating an invite',
+    () async {
+      final secrets = FakeBudgetTransportSecretStore();
+      final manager = _manager(
+        userId: 'owner-1',
+        deviceId: 'owner-device',
+        role: MemberRole.owner,
+        secrets: secrets,
+        discovery: _DiscoveryGateway(),
+        tokenGenerator: _Base64TokenGenerator(),
+      );
+
+      final browser = await manager.discover(budgetId);
+      await browser.close();
+      expect(secrets.secretsByBudget[budgetId], isNotEmpty);
+
+      final hosted = await manager.host(budgetId);
+      try {
+        expect(hosted.manualEndpointCode, isNotNull);
+      } finally {
+        await hosted.close();
+      }
+    },
+  );
+
+  test(
+    'member without imported secret cannot create a divergent one',
+    () async {
+      final secrets = FakeBudgetTransportSecretStore();
+      final manager = _manager(
+        userId: 'member-1',
+        deviceId: 'member-device',
+        role: MemberRole.viewer,
+        secrets: secrets,
+        discovery: _DiscoveryGateway(),
+      );
+
+      await expectLater(manager.discover(budgetId), throwsStateError);
+      expect(secrets.secretsByBudget, isEmpty);
+    },
+  );
 }
 
 const _secret = 'AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=';
@@ -111,6 +155,7 @@ LanPeerSessionManager _manager({
   required MemberRole role,
   required FakeBudgetTransportSecretStore secrets,
   required _DiscoveryGateway discovery,
+  SecureTokenGenerator? tokenGenerator,
 }) {
   final identities = FakeIdentityRepository(
     publicKeysByUser: {userId: 'ed25519:$userId'},
@@ -132,7 +177,7 @@ LanPeerSessionManager _manager({
       idGenerator: FakeIdGenerator(const []),
     ),
   );
-  final tokens = FakeSecureTokenGenerator();
+  final tokens = tokenGenerator ?? FakeSecureTokenGenerator();
   final secretManager = BudgetTransportSecretManager(
     store: secrets,
     tokenGenerator: tokens,
@@ -158,8 +203,17 @@ LanPeerSessionManager _manager({
     discoveryTokenService: LanDiscoveryTokenService(
       transportSecretManager: secretManager,
     ),
+    transportSecretManager: secretManager,
     localAddressResolver: const _LoopbackResolver(),
   );
+}
+
+final class _Base64TokenGenerator implements SecureTokenGenerator {
+  int _counter = 0;
+
+  @override
+  String nextToken({int bytes = 32}) =>
+      base64Url.encode(List<int>.filled(bytes, ++_counter));
 }
 
 final class _LoopbackResolver implements LanLocalAddressResolver {

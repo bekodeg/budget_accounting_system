@@ -232,6 +232,7 @@ final class AppCompositionRoot {
       transport: lanTransportGateway,
       secureSession: lanSecureSessionService,
       discoveryTokenService: lanDiscoveryTokenService,
+      transportSecretManager: transportSecretManager,
       localAddressResolver: lanLocalAddressResolver,
     );
     final syncMutationExecutor = DriftSyncMutationExecutor(
