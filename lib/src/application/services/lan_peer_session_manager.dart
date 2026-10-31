@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../domain/models/domain_types.dart';
 import '../../domain/models/lan_peer_endpoint.dart';
 import '../../domain/models/public_identity.dart';
 import '../authorization/budget_action.dart';
@@ -9,6 +10,7 @@ import '../ports/lan_local_address_resolver.dart';
 import '../ports/lan_transport_gateway.dart';
 import '../ports/secure_lan_channel.dart';
 import '../use_cases/get_public_identity.dart';
+import 'budget_transport_secret_manager.dart';
 import 'lan_discovery_token_service.dart';
 import 'lan_endpoint_codec.dart';
 import 'lan_secure_session_service.dart';
@@ -47,6 +49,7 @@ final class LanPeerSessionManager {
     required LanTransportGateway transport,
     required LanSecureSessionService secureSession,
     required LanDiscoveryTokenService discoveryTokenService,
+    required BudgetTransportSecretManager transportSecretManager,
     required LanLocalAddressResolver localAddressResolver,
     LanEndpointCodec endpointCodec = const LanEndpointCodec(),
   }) : _authorization = authorization,
@@ -55,6 +58,7 @@ final class LanPeerSessionManager {
        _transport = transport,
        _secureSession = secureSession,
        _discoveryTokenService = discoveryTokenService,
+       _transportSecretManager = transportSecretManager,
        _localAddressResolver = localAddressResolver,
        _endpointCodec = endpointCodec;
 
@@ -64,6 +68,7 @@ final class LanPeerSessionManager {
   final LanTransportGateway _transport;
   final LanSecureSessionService _secureSession;
   final LanDiscoveryTokenService _discoveryTokenService;
+  final BudgetTransportSecretManager _transportSecretManager;
   final LanLocalAddressResolver _localAddressResolver;
   final LanEndpointCodec _endpointCodec;
 
@@ -168,6 +173,9 @@ final class LanPeerSessionManager {
       budgetId: budgetId,
       action: BudgetAction.read,
     );
+    if (member.role == MemberRole.owner) {
+      await _transportSecretManager.getOrCreate(budgetId);
+    }
     return _getPublicIdentity(member.userId);
   }
 
