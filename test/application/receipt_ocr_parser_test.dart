@@ -42,6 +42,22 @@ void main() {
     expect(result.items, isEmpty);
   });
 
+  test('misread total and merged tax columns are not receipt items', () {
+    final result = parser.parse(
+      'Shop\n30.10.2026 09:59\n'
+      'A НМН.УМЬАНКА H 22% 38.99 1 38.99\n'
+      'WТОГ 108.98',
+    );
+
+    expect(result.totalMinor, BigInt.from(10898));
+    expect(result.items, isEmpty);
+  });
+
+  test('a product percentage does not hide a valid item', () {
+    final result = parser.parse('Shop\nYogurt 2.5% 38.99');
+    expect(result.items.single.name, 'Yogurt 2.5%');
+  });
+
   test('empty OCR result is failed', () {
     final result = parser.parse('');
     expect(result.parseStatus, 'FAILED');

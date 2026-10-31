@@ -69,8 +69,13 @@ final class ReceiptOcrParser {
       r'(итого|total|sum|сумма|оплата|payment|cash|карта|наличн|ндс|vat|скидка|discount|сдача|change)',
       caseSensitive: false,
     );
+    // The Latin recognizer can read Cyrillic ИТОГ as WTOT on fiscal receipts.
+    final misreadTotal = RegExp(
+      r'^[wиi][тt][оo0][гgtт](?:\s|[:=]|$)',
+      caseSensitive: false,
+    );
     for (final line in lines.skip(1)) {
-      if (excluded.hasMatch(line)) continue;
+      if (excluded.hasMatch(line) || misreadTotal.hasMatch(line)) continue;
       final detail = detailed.firstMatch(line);
       if (detail != null) {
         final name = detail.group(1)!.trim();
@@ -113,8 +118,17 @@ final class ReceiptOcrParser {
     return items;
   }
 
-  bool _validItemName(String name) =>
-      name.length >= 2 && RegExp(r'[A-Za-zА-Яа-яЁё]').hasMatch(name);
+  bool _validItemName(String name) {
+    // OCR may merge the VAT, unit-price and quantity columns into the name.
+    // Such a line needs manual review instead of becoming a misleading item.
+    final mergedTaxColumns = RegExp(
+      r'(?:^|\s)[hнn]?\s*\d{1,2}%\s+\d+[.,]\d{2}\s+\d+\s*$',
+      caseSensitive: false,
+    );
+    return name.length >= 2 &&
+        RegExp(r'[A-Za-zА-Яа-яЁё]').hasMatch(name) &&
+        !mergedTaxColumns.hasMatch(name);
+  }
 
   BigInt? _amountMinor(String raw) {
     final parts = raw.replaceAll(',', '.').split('.');
