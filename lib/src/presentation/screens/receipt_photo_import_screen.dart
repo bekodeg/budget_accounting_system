@@ -70,6 +70,11 @@ final class _ReceiptPhotoImportScreenState
               'Фото сохраняется локально. Приложение ищет QR и распознаёт '
               'текст на устройстве, чтобы предложить товары из чека.',
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'Текст на кириллице может распознаться не полностью. '
+              'Проверьте товары и при необходимости добавьте их вручную.',
+            ),
             const SizedBox(height: 20),
             FilledButton.icon(
               key: const ValueKey('receipt-photo-camera'),
