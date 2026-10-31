@@ -79,6 +79,7 @@ void main() {
       discoveryTokenService: LanDiscoveryTokenService(
         transportSecretManager: secretManager,
       ),
+      transportSecretManager: secretManager,
       localAddressResolver: const _LocalAddressResolver(),
     );
     final services = fakeAppServices(
