@@ -1,0 +1,70 @@
+name: Device Startup Reporter APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Isolated startup reporter APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          pub-cache: true
+      - name: Install dependencies and generate Drift code
+        run: |
+          flutter pub get
+          dart run build_runner build --delete-conflicting-outputs
+      - name: Generate separate Android host
+        run: >-
+          flutter create
+          --platforms=android
+          --project-name budget_accounting_system
+          --org com.bekodeg.startuptest
+          --no-pub
+          .
+      - name: Refresh Android plugin registration
+        run: flutter pub get
+      - name: Configure Android host
+        run: |
+          python3 tool/configure_lan_platform_permissions.py
+          python3 tool/configure_android_native_library_loading.py
+          python3 tool/configure_mlkit_android_dependencies.py
+          grep -F 'applicationId = "com.bekodeg.startuptest.budget_accounting_system"' android/app/build.gradle.kts
+      - name: Build isolated profile APK with Stage identity
+        shell: bash
+        run: |
+          app_version="$(awk '$1 == "version:" {print $2; exit}' pubspec.yaml)"
+          test -n "$app_version"
+          flutter build apk --profile --no-pub \
+            --target-platform android-arm64 \
+            -t tool/device_startup_reporter_main.dart \
+            --dart-define=APP_VERSION="$app_version" \
+            --dart-define=APP_CHANNEL=stage-device-test \
+            --dart-define=APP_COMMIT="${GITHUB_SHA:0:12}"
+      - name: Verify separate package and artifact
+        shell: bash
+        run: |
+          apk=build/app/outputs/flutter-apk/app-profile.apk
+          test -s "$apk"
+          aapt="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name aapt | sort -V | tail -n 1)"
+          "$aapt" dump badging "$apk" | grep -F "package: name='com.bekodeg.startuptest.budget_accounting_system'"
+          sha256sum "$apk" > build/device-startup-reporter-apk.sha256
+      - name: Upload short-lived device test APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: isolated-startup-reporter-apk
+          path: |
+            build/app/outputs/flutter-apk/app-profile.apk
+            build/device-startup-reporter-apk.sha256
+          retention-days: 2
