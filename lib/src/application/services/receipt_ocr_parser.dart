@@ -125,10 +125,10 @@ final class ReceiptOcrParser {
       r'(?:^|\s)[hнn]?\s*\d{1,2}%\s+\d+[.,]\d{2}\s+\d+\s*$',
       caseSensitive: false,
     );
-    // A Latin OCR model often reads "1 шт." as "1uT.", "1WT." or "1T.".
-    // These are quantity labels, not product names, even when a price follows.
+    // A Latin OCR model can read "1 шт." as "1uT." or "1WT." and
+    // "1.092 кг" as "1.092Kr". Neither is a product name.
     final quantityOnly = RegExp(
-      r'^\d+(?:[.,]\d+)?\s*(?:шт|[uwшщ]?[tт])\.?$',
+      r'^\d+(?:[.,]\d{1,3})?\s*(?:шт|[uwшщ]?[tт]|[kк][gгrр])\.?$',
       caseSensitive: false,
     );
     return name.length >= 2 &&
