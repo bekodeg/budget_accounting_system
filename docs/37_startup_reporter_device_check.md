@@ -11,7 +11,8 @@
 
 ## Сборка и проверка
 
-1. Запустить workflow `Device Startup Reporter APK` из проверяемого commit.
+1. Запустить workflow `Device Startup Reporter APK` через push тестовой ветки
+   из проверяемого commit.
 2. Убедиться, что в APK указан отдельный package ID, и установить его на Android.
 3. На экране ошибки сверить версию, канал `stage-device-test` и короткий commit
    с параметрами сборки.

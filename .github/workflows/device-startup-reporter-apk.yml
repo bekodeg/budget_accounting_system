@@ -1,6 +1,9 @@
 name: Device Startup Reporter APK
 
 on:
+  push:
+    branches:
+      - chore/239-startup-device-harness
   workflow_dispatch:
 
 permissions:
