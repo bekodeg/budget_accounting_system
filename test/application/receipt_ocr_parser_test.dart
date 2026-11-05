@@ -61,7 +61,8 @@ void main() {
   test('quantity-only OCR fragments are not receipt items', () {
     final result = parser.parse(
       'Shop\nMilk 38.99\n1uT. 131.99\n1T. 72.99\n'
-      '1UT. 38.99\n1WT. 69.99\n1 шт. 25.00',
+      '1UT. 38.99\n1WT. 69.99\n1 шт. 25.00\n'
+      '1.092Kr 121.36\n0,5кг 60.68',
     );
 
     expect(result.items, hasLength(1));
