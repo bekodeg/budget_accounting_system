@@ -125,9 +125,16 @@ final class ReceiptOcrParser {
       r'(?:^|\s)[hнn]?\s*\d{1,2}%\s+\d+[.,]\d{2}\s+\d+\s*$',
       caseSensitive: false,
     );
+    // A Latin OCR model often reads "1 шт." as "1uT.", "1WT." or "1T.".
+    // These are quantity labels, not product names, even when a price follows.
+    final quantityOnly = RegExp(
+      r'^\d+(?:[.,]\d+)?\s*(?:шт|[uwшщ]?[tт])\.?$',
+      caseSensitive: false,
+    );
     return name.length >= 2 &&
         RegExp(r'[A-Za-zА-Яа-яЁё]').hasMatch(name) &&
-        !mergedTaxColumns.hasMatch(name);
+        !mergedTaxColumns.hasMatch(name) &&
+        !quantityOnly.hasMatch(name);
   }
 
   BigInt? _amountMinor(String raw) {
