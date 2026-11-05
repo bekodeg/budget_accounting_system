@@ -58,6 +58,17 @@ void main() {
     expect(result.items.single.name, 'Yogurt 2.5%');
   });
 
+  test('quantity-only OCR fragments are not receipt items', () {
+    final result = parser.parse(
+      'Shop\nMilk 38.99\n1uT. 131.99\n1T. 72.99\n'
+      '1UT. 38.99\n1WT. 69.99\n1 шт. 25.00',
+    );
+
+    expect(result.items, hasLength(1));
+    expect(result.items.single.name, 'Milk');
+    expect(result.items.single.lineTotalMinor, BigInt.from(3899));
+  });
+
   test('empty OCR result is failed', () {
     final result = parser.parse('');
     expect(result.parseStatus, 'FAILED');
